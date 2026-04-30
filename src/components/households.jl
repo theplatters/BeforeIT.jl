@@ -1,32 +1,32 @@
 @component struct NetDisposableIncome <: AbstractComponent
-    amount::Float64
+    amount::FloatType
 end
 
 @component struct ExpectedIncome <: AbstractComponent
-    amount::Float64
+    amount::FloatType
 end
 
 @component struct Deposits <: AbstractComponent
-    amount::Float64
+    amount::FloatType
 end
 
 @component struct CapitalStock <: AbstractComponent
-    amount::Float64
+    amount::FloatType
 end
 
 @component struct ConsumptionBudget <: AbstractComponent
-    amount::Float64
+    amount::FloatType
 end
 
 @component struct InvestmentBudget <: AbstractComponent
-    amount::Float64
+    amount::FloatType
 end
 
 @component struct RealisedConsumption <: AbstractComponent
-    amount::Float64
+    amount::FloatType
 end
 
 @component struct RealisedInvestment <: AbstractComponent
-    amount::Float64
+    amount::FloatType
 end
 @component struct Household <: AbstractComponent end

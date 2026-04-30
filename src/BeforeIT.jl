@@ -12,6 +12,8 @@ using Random
 using StatsBase
 using WeightVectors
 
+const IntType = eval(Meta.parse(@load_preference("IntType", default = "Int")))
+const FloatType = eval(Meta.parse(@load_preference("FloatType", default = "Float64")))
 
 include("utils/estimate.jl")
 include("utils/ecs_utils.jl")
