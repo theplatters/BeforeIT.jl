@@ -26,13 +26,35 @@ function build_hiring_firms_cache!(world)
     return nothing
 end
 
+function build_worker_cache!(world)
+
+    cache = Ark.get_resource(world, WorkersCache)
+
+    for (worker_e, _) in Ark.Query(world, (Components.Unemployed,))
+        for i in eachindex(worker_e)
+            BeforeIT.emblace_unemployed!(worker_e[i], cache)
+        end
+    end
+
+    for (firm_e, _employment) in Ark.Query(world, (Components.Employment,))
+        for i in eachindex(firm_e)
+            for (worker_e, _) in Ark.Query(world, (Components.EmployedAt,), relations = (Components.EmployedAt => firm_e[i],))
+                for j in eachindex(worker_e)
+                    BeforeIT.emblace_employed!(worker_e[j], firm_e[i], cache)
+                end
+            end
+        end
+    end
+
+    return nothing
+end
+
 function fire_employed_workers!(world::Ark.World)
     f = Ark.Filter(world, (Components.Employed,), with = (Components.EmployedAt,))
     Ark.shuffle_entities!(f)
     remove_employment = Vector{Ark.Entity}()
     for (firm_e, vacancies, employment) in Ark.Query(world, (Components.Vacancies, Components.Employment))
         for i in eachindex(firm_e)
-
             for (worker_e, _) in Ark.Query(world, (Components.EmployedAt,), relations = (Components.EmployedAt => firm_e[i],))
                 for j in eachindex(worker_e)
                     vacancies[i].amount >= 0 && break
@@ -58,22 +80,25 @@ end
 function hire_workers!(world::Ark.World)
 
     cache = Ark.get_resource(world, HiringFirmsCache)
-    f = Ark.Filter(world, (Components.Unemployed,))
-    firms = Ark.Filter(world, (Components.Vacancies, Components.Employment))
-    Ark.shuffle_entities!(f)
-    Ark.shuffle_entities!(firms)
+    worker_cache = Ark.get_resource(world, WorkersCache)
 
     add_employment = Dict{Ark.Entity, Ark.Entity}()
 
 
-    while cache.nhiring > 0 && nunemployed > 0
+    shuffle!(view(worker_cache.active, 1:cache.nhiring))
+    while cache.nhiring > 0 && worker_cache.n_unemployed > 0
         shuffle!(view(cache.active, 1:cache.nhiring))
         i = 1
+
         while i < cache.nhiring
             firm_index = cache.active[i]
+            worker_e = worker_cache.workers[worker_cache.active[worker_cache.n_unemployed]]
+            firm_e = cache.firms[i]
+            add_employment[worker_e] = firm_e
+
 
             if iszero(cache.vacancies[firm_index])
-                active[i] = active[cache.nhiring]
+                cache.active[i] = cache.active[cache.nhiring]
                 cache.nhiring -= 1
             else
                 i += 1
