@@ -2,6 +2,7 @@ function search_and_matching_labor!(world::Ark.World)
     calculate_initial_vacancies!(world)
     fire_employed_workers!(world)
     build_hiring_firms_cache!(world)
+    build_worker_cache!(world)
     hire_workers!(world)
     return nothing
 end

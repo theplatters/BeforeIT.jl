@@ -1,4 +1,4 @@
-struct HiringFirmsCache
+mutable struct HiringFirmsCache
     vacancies::Vector{Int64}
     active::Vector{Int64}
     employment::Vector{Int64}
@@ -37,7 +37,7 @@ function reset_cache!(cache::HiringFirmsCache)
 end
 
 
-struct WorkersCache
+mutable struct WorkersCache
     employed::Vector{Bool}
     newly_employed::Vector{Bool}
     employed_at::Vector{Ark.Entity}
