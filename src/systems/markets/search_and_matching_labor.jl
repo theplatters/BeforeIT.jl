@@ -92,9 +92,10 @@ function hire_workers!(world::Ark.World)
         shuffle!(view(cache.active, 1:cache.nhiring))
         i = 1
 
-        while i < cache.nhiring
+        while i < cache.nhiring && worker_cache.n_unemployed > 0
+
             firm_index = cache.active[i]
-            worker_e = worker_cache.workers[worker_cache.active[worker_cache.n_unemployed]]
+            worker_e = worker_cache.worker[worker_cache.active[worker_cache.n_unemployed]]
             firm_e = cache.firms[i]
             add_employment[worker_e] = firm_e
             worker_cache.n_unemployed -= 1
