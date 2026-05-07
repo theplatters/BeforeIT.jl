@@ -2,8 +2,8 @@ struct HiringFirmsCache
     vacancies::Vector{Int64}
     active::Vector{Int64}
     employment::Vector{Int64}
-    current_index::Int64
     firms::Vector{Ark.Entity}
+    current_index::Int64
     nhiring::Int64
 end
 
