@@ -1,6 +1,7 @@
 module Components
 
 import Ark
+using ..BeforeIT: FloatType, IntType
 
 # Registry
 const ALL = Type[]
