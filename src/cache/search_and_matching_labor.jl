@@ -77,3 +77,9 @@ function emblace_employed!(entity::Ark.Entity, employed_at::Ark.Entity, cache::W
     cache.current_index += 1
     return nothing
 end
+
+function reset_cache!(cache::WorkersCache)
+    cache.current_index = 1
+    cache.n_unemployed = 0
+    return nothing
+end
