@@ -163,6 +163,11 @@ Base.@kwdef mutable struct MockProperties
     theta_UB::Float64 = 0.0
     theta::Float64 = 0.0
     a_sg::Matrix{Float64} = zeros(62, 62)
+    b_CF_g::Vector{Float64} = zeros(62)
+    b_HH_g::Vector{Float64} = zeros(62)
+    b_CFH_g::Vector{Float64} = zeros(62)
+    c_E_g::Vector{Float64} = zeros(62)
+    c_G_g::Vector{Float64} = zeros(62)
 
     # Dimensions
     T_prime::Int = 0
@@ -186,6 +191,8 @@ end
 
 # Helper to replicate the old eachfirm iterator
 eachfirm(model::MockModel) = 1:length(model.firms.L_i)
+Base.length(f::MockFirms) = length(f.L_i)
+Base.length(w::MockWorkers) = length(w.D_h)
 
 """
     build_mock_model(prop::Properties; kwargs...)
@@ -207,9 +214,15 @@ function build_mock_model(prop::Bit.Properties; overrides...)
         tau_INC = prop.tax_rates.income,
         tau_SIW = prop.social_insurance.employees_contribution,
         tau_SIF = prop.social_insurance.employers_contribution,
-        a_sg = prop.product_coeffs.technology_matrix,
         sb_other = prop.initial_conditions.government.subsidies_other,
         theta_UB = prop.social_insurance.unemployment_benefit,
+        theta = prop.banking_params.debt_installment_rate,
+        a_sg = prop.product_coeffs.technology_matrix,
+        b_CF_g = prop.product_coeffs.capital_formation,
+        b_HH_g = prop.product_coeffs.household_consumption,
+        b_CFH_g = prop.product_coeffs.household_investment,
+        c_E_g = prop.product_coeffs.exports,
+        c_G_g = prop.product_coeffs.government_consumption,
         T_prime = prop.dimensions.interval_for_expectation_estimation,
         I = I,
         H_act = H_act
@@ -226,22 +239,98 @@ function build_mock_model(prop::Bit.Properties; overrides...)
     )
 
     firms = MockFirms(
-        L_i = fill(0.0, I), D_i = fill(0.0, I), D_h = fill(0.0, I),
-        E_i = fill(0.0, I), K_i = fill(0.0, I), Y_i = fill(0.0, I)
+        G_i = fill(1, I),
+        alpha_bar_i = fill(1.0, I),
+        beta_i = fill(1.0, I),
+        kappa_i = fill(1.0, I),
+        w_i = fill(0.0, I),
+        w_bar_i = fill(0.0, I),
+        delta_i = fill(0.0, I),
+        tau_Y_i = fill(0.0, I),
+        tau_K_i = fill(0.0, I),
+        N_i = fill(0, I),
+        Y_i = fill(0.0, I),
+        Q_i = fill(0.0, I),
+        Q_d_i = fill(0.0, I),
+        P_i = fill(1.0, I),
+        S_i = fill(0.0, I),
+        K_i = fill(0.0, I),
+        M_i = fill(0.0, I),
+        L_i = fill(0.0, I),
+        pi_bar_i = fill(0.0, I),
+        D_i = fill(0.0, I),
+        Pi_i = fill(0.0, I),
+        V_i = fill(0, I),
+        I_i = fill(0.0, I),
+        E_i = fill(0.0, I),
+        P_bar_i = fill(1.0, I),
+        P_CF_i = fill(1.0, I),
+        DS_i = fill(0.0, I),
+        DM_i = fill(0.0, I),
+        DL_i = fill(0.0, I),
+        DL_d_i = fill(0.0, I),
+        K_e_i = fill(0.0, I),
+        L_e_i = fill(0.0, I),
+        Q_s_i = fill(0.0, I),
+        I_d_i = fill(0.0, I),
+        DM_d_i = fill(0.0, I),
+        N_d_i = fill(0, I),
+        Pi_e_i = fill(0.0, I),
+        Y_h = fill(0.0, I),
+        C_d_h = fill(0.0, I),
+        I_d_h = fill(0.0, I),
+        C_h = fill(0.0, I),
+        I_h = fill(0.0, I),
+        K_h = fill(0.0, I),
+        D_h = fill(0.0, I)
     )
 
-    w_act = MockWorkers(D_h = fill(0.0, H_act))
-    w_inact = MockWorkers(D_h = fill(0.0, H_inact))
+    w_act = MockWorkers(
+        w_h = fill(0.0, H_act),
+        O_h = fill(0, H_act),
+        C_d_h = fill(0.0, H_act),
+        I_d_h = fill(0.0, H_act),
+        C_h = fill(0.0, H_act),
+        I_h = fill(0.0, H_act),
+        D_h = fill(0.0, H_act),
+        K_h = fill(0.0, H_act),
+        Y_h = fill(0.0, H_act)
+    )
+    w_inact = MockWorkers(
+        w_h = fill(0.0, H_inact),
+        O_h = fill(0, H_inact),
+        C_d_h = fill(0.0, H_inact),
+        I_d_h = fill(0.0, H_inact),
+        C_h = fill(0.0, H_inact),
+        I_h = fill(0.0, H_inact),
+        D_h = fill(0.0, H_inact),
+        K_h = fill(0.0, H_inact),
+        Y_h = fill(0.0, H_inact)
+    )
+
+    rotw = MockRestOfTheWorld(
+        C_d_l = fill(0.0, prop.dimensions.foreign_consumers),
+        Y_m = fill(0.0, prop.dimensions.sectors),
+        Q_m = fill(0.0, prop.dimensions.sectors),
+        Q_d_m = fill(0.0, prop.dimensions.sectors),
+        P_m = fill(1.0, prop.dimensions.sectors)
+    )
+
+    gov = MockGovernment(
+        C_d_j = fill(0.0, prop.dimensions.local_governments)
+    )
 
     agg = MockAggregates(
         pi_e = prop.initial_conditions.economy.inflation[end],
         gamma_e = 0.0, P_bar_CF = 1.0,
+        P_bar_g = fill(1.0, prop.dimensions.sectors),
         Y = copy(prop.initial_conditions.economy.total_output), t = 1
     )
 
     model = MockModel(
         prop = mock_prop, cb = cb, bank = bank,
-        firms = firms, w_act = w_act, w_inact = w_inact, agg = agg
+        firms = firms, w_act = w_act, w_inact = w_inact, 
+        agg = agg, rotw = rotw, gov = gov
     )
 
     for (k, v) in overrides
@@ -256,6 +345,10 @@ function build_mock_model(prop::Bit.Properties; overrides...)
             setfield!(model.w_act, Symbol(replace(k_str, "w_act_" => "")), v)
         elseif startswith(k_str, "w_inact_")
             setfield!(model.w_inact, Symbol(replace(k_str, "w_inact_" => "")), v)
+        elseif startswith(k_str, "gov_")
+            setfield!(model.gov, Symbol(replace(k_str, "gov_" => "")), v)
+        elseif startswith(k_str, "rotw_")
+            setfield!(model.rotw, Symbol(replace(k_str, "rotw_" => "")), v)
         else
             setfield!(model, k, v)
         end
@@ -280,7 +373,16 @@ function set_mock_components!(world::Ark.World; overrides...)
         :firms_D_i => Bit.Components.Deposits,
         :firms_E_i => Bit.Components.Equity,
         :firms_K_i => Bit.Components.CapitalStock,
-        :firms_Y_i => Bit.Components.Output
+        :firms_Y_i => Bit.Components.Output,
+        :firms_G_i => Bit.Components.PrincipalProduct,
+        :firms_I_d_i => Bit.Components.DesiredInvestment,
+        :firms_DM_d_i => Bit.Components.DesiredMaterials,
+        :firms_S_i => Bit.Components.Inventories,
+        :firms_P_i => Bit.Components.Price,
+        :firms_alpha_bar_i => Bit.Components.LaborProductivity,
+        :firms_beta_i => Bit.Components.IntermediateProductivity,
+        :firms_kappa_i => Bit.Components.CapitalProductivity,
+        :firms_delta_i => Bit.Components.CapitalDeprecationRate
     )
 
     bank_mappings = Dict(
@@ -288,14 +390,39 @@ function set_mock_components!(world::Ark.World; overrides...)
         :bank_r => Bit.Components.LendingRate,
         :bank_Pi_k => Bit.Components.Profits,
         :bank_Pi_e_k => Bit.Components.ExpectedProfits,
-        :bank_D_k => Bit.Components.ResidualItems
+        :bank_D_k => Bit.Components.ResidualItems,
+        :bank_C_d_h => Bit.Components.ConsumptionBudget,
+        :bank_I_d_h => Bit.Components.InvestmentBudget
     )
 
     # Household mappings (split by their specific roles in the ECS)
-    w_act_mappings = Dict(:w_act_D_h => Bit.Components.Deposits)
-    w_inact_mappings = Dict(:w_inact_D_h => Bit.Components.Deposits)
-    capitalist_mappings = Dict(:firms_D_h => Bit.Components.Deposits)
-    banker_mappings = Dict(:bank_D_h => Bit.Components.Deposits)
+    w_act_mappings = Dict(
+        :w_act_D_h => Bit.Components.Deposits,
+        :w_act_C_d_h => Bit.Components.ConsumptionBudget,
+        :w_act_I_d_h => Bit.Components.InvestmentBudget
+    )
+    w_inact_mappings = Dict(
+        :w_inact_D_h => Bit.Components.Deposits,
+        :w_inact_C_d_h => Bit.Components.ConsumptionBudget,
+        :w_inact_I_d_h => Bit.Components.InvestmentBudget
+    )
+    capitalist_mappings = Dict(
+        :firms_D_h => Bit.Components.Deposits,
+        :firms_C_d_h => Bit.Components.ConsumptionBudget,
+        :firms_I_d_h => Bit.Components.InvestmentBudget
+    )
+    banker_mappings = Dict(
+        :bank_D_h => Bit.Components.Deposits,
+        :bank_C_d_h => Bit.Components.ConsumptionBudget,
+        :bank_I_d_h => Bit.Components.InvestmentBudget
+    )
+
+    rotw_mappings = Dict(
+        :rotw_C_d_l => Bit.Components.ForeignConsumptionDemand,
+        :rotw_Y_m => Bit.Components.ImportSupply,
+        :rotw_P_m => Bit.Components.ImportPrice
+    )
+    gov_mappings = Dict(:gov_C_d_j => Bit.Components.ConsumptionDemand)
 
     for (k, v) in overrides
         if haskey(firm_mappings, k)
@@ -349,6 +476,36 @@ function set_mock_components!(world::Ark.World; overrides...)
             CompType = bank_mappings[k]
             for (e, comp) in Ark.Query(world, (CompType,), with = (Bit.Components.Bank,))
                 comp[1] = CompType(v)
+            end
+
+        elseif k == :rotw_C_d_l
+            CompType = Bit.Components.ForeignConsumptionDemand
+            idx = 1
+            for (e, comp) in Ark.Query(world, (CompType,), with = (Bit.Components.RestOfWorldEntity,))
+                for i in eachindex(e)
+                    comp[i] = CompType(v[idx])
+                    idx += 1
+                end
+            end
+
+        elseif k == :rotw_Y_m || k == :rotw_P_m
+            CompType = rotw_mappings[k]
+            idx = 1
+            for (e, comp) in Ark.Query(world, (CompType,), with = (Bit.Components.ForeignSector,))
+                for i in eachindex(e)
+                    comp[i] = CompType(v[idx])
+                    idx += 1
+                end
+            end
+
+        elseif haskey(gov_mappings, k)
+            CompType = gov_mappings[k]
+            idx = 1
+            for (e, comp) in Ark.Query(world, (CompType,), with = (Bit.Components.LocalGovernment,))
+                for i in eachindex(e)
+                    comp[i] = CompType(v[idx])
+                    idx += 1
+                end
             end
 
         else

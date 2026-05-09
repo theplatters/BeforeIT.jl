@@ -7,7 +7,7 @@ and retail market operations for each good. Finally, it updates the aggregate va
 
 This function updates the model in-place and does not return any value.
 """
-function search_and_matching!(model::AbstractModel; parallel = false)
+function search_and_matching!(model; parallel = false)
 
     w_act, w_inact, firms, gov = model.w_act, model.w_inact, model.firms, model.gov
     bank, rotw, agg, prop = model.bank, model.rotw, model.agg, model.prop
@@ -48,7 +48,7 @@ function search_and_matching!(model::AbstractModel; parallel = false)
     end
 
     G = size(prop.b_HH_g, 1) # number of goods
-    @maybe_threads parallel for g in 1:G
+    for g in 1:G
         perform_market!(g, RETAIL_LOCK)
     end
 
@@ -95,18 +95,27 @@ function update_aggregate_variables!(
     gov.P_j = gov.C_j / gov.P_j
     rotw.P_l = rotw.C_l / rotw.P_l
 
+    println("Sizes check in update_aggregate_variables!:")
+    println("  w_act.C_h: ", size(w_act.C_h), " vs view: ", size(@view(C_h[1:H_W])))
     w_act.C_h .= @view(C_h[1:H_W])
+    println("  w_inact.C_h: ", size(w_inact.C_h), " vs view: ", size(@view(C_h[(H_W + 1):(H_W + H_inact)])))
     w_inact.C_h .= @view(C_h[(H_W + 1):(H_W + H_inact)])
+    println("  firms.C_h: ", size(firms.C_h), " vs view: ", size(@view(C_h[(H_W + H_inact + 1):(H_W + H_inact + I)])))
     firms.C_h .= @view(C_h[(H_W + H_inact + 1):(H_W + H_inact + I)])
     bank.C_h = C_h[H]
 
+    println("  w_act.I_h: ", size(w_act.I_h), " vs view: ", size(@view(I_h[1:H_W])))
     w_act.I_h .= @view(I_h[1:H_W])
+    println("  w_inact.I_h: ", size(w_inact.I_h), " vs view: ", size(@view(I_h[(H_W + 1):(H_W + H_inact)])))
     w_inact.I_h .= @view(I_h[(H_W + 1):(H_W + H_inact)])
+    println("  firms.I_h: ", size(firms.I_h), " vs view: ", size(@view(I_h[(H_W + H_inact + 1):(H_W + H_inact + I)])))
     firms.I_h .= @view(I_h[(H_W + H_inact + 1):(H_W + H_inact + I)])
     bank.I_h = I_h[H]
 
+    println("  rotw.Q_d_m: ", size(rotw.Q_d_m), " vs Q_d_m: ", size(Q_d_m))
     rotw.Q_d_m .= Q_d_m
 
+    println("  firms.I_i: ", size(firms.I_i), " vs I_i: ", size(I_i))
     firms.I_i .= I_i
     firms.Q_d_i .= Q_d_i
     firms.P_bar_i .= P_bar_i
@@ -221,7 +230,7 @@ function perform_firms_market!(
     while !isempty(I_g) && !iszero(F_g_active)
 
         # select buyers at random
-        fshuffle!(I_g)
+        shuffle!(I_g)
         for i in I_g
             # select a random firm according to the probabilities
             e = rand(F_g_active)
@@ -248,7 +257,7 @@ function perform_firms_market!(
 
         while !isempty(I_g) && !iszero(F_g_active)
 
-            fshuffle!(I_g)
+            shuffle!(I_g)
             for i in I_g
                 e = rand(F_g_active)
                 f = F_g_[e]
@@ -269,9 +278,11 @@ function perform_firms_market!(
         end
     end
 
+    a = a_sg[g, firms.G_i] .* firms.DM_d_i .- max.(0.0, DM_d_ig .- b_CF_g[g] .* firms.I_d_i)
+    b = max.(0.0, b_CF_g[g] .* firms.I_d_i .- DM_d_ig)
     c = a_sg[g, firms.G_i] .* firms.DM_d_i .+ b_CF_g[g] .* firms.I_d_i .- DM_d_ig
 
-    DM_i_g[:, g] .= a_sg[g, firms.G_i] .* firms.DM_d_i .- max.(0.0, DM_d_ig .- b_CF_g[g] .* firms.I_d_i)
+    DM_i_g[:, g] .= a
     I_i_g[:, g] .= max.(0.0, b_CF_g[g] .* firms.I_d_i .- DM_d_ig)
 
     P_bar_i_g[:, g] .= DM_nominal_ig .* a ./ zero_to_one.(c)
@@ -308,7 +319,7 @@ function perform_retail_market!(
 
     while !isempty(H_g) && !iszero(F_g_active)
 
-        fshuffle!(H_g)
+        shuffle!(H_g)
         for h in H_g
             e = rand(F_g_active)
             f = F_g[e]
@@ -332,7 +343,7 @@ function perform_retail_market!(
 
         while !isempty(H_g) && !iszero(F_g_active)
 
-            fshuffle!(H_g)
+            shuffle!(H_g)
             for h in H_g
                 e = rand(F_g_active)
                 f = F_g_[e]
@@ -354,15 +365,15 @@ function perform_retail_market!(
     end
 
     a = @view(C_real_hg[1:H])
-    b = @~ C_d_h .* b_HH_g[g] .- pos.(@view(C_d_hg[1:H]) .- b_CFH_g[g] .* I_d_h)
-    c = @~ C_d_h .* b_HH_g[g] .+ b_CFH_g[g] .* I_d_h .- @view(C_d_hg[1:H])
-    d = @~ pos.(b_CFH_g[g] .* I_d_h .- @view(C_d_hg[1:H]))
+    b = C_d_h .* b_HH_g[g] .- max.(0.0, @view(C_d_hg[1:H]) .- b_CFH_g[g] .* I_d_h)
+    c = C_d_h .* b_HH_g[g] .+ b_CFH_g[g] .* I_d_h .- @view(C_d_hg[1:H])
+    d = max.(0.0, b_CFH_g[g] .* I_d_h .- @view(C_d_hg[1:H]))
 
-    @~ Q_d_i_g[:, g] .= @view(S_f[1:I]) .- @view(S_fg[1:I])
-    @~ Q_d_m_g[:, g] .= @view(S_f[(I + 1):end]) .- @view(S_fg[(I + 1):end])
+    Q_d_i_g[:, g] .= @view(S_f[1:I]) .- @view(S_fg[1:I])
+    Q_d_m_g[:, g] .= @view(S_f[(I + 1):end]) .- @view(S_fg[(I + 1):end])
 
-    C_j_g[g] = sum(@~ c_G_g[g] .* gov.C_d_j) - sum(@view(C_d_hg[(H + L + 1):(H + L + J)]))
-    C_l_g[g] = sum(@~ c_E_g[g] .* rotw.C_d_l) - sum(@view(C_d_hg[(H + 1):(H + L)]))
+    C_j_g[g] = sum(c_G_g[g] .* gov.C_d_j) - sum(@view(C_d_hg[(H + L + 1):(H + L + J)]))
+    C_l_g[g] = sum(c_E_g[g] .* rotw.C_d_l) - sum(@view(C_d_hg[(H + 1):(H + L)]))
 
     P_bar_h_g[g] = sum(a) * sum(b) / zero_to_one(sum(c))
     P_bar_CF_h_g[g] = sum(a) * sum(d) / zero_to_one(sum(c))
@@ -376,27 +387,27 @@ end
 
 function update_non_sector_vars!(C_h, I_h, b, d, RETAIL_LOCK, ::Val{true})
     return @lock RETAIL_LOCK begin
-        @~ C_h .+= b
-        @~ I_h .+= d
+        C_h .+= b
+        I_h .+= d
     end
 end
 
 function update_non_sector_vars!(C_h, I_h, b, d, RETAIL_LOCK, ::Val{false})
-    @~ C_h .+= b
-    return @~ I_h .+= d
+    C_h .+= b
+    return I_h .+= d
 end
 
 function compute_price_size_weights(P_f, S_f, F_g)
     # price probability of being selected
-    pr_price_f_v = @~ exp.(-2 .* @view(P_f[F_g]))
+    pr_price_f_v = exp.(-2 .* @view(P_f[F_g]))
     pr_price_f_sum = sum(pr_price_f_v)
-    pr_price_f = @~ pos.(pr_price_f_v ./ pr_price_f_sum)
+    pr_price_f = max.(0.0, pr_price_f_v ./ pr_price_f_sum)
     # size probability of being selected
     pr_size_f_v = @view(S_f[F_g])
     pr_size_f_sum = sum(pr_size_f_v)
-    pr_size_f = @~ pr_size_f_v ./ pr_size_f_sum
+    pr_size_f = pr_size_f_v ./ pr_size_f_sum
     # total weight of being selected
-    w_cum_f_ = @~ pr_price_f .+ pr_size_f
+    w_cum_f_ = pr_price_f .+ pr_size_f
     return w_cum_f_
 end
 

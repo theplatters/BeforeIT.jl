@@ -203,13 +203,13 @@ Pi_i = in_sales + in_deposits - out_wages - out_expenses - out_depreciation - ou
 
 where:
 - `in_sales = P_i * Q_i + P_i * DS_i`
-- `in_deposits = r_bar * pos(D_i)`
+- `in_deposits = r_bar * max(0.0, D_i)`
 - `out_wages = (1 + tau_SIF) * w_i * N_i * P_bar_HH`
 - `out_expenses = 1 / beta_i * P_bar_i * Y_i`
 - `out_depreciation = delta_i / kappa_i * P_CF_i * Y_i`
 - `out_taxes_prods = tau_Y_i * P_i * Y_i`
 - `out_taxes_capital = tau_K_i * P_i * Y_i`
-- `out_loans = r * (L_i + pos(-D_i))`
+- `out_loans = r * (L_i + max(0.0, -D_i))`
 """
 function firms_profits(model)
     firms = model.firms
@@ -217,13 +217,13 @@ function firms_profits(model)
     P_bar_HH, tau_SIF, r, r_bar = model.agg.P_bar_HH, model.prop.tau_SIF, model.bank.r, model.cb.r_bar
 
     in_sales = firms.P_i .* firms.Q_i .+ firms.P_i .* firms.DS_i
-    in_deposits = r_bar .* pos(firms.D_i)
+    in_deposits = r_bar .* max(0.0, firms.D_i)
     out_wages = (1.0 + tau_SIF) .* firms.w_i .* firms.N_i .* P_bar_HH
     out_expenses = 1.0 ./ firms.beta_i .* firms.P_bar_i .* firms.Y_i
     out_depreciation = firms.delta_i ./ firms.kappa_i .* firms.P_CF_i .* firms.Y_i
     out_taxes_prods = firms.tau_Y_i .* firms.P_i .* firms.Y_i
     out_taxes_capital = firms.tau_K_i .* firms.P_i .* firms.Y_i
-    out_loans = r .* (firms.L_i .+ pos(-firms.D_i))
+    out_loans = r .* (firms.L_i .+ max(0.0, -firms.D_i))
 
     Pi_i =
         in_sales + in_deposits - out_wages - out_expenses - out_depreciation - out_taxes_prods - out_taxes_capital -
@@ -255,10 +255,10 @@ where:
 - `material_cost = -DM_i * P_bar_i`
 - `taxes_products = -tau_Y_i * P_i * Y_i`
 - `taxes_production = -tau_K_i * P_i * Y_i`
-- `corporate_tax = -tau_FIRM * pos(Pi_i)`
-- `dividend_payments = -theta_DIV * (1 - tau_FIRM) * pos(Pi_i)`
-- `interest_payments = -r * (L_i + pos(-D_i))`
-- `interest_received = r_bar * pos(D_i)`
+- `corporate_tax = -tau_FIRM * max(0.0, Pi_i)`
+- `dividend_payments = -theta_DIV * (1 - tau_FIRM) * max(0.0, Pi_i)`
+- `interest_payments = -r * (L_i + max(0.0, -D_i))`
+- `interest_received = r_bar * max(0.0, D_i)`
 - `investment_cost = -P_CF_i * I_i`
 - `new_credit = DL_i`
 - `debt_installment = -theta * L_i`
@@ -274,10 +274,10 @@ function firms_deposits(model)
     material_cost = -firms.DM_i .* firms.P_bar_i
     taxes_products = -firms.tau_Y_i .* firms.P_i .* firms.Y_i
     taxes_production = -firms.tau_K_i .* firms.P_i .* firms.Y_i
-    corporate_tax = -tau_FIRM .* pos.(firms.Pi_i)
-    dividend_payments = -theta_DIV .* (1 - tau_FIRM) .* pos.(firms.Pi_i)
-    interest_payments = -r .* (firms.L_i .+ pos.(-firms.D_i))
-    interest_received = r_bar .* pos.(firms.D_i)
+    corporate_tax = -tau_FIRM .* max.(0.0, firms.Pi_i)
+    dividend_payments = -theta_DIV .* (1 - tau_FIRM) .* max.(0.0, firms.Pi_i)
+    interest_payments = -r .* (firms.L_i .+ max.(0.0, -firms.D_i))
+    interest_received = r_bar .* max.(0.0, firms.D_i)
     investment_cost = -firms.P_CF_i .* firms.I_i
     new_credit = firms.DL_i
     debt_installment = -theta .* firms.L_i

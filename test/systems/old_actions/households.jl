@@ -1,5 +1,5 @@
 # update wages for workers
-function update_workers_wages!(model::AbstractModel)
+function update_workers_wages!(model)
     w_act, firms = model.w_act, model.firms
     w_i = firms.w_i
     for (i, h) in enumerate(w_act.O_h)
@@ -33,7 +33,7 @@ function set_households_income_act!(model; expected = false)
     return model.w_act.Y_h .= households_income_act(model; expected)
 end
 
-function households_income_inact(model::AbstractModel; expected = false)
+function households_income_inact(model; expected = false)
     w_inact = model.w_inact
 
     H_inact, sb_inact = length(w_inact), model.gov.sb_inact
@@ -51,7 +51,7 @@ function set_households_income_inact!(model; expected = false)
     return model.w_inact.Y_h .= households_income_inact(model; expected)
 end
 
-function households_income_firms(model::AbstractModel; expected = false)
+function households_income_firms(model; expected = false)
     firms = model.firms
     tau_INC, tau_FIRM, theta_DIV = model.prop.tau_INC, model.prop.tau_FIRM, model.prop.theta_DIV
     sb_other, P_bar_HH = model.gov.sb_other, model.agg.P_bar_HH
@@ -85,7 +85,7 @@ function set_households_income_bank!(model; expected = false)
     return model.bank.Y_h = households_income_bank(model; expected)
 end
 
-function households_budget_act(model::AbstractModel)
+function households_budget_act(model)
     w_act = model.w_act
 
     psi, psi_H, tau_VAT, tau_CF = model.prop.psi, model.prop.psi_H, model.prop.tau_VAT, model.prop.tau_CF
@@ -97,14 +97,14 @@ function households_budget_act(model::AbstractModel)
 
     return C_d_h, I_d_h
 end
-function set_households_budget_act!(model::AbstractModel)
+function set_households_budget_act!(model)
     w_act = model.w_act
     C_d_h, I_d_h = households_budget_act(model)
     w_act.C_d_h .= C_d_h
     return w_act.I_d_h .= I_d_h
 end
 
-function households_budget_inact(model::AbstractModel)
+function households_budget_inact(model)
     w_inact = model.w_inact
 
     psi, psi_H, tau_VAT, tau_CF = model.prop.psi, model.prop.psi_H, model.prop.tau_VAT, model.prop.tau_CF
@@ -116,14 +116,14 @@ function households_budget_inact(model::AbstractModel)
 
     return C_d_h, I_d_h
 end
-function set_households_budget_inact!(model::AbstractModel)
+function set_households_budget_inact!(model)
     w_inact = model.w_inact
     C_d_h, I_d_h = households_budget_inact(model)
     w_inact.C_d_h .= C_d_h
     return w_inact.I_d_h .= I_d_h
 end
 
-function households_budget_firms(model::AbstractModel)
+function households_budget_firms(model)
     firms = model.firms
 
     psi, psi_H, tau_VAT, tau_CF = model.prop.psi, model.prop.psi_H, model.prop.tau_VAT, model.prop.tau_CF
@@ -135,7 +135,7 @@ function households_budget_firms(model::AbstractModel)
 
     return C_d_h, I_d_h
 end
-function set_households_budget_firms!(model::AbstractModel)
+function set_households_budget_firms!(model)
     firms = model.firms
     C_d_h, I_d_h = households_budget_firms(model)
     firms.C_d_h .= C_d_h

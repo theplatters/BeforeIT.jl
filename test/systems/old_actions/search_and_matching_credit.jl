@@ -10,7 +10,7 @@ Parameters:
 Returns:
 - DL_i: An array of credit allocations for each firm.
 """
-function search_and_matching_credit!(model::AbstractModel)
+function search_and_matching_credit!(model)
     firms = model.firms
 
     DL_d_i, K_e_i, L_e_i = firms.DL_d_i, firms.K_e_i, firms.L_e_i
@@ -20,7 +20,7 @@ function search_and_matching_credit!(model::AbstractModel)
     s_DL = zero(Float64)
     s_L_e = sum(L_e_i)
     I_FG = findall(DL_d_i .> 0)
-    fshuffle!(I_FG)
+    shuffle!(I_FG)
     for i in I_FG
         DL_i[i] = max(
             0.0,

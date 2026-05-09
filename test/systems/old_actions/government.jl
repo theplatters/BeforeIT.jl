@@ -38,7 +38,7 @@ imports.
 # Returns
 - `Y_G`: government revenues
 """
-function gov_revenues(model::AbstractModel)
+function gov_revenues(model)
     gov, w_act, w_inact = model.gov, model.w_act, model.w_inact
     firms, bank, rotw = model.firms, model.bank, model.rotw
 
@@ -55,8 +55,8 @@ function gov_revenues(model::AbstractModel)
     social_security = (tau_SIF + tau_SIW) * tot_wages_emp * P_bar_HH
     labour_income = tau_INC * (1 - tau_SIW) * P_bar_HH * tot_wages_emp
     value_added = tau_VAT * tot_C_h
-    capital_income = tau_INC * (1 - tau_FIRM) * theta_DIV * (sum(pos.(firms.Pi_i)) + pos(bank.Pi_k))
-    corporate_income = tau_FIRM * (sum(pos.(firms.Pi_i)) + pos(bank.Pi_k))
+    capital_income = tau_INC * (1 - tau_FIRM) * theta_DIV * (sum(max.(0.0, firms.Pi_i)) + max(0.0, bank.Pi_k))
+    corporate_income = tau_FIRM * (sum(max.(0.0, firms.Pi_i)) + max(0.0, bank.Pi_k))
     capital_formation = tau_CF * tot_I_h
     products = sum(firms.tau_Y_i .* firms.P_i .* firms.Y_i)
     production = sum(firms.tau_K_i .* firms.P_i .* firms.Y_i)
@@ -75,7 +75,7 @@ function gov_revenues(model::AbstractModel)
 
     return Y_G
 end
-function set_gov_revenues!(model::AbstractModel)
+function set_gov_revenues!(model)
     return model.gov.Y_G = gov_revenues(model)
 end
 
@@ -116,7 +116,7 @@ Computes social benefits paid by the government households.
 - `sb_other`: social benefits for other households
 - `sb_inact`: social benefits for inactive households
 """
-function gov_social_benefits(model::AbstractModel)
+function gov_social_benefits(model)
     gov = model.gov
     gamma_e = model.agg.gamma_e
 
@@ -125,7 +125,7 @@ function gov_social_benefits(model::AbstractModel)
 
     return sb_other, sb_inact
 end
-function set_gov_social_benefits!(model::AbstractModel)
+function set_gov_social_benefits!(model)
     gov = model.gov
     return gov.sb_other, gov.sb_inact = gov_social_benefits(model)
 end

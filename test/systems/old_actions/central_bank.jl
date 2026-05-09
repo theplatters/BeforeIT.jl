@@ -10,7 +10,7 @@ Update the base interest rate set by the central bank according to the Taylor ru
 # Returns
 - `r_bar`: The updated base interest rate
 """
-function central_bank_rate(model::AbstractModel)
+function central_bank_rate(model)
     cb = model.cb
     # unpack arguments
     gamma_EA = model.rotw.gamma_EA
@@ -20,7 +20,7 @@ function central_bank_rate(model::AbstractModel)
     return r_bar
 end
 
-function set_central_bank_rate!(model::AbstractModel)
+function set_central_bank_rate!(model)
     return model.cb.r_bar = central_bank_rate(model)
 end
 
@@ -50,7 +50,7 @@ r_t = ρ * r_{t-1} + (1 - ρ) * (r^* + π^* + ξ_π * (π_t - π^*) + ξ_γ * γ
 """
 function taylor_rule(rho::T, r_bar::T, r_star::T, pi_star::T, xi_pi::T, xi_gamma::T, gamma_EA::T, pi_EA::T) where {T}
     rate = rho * r_bar + (one(T) - rho) * (r_star + pi_star + xi_pi * (pi_EA - pi_star) + xi_gamma * gamma_EA)
-    return pos(rate)
+    return max(0.0, rate)
 end
 
 """

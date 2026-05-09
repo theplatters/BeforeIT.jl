@@ -17,7 +17,7 @@ The function returns:
 - `N_i`: An updated array of the number of employed workers for each firm.
 - `O_h`: An updated array where each element represents the firm a worker is employed with (0 if unemployed).
 """
-function search_and_matching_labour!(model::AbstractModel)
+function search_and_matching_labour!(model)
     firms, w_act = model.firms, model.w_act
 
     N_d_i, N_i, O_h = firms.N_d_i, firms.N_i, model.w_act.O_h
@@ -26,7 +26,7 @@ function search_and_matching_labour!(model::AbstractModel)
 
     # get employed workers in random order
     H_E = findall(O_h .> 0)
-    fshuffle!(H_E)
+    shuffle!(H_E)
 
     # fire workers if vacancies are negative
     for h in H_E
@@ -44,12 +44,12 @@ function search_and_matching_labour!(model::AbstractModel)
 
     # find unemployed workers and positive vacancies
     H_U = findall(O_h .== 0)
-    fshuffle!(H_U)
+    shuffle!(H_U)
     I_V = findall(V_i .> 0)
 
     # while there are no more vacancies or unemployed workers
     while !isempty(H_U) && !isempty(I_V)
-        fshuffle!(I_V)
+        shuffle!(I_V)
         for i in I_V
             # select random unemployed worker
             h = H_U[1]

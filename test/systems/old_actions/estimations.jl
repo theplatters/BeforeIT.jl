@@ -26,7 +26,7 @@ The expected inflation rate `pi_e` is calculated as follows:
 \\pi_e = exp(\\alpha_\\pi \\cdot \\pi_{T^\\prime + t - 1} + \\beta_\\pi + \\epsilon_\\pi) - 1
 ```
 """
-function growth_inflation_expectations(model::AbstractModel)
+function growth_inflation_expectations(model)
 
     Y, pi_, T_prime, t = model.agg.Y, model.agg.pi_, model.prop.T_prime, model.agg.t
 
@@ -40,7 +40,7 @@ function growth_inflation_expectations(model::AbstractModel)
     return Y_e, gamma_e, pi_e
 end
 
-function set_growth_inflation_expectations!(model::AbstractModel)
+function set_growth_inflation_expectations!(model)
     agg = model.agg
     return agg.Y_e, agg.gamma_e, agg.pi_e = growth_inflation_expectations(model)
 end
@@ -77,7 +77,7 @@ Y_{EA} = exp(\\alpha_Y \\cdot \\log(Y_{EA}) + \\beta_Y + \\epsilon_{Y_{EA}})
 where `alpha_Y`, `beta_Y`, `alpha_pi`, `beta_pi`, `epsilon_Y_EA` and `epsilon_pi_EA` are estimated using
 the past log-GDP and inflation data using the `estimate` function.
 """
-function growth_inflation_EA(model::AbstractModel)
+function growth_inflation_EA(model)
     rotw = model.rotw
 
     epsilon_Y_EA = model.agg.epsilon_Y_EA
@@ -90,7 +90,7 @@ function growth_inflation_EA(model::AbstractModel)
     return Y_EA, gamma_EA, pi_EA
 end
 
-function set_growth_inflation_EA!(model::AbstractModel)
+function set_growth_inflation_EA!(model)
     rotw = model.rotw
     return rotw.Y_EA, rotw.gamma_EA, rotw.pi_EA = growth_inflation_EA(model)
 end
@@ -150,7 +150,7 @@ The sector-specific price index `vec` is calculated as follows:
 vec_g = \\frac{\\sum_{i=1}^N P_i \\cdot Y_i}{\\sum_{i=1}^N Y_i}
 ```
 """
-function sector_specific_priceindex(model::AbstractModel)
+function sector_specific_priceindex(model)
     firms, rotw = model.firms, model.rotw
 
     G = model.prop.G
@@ -167,19 +167,19 @@ function sector_specific_priceindex(model::AbstractModel)
     end
     return vec
 end
-function set_sector_specific_priceindex!(model::AbstractModel)
+function set_sector_specific_priceindex!(model)
     return model.agg.P_bar_g .= sector_specific_priceindex(model)
 end
 
-function capital_formation_priceindex(model::AbstractModel)
+function capital_formation_priceindex(model)
     agg, prop = model.agg, model.prop
     return sum(prop.b_CF_g .* agg.P_bar_g)
 end
-function set_capital_formation_priceindex!(model::AbstractModel)
+function set_capital_formation_priceindex!(model)
     return model.agg.P_bar_CF = capital_formation_priceindex(model)
 end
 
-function households_priceindex(model::AbstractModel)
+function households_priceindex(model)
     agg, prop = model.agg, model.prop
     return sum(prop.b_HH_g .* agg.P_bar_g)
 end
