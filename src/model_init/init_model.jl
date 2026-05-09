@@ -49,3 +49,13 @@ end
 function properties(m::ECSModel)
     return Ark.get_resource(m.world, Properties)
 end
+
+function Base.getproperty(m::ECSModel, name::Symbol)
+    if name === :data
+        return Ark.get_resource(m.world, DataCollector)
+    elseif name === :properties
+        return Ark.get_resource(m.world, Properties)
+    else
+        return getfield(m, name)
+    end
+end

@@ -118,6 +118,9 @@ function step!(model)
     # update GDP with the results of the time step
     BeforeIT.set_gross_domestic_product!(world)
 
+    # collect data
+    BeforeIT.collect_data!(world)
+
     # update time step
     BeforeIT.set_time!(world)
 

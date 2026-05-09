@@ -2,34 +2,34 @@ abstract type AbstractData <: AbstractObject end
 
 # Define the Data struct
 Bit.@object struct Data(Object) <: AbstractData
-    collection_time::Vector{Bit.typeInt} = Bit.typeInt[]
-    nominal_gdp::Vector{Bit.typeFloat} = Bit.typeFloat[]
-    real_gdp::Vector{Bit.typeFloat} = Bit.typeFloat[]
-    nominal_gva::Vector{Bit.typeFloat} = Bit.typeFloat[]
-    real_gva::Vector{Bit.typeFloat} = Bit.typeFloat[]
-    nominal_household_consumption::Vector{Bit.typeFloat} = Bit.typeFloat[]
-    real_household_consumption::Vector{Bit.typeFloat} = Bit.typeFloat[]
-    nominal_government_consumption::Vector{Bit.typeFloat} = Bit.typeFloat[]
-    real_government_consumption::Vector{Bit.typeFloat} = Bit.typeFloat[]
-    nominal_capitalformation::Vector{Bit.typeFloat} = Bit.typeFloat[]
-    real_capitalformation::Vector{Bit.typeFloat} = Bit.typeFloat[]
-    nominal_fixed_capitalformation::Vector{Bit.typeFloat} = Bit.typeFloat[]
-    real_fixed_capitalformation::Vector{Bit.typeFloat} = Bit.typeFloat[]
-    nominal_fixed_capitalformation_dwellings::Vector{Bit.typeFloat} = Bit.typeFloat[]
-    real_fixed_capitalformation_dwellings::Vector{Bit.typeFloat} = Bit.typeFloat[]
-    nominal_exports::Vector{Bit.typeFloat} = Bit.typeFloat[]
-    real_exports::Vector{Bit.typeFloat} = Bit.typeFloat[]
-    nominal_imports::Vector{Bit.typeFloat} = Bit.typeFloat[]
-    real_imports::Vector{Bit.typeFloat} = Bit.typeFloat[]
-    operating_surplus::Vector{Bit.typeFloat} = Bit.typeFloat[]
-    compensation_employees::Vector{Bit.typeFloat} = Bit.typeFloat[]
-    wages::Vector{Bit.typeFloat} = Bit.typeFloat[]
-    taxes_production::Vector{Bit.typeFloat} = Bit.typeFloat[]
-    gdp_deflator_growth_ea::Vector{Bit.typeFloat} = Bit.typeFloat[]
-    real_gdp_ea::Vector{Bit.typeFloat} = Bit.typeFloat[]
-    euribor::Vector{Bit.typeFloat} = Bit.typeFloat[]
-    nominal_sector_gva::Vector{Vector{Bit.typeFloat}} = Vector{Bit.typeFloat}[]
-    real_sector_gva::Vector{Vector{Bit.typeFloat}} = Vector{Bit.typeFloat}[]
+    collection_time::Vector{IntType} = IntType[]
+    nominal_gdp::Vector{FloatType} = FloatType[]
+    real_gdp::Vector{FloatType} = FloatType[]
+    nominal_gva::Vector{FloatType} = FloatType[]
+    real_gva::Vector{FloatType} = FloatType[]
+    nominal_household_consumption::Vector{FloatType} = FloatType[]
+    real_household_consumption::Vector{FloatType} = FloatType[]
+    nominal_government_consumption::Vector{FloatType} = FloatType[]
+    real_government_consumption::Vector{FloatType} = FloatType[]
+    nominal_capitalformation::Vector{FloatType} = FloatType[]
+    real_capitalformation::Vector{FloatType} = FloatType[]
+    nominal_fixed_capitalformation::Vector{FloatType} = FloatType[]
+    real_fixed_capitalformation::Vector{FloatType} = FloatType[]
+    nominal_fixed_capitalformation_dwellings::Vector{FloatType} = FloatType[]
+    real_fixed_capitalformation_dwellings::Vector{FloatType} = FloatType[]
+    nominal_exports::Vector{FloatType} = FloatType[]
+    real_exports::Vector{FloatType} = FloatType[]
+    nominal_imports::Vector{FloatType} = FloatType[]
+    real_imports::Vector{FloatType} = FloatType[]
+    operating_surplus::Vector{FloatType} = FloatType[]
+    compensation_employees::Vector{FloatType} = FloatType[]
+    wages::Vector{FloatType} = FloatType[]
+    taxes_production::Vector{FloatType} = FloatType[]
+    gdp_deflator_growth_ea::Vector{FloatType} = FloatType[]
+    real_gdp_ea::Vector{FloatType} = FloatType[]
+    euribor::Vector{FloatType} = FloatType[]
+    nominal_sector_gva::Vector{Vector{FloatType}} = Vector{FloatType}[]
+    real_sector_gva::Vector{Vector{FloatType}} = Vector{FloatType}[]
 end
 
 # Define the DataVector struct
@@ -149,6 +149,7 @@ function update_data_init!(m::AbstractModel)
 end
 
 function update_data_step!(m::AbstractModel)
+
     d, p, t = m.data, m.prop, length(m.data.collection_time)
     tot_C_h = sum(m.w_act.C_h) + sum(m.w_inact.C_h) + sum(m.firms.C_h) + m.bank.C_h
     tot_I_h = sum(m.w_act.I_h) + sum(m.w_inact.I_h) + sum(m.firms.I_h) + m.bank.I_h

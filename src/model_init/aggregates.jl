@@ -40,6 +40,7 @@ function setup_aggregates!(world::Ark.World, properties::Properties)
     Ark.add_resource!(world, Epsilons(0.0, 0.0, 0.0))
 
     Ark.add_resource!(world, Expectations(0.0, 0.0, 0.0))
+    Ark.add_resource!(world, DataCollector(properties))
     Ark.add_resource!(
         world, PriceIndices(
             ones(Float64, properties.dimensions.sectors), # sector price index
