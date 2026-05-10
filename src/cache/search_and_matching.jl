@@ -133,16 +133,23 @@ function build_sampling_weights!(
     price_sum = 0.0
     size_sum = 0.0
     @inbounds for i in eachindex(price, stock)
-        wp = exp(-2.0 * price[i])
-        ws = max(stock[i], 0.0)
-        weights[i] = wp
-        price_sum += wp
-        size_sum += ws
+        if stock[i] > 0.0
+            wp = exp(-2.0 * price[i])
+            ws = stock[i]
+            weights[i] = wp
+            price_sum += wp
+            size_sum += ws
+        else
+            weights[i] = 0.0
+        end
     end
     inv_price_sum = price_sum > 0 ? inv(price_sum) : 0.0
     inv_size_sum = size_sum > 0 ? inv(size_sum) : 0.0
+    # println("  price_sum: ", price_sum, " size_sum: ", size_sum)
     @inbounds for i in eachindex(weights, price, stock)
-        weights[i] = weights[i] * inv_price_sum + max(stock[i], 0.0) * inv_size_sum
+        if weights[i] > 0.0
+            weights[i] = weights[i] * inv_price_sum + stock[i] * inv_size_sum
+        end
     end
     return weights
 end
