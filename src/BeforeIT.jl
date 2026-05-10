@@ -19,6 +19,8 @@ include("utils/estimate.jl")
 include("utils/ecs_utils.jl")
 include("utils/nfvar3.jl")
 include("utils/julia_svd.jl")
+include("utils/positive.jl")
+include("utils/misc.jl")
 
 include("components/components.jl")
 
