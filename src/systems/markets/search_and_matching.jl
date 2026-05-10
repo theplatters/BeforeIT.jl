@@ -3,7 +3,7 @@ function search_and_matching!(world::Ark.World)
     build_consumption_demand_cache!(world)
     build_stock_cache!(world)
     zero_out_components_for_search_and_match!(world)
-    for g in 1:BeforeIT.properties(world).dimensions.sectors
+    Threads.@threads for g in 1:BeforeIT.properties(world).dimensions.sectors
         perform_firm_market!(world, g)
         perform_retail_market!(world, g)
     end

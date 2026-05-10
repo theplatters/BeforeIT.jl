@@ -18,6 +18,7 @@ using Test
         include("systems/government.jl")
         include("systems/households.jl")
         include("systems/rotw.jl")
+        include("systems/markets/search_and_matching.jl")
     end
 
 

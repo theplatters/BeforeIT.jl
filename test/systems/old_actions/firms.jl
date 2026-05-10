@@ -217,13 +217,13 @@ function firms_profits(model)
     P_bar_HH, tau_SIF, r, r_bar = model.agg.P_bar_HH, model.prop.tau_SIF, model.bank.r, model.cb.r_bar
 
     in_sales = firms.P_i .* firms.Q_i .+ firms.P_i .* firms.DS_i
-    in_deposits = r_bar .* max(0.0, firms.D_i)
+    in_deposits = r_bar .* max.(0.0, firms.D_i)
     out_wages = (1.0 + tau_SIF) .* firms.w_i .* firms.N_i .* P_bar_HH
     out_expenses = 1.0 ./ firms.beta_i .* firms.P_bar_i .* firms.Y_i
     out_depreciation = firms.delta_i ./ firms.kappa_i .* firms.P_CF_i .* firms.Y_i
     out_taxes_prods = firms.tau_Y_i .* firms.P_i .* firms.Y_i
     out_taxes_capital = firms.tau_K_i .* firms.P_i .* firms.Y_i
-    out_loans = r .* (firms.L_i .+ max(0.0, -firms.D_i))
+    out_loans = r .* (firms.L_i .+ max.(0.0, -firms.D_i))
 
     Pi_i =
         in_sales + in_deposits - out_wages - out_expenses - out_depreciation - out_taxes_prods - out_taxes_capital -
