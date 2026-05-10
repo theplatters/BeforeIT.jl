@@ -5,8 +5,6 @@ function collect_data!(world::Ark.World)
     t_resource = Ark.get_resource(world, TimeIndex)
     t = t_resource.step
     props = BeforeIT.properties(world)
-    offset = props.dimensions.interval_for_expectation_estimation
-    idx = offset + t
 
     push!(history.collection_time, t)
 
@@ -76,29 +74,29 @@ function collect_data!(world::Ark.World)
     end
 
     # GDP
-    history.nominal_gdp[idx] = nominal_output_tax +
+    push!(history.nominal_gdp, nominal_output_tax +
         τ_VAT * tot_C_h +
         τ_CF * tot_I_h +
         τ_G * gov_C_j +
         τ_EXPORT * rotw_C_l +
-        nominal_gva_at_basic_prices
+        nominal_gva_at_basic_prices)
 
-    history.real_gdp[idx] = real_gva_at_basic_prices +
+    push!(history.real_gdp, real_gva_at_basic_prices +
         real_output_tax +
         τ_VAT * tot_C_h / P_bar_h +
         τ_CF * tot_I_h / P_bar_CF_h +
         τ_G * gov_C_j / gov_P_j +
-        τ_EXPORT * rotw_C_l / rotw_P_l
+        τ_EXPORT * rotw_C_l / rotw_P_l)
 
     # GVA
-    history.nominal_gva[idx] = nominal_gva_at_basic_prices
-    history.real_gva[idx] = real_gva_at_basic_prices
+    push!(history.nominal_gva, nominal_gva_at_basic_prices)
+    push!(history.real_gva, real_gva_at_basic_prices)
 
     # Consumption
-    history.nominal_household_consumption[idx] = (1.0 + τ_VAT) * tot_C_h
-    history.real_household_consumption[idx] = (1.0 + τ_VAT) * tot_C_h / P_bar_h
-    history.nominal_government_consumption[idx] = (1.0 + τ_G) * gov_C_j
-    history.real_government_consumption[idx] = (1.0 + τ_G) * gov_C_j / gov_P_j
+    push!(history.nominal_household_consumption, (1.0 + τ_VAT) * tot_C_h)
+    push!(history.real_household_consumption, (1.0 + τ_VAT) * tot_C_h / P_bar_h)
+    push!(history.nominal_government_consumption, (1.0 + τ_G) * gov_C_j)
+    push!(history.real_government_consumption, (1.0 + τ_G) * gov_C_j / gov_P_j)
 
     # Capital Formation
     nominal_firm_inv = 0.0
@@ -119,7 +117,7 @@ function collect_data!(world::Ark.World)
         nominal_material_stock_adj += sum(dm.amount .* p_bar.value .- 1.0 ./ beta.value .* p_bar.value .* y.amount)
     end
 
-    history.nominal_capitalformation[idx] = nominal_firm_inv + (1.0 + τ_CF) * tot_I_h + nominal_stock_change + nominal_material_stock_adj
+    push!(history.nominal_capitalformation, nominal_firm_inv + (1.0 + τ_CF) * tot_I_h + nominal_stock_change + nominal_material_stock_adj)
 
     real_material_stock_adj = 0.0
     for (_, dm, y, beta) in Ark.Query(world, (Components.MaterialsStockChange, Components.Output, Components.IntermediateProductivity))
@@ -130,30 +128,30 @@ function collect_data!(world::Ark.World)
         real_final_goods_stock_change += sum(ds.amount)
     end
 
-    history.real_capitalformation[idx] = real_firm_inv + (1.0 + τ_CF) * tot_I_h / P_bar_CF_h +
-        real_material_stock_adj + real_final_goods_stock_change
+    push!(history.real_capitalformation, real_firm_inv + (1.0 + τ_CF) * tot_I_h / P_bar_CF_h +
+        real_material_stock_adj + real_final_goods_stock_change)
 
-    history.nominal_fixed_capitalformation[idx] = nominal_firm_inv + (1.0 + τ_CF) * tot_I_h
-    history.real_fixed_capitalformation[idx] = real_firm_inv + (1.0 + τ_CF) * tot_I_h / P_bar_CF_h
+    push!(history.nominal_fixed_capitalformation, nominal_firm_inv + (1.0 + τ_CF) * tot_I_h)
+    push!(history.real_fixed_capitalformation, real_firm_inv + (1.0 + τ_CF) * tot_I_h / P_bar_CF_h)
 
-    history.nominal_fixed_capitalformation_dwellings[idx] = (1.0 + τ_CF) * tot_I_h
-    history.real_fixed_capitalformation_dwellings[idx] = (1.0 + τ_CF) * tot_I_h / P_bar_CF_h
+    push!(history.nominal_fixed_capitalformation_dwellings, (1.0 + τ_CF) * tot_I_h)
+    push!(history.real_fixed_capitalformation_dwellings, (1.0 + τ_CF) * tot_I_h / P_bar_CF_h)
 
     # Exports / Imports
-    history.nominal_exports[idx] = (1.0 + τ_EXPORT) * rotw_C_l
-    history.real_exports[idx] = (1.0 + τ_EXPORT) * rotw_C_l / rotw_P_l
+    push!(history.nominal_exports, (1.0 + τ_EXPORT) * rotw_C_l)
+    push!(history.real_exports, (1.0 + τ_EXPORT) * rotw_C_l / rotw_P_l)
 
     nom_imp = 0.0
     for (_, p_m, q_m) in Ark.Query(world, (Components.ImportPrice, Components.ImportSales))
         nom_imp += sum(p_m.value .* q_m.amount)
     end
-    history.nominal_imports[idx] = nom_imp
+    push!(history.nominal_imports, nom_imp)
 
     real_imp = 0.0
     for (_, q_m) in Ark.Query(world, (Components.ImportSales,))
         real_imp += sum(q_m.amount)
     end
-    history.real_imports[idx] = real_imp
+    push!(history.real_imports, real_imp)
 
     # OS / Wages / Taxes
     wages_val_acc = 0.0
@@ -161,14 +159,14 @@ function collect_data!(world::Ark.World)
         wages_val_acc += sum(w_bar.rate .* n.amount)
     end
     wages_val = wages_val_acc * P_bar_h
-    history.wages[idx] = wages_val
-    history.compensation_employees[idx] = (1.0 + τ_SIF) * wages_val
+    push!(history.wages, wages_val)
+    push!(history.compensation_employees, (1.0 + τ_SIF) * wages_val)
 
     taxes_prod = 0.0
     for (_, tau_k, y, p) in Ark.Query(world, (Components.CapitalTaxRate, Components.Output, Components.Price))
         taxes_prod += sum(tau_k.rate .* y.amount .* p.value)
     end
-    history.taxes_production[idx] = taxes_prod
+    push!(history.taxes_production, taxes_prod)
 
     op_surplus = 0.0
     for (_, p, q, ds, w_bar, n, beta, p_bar, tau_y, tau_k, y) in Ark.Query(world, (Components.Price, Components.Sales, Components.FinalGoodsStockChange, Components.AverageWageRate, Components.Employment, Components.IntermediateProductivity, Components.PriceIndex, Components.OutputTaxRate, Components.CapitalTaxRate, Components.Output))
@@ -180,20 +178,22 @@ function collect_data!(world::Ark.World)
             tau_k.rate .* p.value .* y.amount
         )
     end
-    history.operating_surplus[idx] = op_surplus
+    push!(history.operating_surplus, op_surplus)
 
     # External
     (_, cb_euribor) = single(Ark.Query(world, (Components.NominalInterestRate,)))
-    history.euribor[idx] = cb_euribor.rate
-    history.gdp_deflator_growth_ea[idx] = rotw_P_l # This is pi_EA
+    push!(history.euribor, cb_euribor.rate)
+    push!(history.gdp_deflator_growth_ea, rotw_P_l) # This is pi_EA
 
     real_gdp_ea = 0.0
     for (_, y_ea) in Ark.Query(world, (Components.EuroAreaGDP,))
         real_gdp_ea += sum(y_ea.value)
     end
-    history.real_gdp_ea[idx] = real_gdp_ea
+    push!(history.real_gdp_ea, real_gdp_ea)
 
     # Sectoral GVA
+    nom_sector_gva = zeros(props.dimensions.sectors)
+    real_sector_gva = zeros(props.dimensions.sectors)
     for g in 1:props.dimensions.sectors
         nom_gva_g = 0.0
         real_gva_g = 0.0
@@ -202,9 +202,11 @@ function collect_data!(world::Ark.World)
             nom_gva_g += sum(mask .* ((1.0 .- tau_y.rate) .* p.value .* y.amount .- 1.0 ./ beta.value .* p_bar.value .* y.amount))
             real_gva_g += sum(mask .* (y.amount .* ((1.0 .- tau_y.rate) .- 1.0 ./ beta.value)))
         end
-        history.nominal_sector_gva[idx][g] = nom_gva_g
-        history.real_sector_gva[idx][g] = real_gva_g
+        nom_sector_gva[g] = nom_gva_g
+        real_sector_gva[g] = real_gva_g
     end
+    push!(history.nominal_sector_gva, nom_sector_gva)
+    push!(history.real_sector_gva, real_sector_gva)
 
     return nothing
 end
