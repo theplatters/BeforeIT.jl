@@ -55,38 +55,40 @@ function collect_data!(world::Ark.World)
 
     # Firms
     nominal_output_tax = 0.0
-    for (_, tau_y, y, p) in Ark.Query(world, (Components.OutputTaxRate, Components.Output, Components.Price))
-        nominal_output_tax += sum(tau_y.rate .* y.amount .* p.value)
-    end
     real_output_tax = 0.0
-    for (_, tau_y, y) in Ark.Query(world, (Components.OutputTaxRate, Components.Output))
-        real_output_tax += sum(tau_y.rate .* y.amount)
+    for (_, tau, y, p) in Ark.Query(world, (Components.TaxRates, Components.Output, Components.Price))
+        nominal_output_tax += sum(tau.output .* y.amount .* p.value)
+        real_output_tax += sum(tau.output .* y.amount)
     end
 
     nominal_gva_at_basic_prices = 0.0
-    for (_, tau_y, p, y, beta, p_bar) in Ark.Query(world, (Components.OutputTaxRate, Components.Price, Components.Output, Components.IntermediateProductivity, Components.PriceIndex))
-        nominal_gva_at_basic_prices += sum((1.0 .- tau_y.rate) .* p.value .* y.amount .- 1.0 ./ beta.value .* p_bar.value .* y.amount)
+    for (_, tau, p, y, beta, p_bar) in Ark.Query(world, (Components.TaxRates, Components.Price, Components.Output, Components.IntermediateProductivity, Components.PriceIndex))
+        nominal_gva_at_basic_prices += sum((1.0 .- tau.output) .* p.value .* y.amount .- 1.0 ./ beta.value .* p_bar.value .* y.amount)
     end
 
     real_gva_at_basic_prices = 0.0
-    for (_, y, tau_y, beta) in Ark.Query(world, (Components.Output, Components.OutputTaxRate, Components.IntermediateProductivity))
-        real_gva_at_basic_prices += sum(y.amount .* ((1.0 .- tau_y.rate) .- 1.0 ./ beta.value))
+    for (_, y, tau, beta) in Ark.Query(world, (Components.Output, Components.TaxRates, Components.IntermediateProductivity))
+        real_gva_at_basic_prices += sum(y.amount .* ((1.0 .- tau.output) .- 1.0 ./ beta.value))
     end
 
     # GDP
-    push!(history.nominal_gdp, nominal_output_tax +
-        τ_VAT * tot_C_h +
-        τ_CF * tot_I_h +
-        τ_G * gov_C_j +
-        τ_EXPORT * rotw_C_l +
-        nominal_gva_at_basic_prices)
+    push!(
+        history.nominal_gdp, nominal_output_tax +
+            τ_VAT * tot_C_h +
+            τ_CF * tot_I_h +
+            τ_G * gov_C_j +
+            τ_EXPORT * rotw_C_l +
+            nominal_gva_at_basic_prices
+    )
 
-    push!(history.real_gdp, real_gva_at_basic_prices +
-        real_output_tax +
-        τ_VAT * tot_C_h / P_bar_h +
-        τ_CF * tot_I_h / P_bar_CF_h +
-        τ_G * gov_C_j / gov_P_j +
-        τ_EXPORT * rotw_C_l / rotw_P_l)
+    push!(
+        history.real_gdp, real_gva_at_basic_prices +
+            real_output_tax +
+            τ_VAT * tot_C_h / P_bar_h +
+            τ_CF * tot_I_h / P_bar_CF_h +
+            τ_G * gov_C_j / gov_P_j +
+            τ_EXPORT * rotw_C_l / rotw_P_l
+    )
 
     # GVA
     push!(history.nominal_gva, nominal_gva_at_basic_prices)
@@ -128,8 +130,10 @@ function collect_data!(world::Ark.World)
         real_final_goods_stock_change += sum(ds.amount)
     end
 
-    push!(history.real_capitalformation, real_firm_inv + (1.0 + τ_CF) * tot_I_h / P_bar_CF_h +
-        real_material_stock_adj + real_final_goods_stock_change)
+    push!(
+        history.real_capitalformation, real_firm_inv + (1.0 + τ_CF) * tot_I_h / P_bar_CF_h +
+            real_material_stock_adj + real_final_goods_stock_change
+    )
 
     push!(history.nominal_fixed_capitalformation, nominal_firm_inv + (1.0 + τ_CF) * tot_I_h)
     push!(history.real_fixed_capitalformation, real_firm_inv + (1.0 + τ_CF) * tot_I_h / P_bar_CF_h)
@@ -163,19 +167,19 @@ function collect_data!(world::Ark.World)
     push!(history.compensation_employees, (1.0 + τ_SIF) * wages_val)
 
     taxes_prod = 0.0
-    for (_, tau_k, y, p) in Ark.Query(world, (Components.CapitalTaxRate, Components.Output, Components.Price))
-        taxes_prod += sum(tau_k.rate .* y.amount .* p.value)
+    for (_, tau, y, p) in Ark.Query(world, (Components.TaxRates, Components.Output, Components.Price))
+        taxes_prod += sum(tau.capital .* y.amount .* p.value)
     end
     push!(history.taxes_production, taxes_prod)
 
     op_surplus = 0.0
-    for (_, p, q, ds, w_bar, n, beta, p_bar, tau_y, tau_k, y) in Ark.Query(world, (Components.Price, Components.Sales, Components.FinalGoodsStockChange, Components.AverageWageRate, Components.Employment, Components.IntermediateProductivity, Components.PriceIndex, Components.OutputTaxRate, Components.CapitalTaxRate, Components.Output))
+    for (_, p, q, ds, w_bar, n, beta, p_bar, tau, y) in Ark.Query(world, (Components.Price, Components.Sales, Components.FinalGoodsStockChange, Components.AverageWageRate, Components.Employment, Components.IntermediateProductivity, Components.PriceIndex, Components.TaxRates, Components.Output))
         op_surplus += sum(
             p.value .* q.amount .+ p.value .* ds.amount .-
-            (1.0 + τ_SIF) .* w_bar.rate .* n.amount .* P_bar_h .-
-            1.0 ./ beta.value .* p_bar.value .* y.amount .-
-            tau_y.rate .* p.value .* y.amount .-
-            tau_k.rate .* p.value .* y.amount
+                (1.0 + τ_SIF) .* w_bar.rate .* n.amount .* P_bar_h .-
+                1.0 ./ beta.value .* p_bar.value .* y.amount .-
+                tau.output .* p.value .* y.amount .-
+                tau.capital .* p.value .* y.amount
         )
     end
     push!(history.operating_surplus, op_surplus)
@@ -197,10 +201,10 @@ function collect_data!(world::Ark.World)
     for g in 1:props.dimensions.sectors
         nom_gva_g = 0.0
         real_gva_g = 0.0
-        for (_, pp, tau_y, p, y, beta, p_bar) in Ark.Query(world, (Components.PrincipalProduct, Components.OutputTaxRate, Components.Price, Components.Output, Components.IntermediateProductivity, Components.PriceIndex))
+        for (_, pp, tau, p, y, beta, p_bar) in Ark.Query(world, (Components.PrincipalProduct, Components.TaxRates, Components.Price, Components.Output, Components.IntermediateProductivity, Components.PriceIndex))
             mask = pp.id .== g
-            nom_gva_g += sum(mask .* ((1.0 .- tau_y.rate) .* p.value .* y.amount .- 1.0 ./ beta.value .* p_bar.value .* y.amount))
-            real_gva_g += sum(mask .* (y.amount .* ((1.0 .- tau_y.rate) .- 1.0 ./ beta.value)))
+            nom_gva_g += sum(mask .* ((1.0 .- tau.output) .* p.value .* y.amount .- 1.0 ./ beta.value .* p_bar.value .* y.amount))
+            real_gva_g += sum(mask .* (y.amount .* ((1.0 .- tau.output) .- 1.0 ./ beta.value)))
         end
         nom_sector_gva[g] = nom_gva_g
         real_sector_gva[g] = real_gva_g

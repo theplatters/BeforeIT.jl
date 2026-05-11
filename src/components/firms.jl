@@ -15,6 +15,13 @@ end
     value::FloatType
 end
 
+@component struct FirmProperties
+    intermediate_productivity::FloatType
+    capital_productivity::FloatType
+    labor_productivity::FloatType
+    capital_deprecation_rate::FloatType
+end
+
 @component struct CapitalDeprecationRate <: FirmComponent #delta_i
     rate::FloatType
 end
@@ -31,12 +38,9 @@ end
     rate::FloatType
 end
 
-@component struct OutputTaxRate <: FirmComponent #tau_Y
-    rate::FloatType
-end
-
-@component struct CapitalTaxRate <: FirmComponent #tau_k
-    rate::FloatType
+@component struct TaxRates <: FirmComponent #tau_Y
+    output::FloatType
+    capital::FloatType
 end
 
 @component struct Price <: FirmComponent #P_i

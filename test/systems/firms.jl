@@ -271,13 +271,13 @@ include("old_actions/firms.jl")
             r_bar[1] = Bit.Components.NominalInterestRate(0.02)
         end
 
-        for (e, P, Q, DS, D, w, N, beta, P_bar, Y, delta, kappa, P_CF, tau_Y, tau_K, L) in Ark.Query(
+        for (e, P, Q, DS, D, w, N, beta, P_bar, Y, delta, kappa, P_CF, tau, L) in Ark.Query(
                 world, (
                     Bit.Components.Price, Bit.Components.Sales, Bit.Components.FinalGoodsStockChange,
                     Bit.Components.Deposits, Bit.Components.WageBill, Bit.Components.Employment,
                     Bit.Components.IntermediateProductivity, Bit.Components.PriceIndex, Bit.Components.Output,
                     Bit.Components.CapitalDeprecationRate, Bit.Components.CapitalProductivity,
-                    Bit.Components.CFPriceIndex, Bit.Components.OutputTaxRate, Bit.Components.CapitalTaxRate,
+                    Bit.Components.CFPriceIndex, Bit.Components.TaxRates,
                     Bit.Components.LoansOutstanding,
                 ), with = (Bit.Components.Firm,)
             )
@@ -294,8 +294,7 @@ include("old_actions/firms.jl")
                 delta[i] = Bit.Components.CapitalDeprecationRate(test_delta_i[i])
                 kappa[i] = Bit.Components.CapitalProductivity(test_kappa_i[i])
                 P_CF[i] = Bit.Components.CFPriceIndex(test_P_CF_i[i])
-                tau_Y[i] = Bit.Components.OutputTaxRate(test_tau_Y_i[i])
-                tau_K[i] = Bit.Components.CapitalTaxRate(test_tau_K_i[i])
+                tau[i] = Bit.Components.TaxRates(test_tau_Y_i[i], test_tau_K_i[i])
                 L[i] = Bit.Components.LoansOutstanding(test_L_i[i])
             end
         end
@@ -366,11 +365,11 @@ include("old_actions/firms.jl")
             r_bar[1] = Bit.Components.NominalInterestRate(0.02)
         end
 
-        for (e, P, Q, w, N, DM, P_bar, tau_Y, tau_K, Y, Pi, L, D, P_CF, I, DL) in Ark.Query(
+        for (e, P, Q, w, N, DM, P_bar, tau, Y, Pi, L, D, P_CF, I, DL) in Ark.Query(
                 world, (
                     Bit.Components.Price, Bit.Components.Sales, Bit.Components.WageBill,
                     Bit.Components.Employment, Bit.Components.MaterialsStockChange, Bit.Components.PriceIndex,
-                    Bit.Components.OutputTaxRate, Bit.Components.CapitalTaxRate, Bit.Components.Output,
+                    Bit.Components.TaxRates, Bit.Components.Output,
                     Bit.Components.Profits, Bit.Components.LoansOutstanding, Bit.Components.Deposits,
                     Bit.Components.CFPriceIndex, Bit.Components.Investment, Bit.Components.LoanFlow,
                 ), with = (Bit.Components.Firm,)
@@ -382,8 +381,7 @@ include("old_actions/firms.jl")
                 N[i] = Bit.Components.Employment(test_N_i[i])
                 DM[i] = Bit.Components.MaterialsStockChange(test_DM_i[i])
                 P_bar[i] = Bit.Components.PriceIndex(test_P_bar_i[i])
-                tau_Y[i] = Bit.Components.OutputTaxRate(test_tau_Y_i[i])
-                tau_K[i] = Bit.Components.CapitalTaxRate(test_tau_K_i[i])
+                tau[i] = Bit.Components.TaxRates(test_tau_Y_i[i], test_tau_K_i[i])
                 Y[i] = Bit.Components.Output(test_Y_i[i])
                 Pi[i] = Bit.Components.Profits(test_Pi_i[i])
                 L[i] = Bit.Components.LoansOutstanding(test_L_i[i])
