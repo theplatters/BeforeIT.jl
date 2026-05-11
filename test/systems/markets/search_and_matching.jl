@@ -18,7 +18,7 @@ include("../old_actions/search_and_matching.jl")
 
 function setup_test_world(properties; overrides...)
     world = Bit.ECSModel(properties).world
-    
+
     # Ensure all demand sources are zeroed unless specified
     I = properties.dimensions.total_firms
     H_act = properties.population.active
@@ -26,7 +26,7 @@ function setup_test_world(properties; overrides...)
     G = properties.dimensions.sectors
     J = properties.dimensions.local_governments
     L = properties.dimensions.foreign_consumers
-    
+
     base_overrides = (
         firms_DM_d_i = fill(0.0, I),
         firms_I_d_i = fill(0.0, I),
@@ -39,14 +39,14 @@ function setup_test_world(properties; overrides...)
         bank_C_d_h = 0.0,
         bank_I_d_h = 0.0,
         gov_C_d_j = fill(0.0, J),
-        rotw_C_d_l = fill(0.0, L)
+        rotw_C_d_l = fill(0.0, L),
     )
-    
+
     # Merge overrides (user overrides take precedence)
     final_overrides = merge(base_overrides, overrides)
-    
+
     set_mock_components!(world; final_overrides...)
-    
+
     # Sync aggregate price indices
     pi_indices = Bit.price_indices(world)
     pi_indices.household_consumption = 1.0
@@ -55,7 +55,7 @@ function setup_test_world(properties; overrides...)
     pi_indices.aggregate = 1.0
     pi_indices.household_consumption_previous = 1.0
     pi_indices.capital_formation_households = 1.0
-    
+
     return world
 end
 
@@ -70,13 +70,14 @@ end
 
     @testset "Absolute Zero (No Supply, No Demand)" begin
         Random.seed!(42)
-        world = setup_test_world(properties; 
+        world = setup_test_world(
+            properties;
             firms_S_i = fill(0.0, I),
             firms_Y_i = fill(0.0, I),
             rotw_Y_m = fill(0.0, G)
         )
         Bit.search_and_matching!(world)
-        
+
         total_sales = 0.0
         for (_, sales) in Ark.Query(world, (Bit.Components.Sales,), with = (Bit.Components.Firm,))
             total_sales += sum(sales.amount)
@@ -86,19 +87,20 @@ end
 
     @testset "Floating Point Precision (Very Small Demand)" begin
         Random.seed!(42)
-        tiny_val = 1e-15
-        world = setup_test_world(properties; 
+        tiny_val = 1.0e-15
+        world = setup_test_world(
+            properties;
             firms_S_i = fill(1.0, I),
             firms_Y_i = fill(0.0, I),
             firms_P_i = fill(1.0, I),
-            w_act_C_d_h = [tiny_val; fill(0.0, H_act-1)]
+            w_act_C_d_h = [tiny_val; fill(0.0, H_act - 1)]
         )
         prop_res = Bit.properties(world)
         prop_res.product_coeffs.household_consumption .= 0.0
         prop_res.product_coeffs.household_consumption[1] = 1.0
-        
+
         Bit.search_and_matching!(world)
-        
+
         total_sales = 0.0
         for (_, sales) in Ark.Query(world, (Bit.Components.Sales,), with = (Bit.Components.Firm,))
             total_sales += sum(sales.amount)
@@ -108,26 +110,27 @@ end
 
     @testset "Mixed Supply (Domestic and Imports)" begin
         Random.seed!(42)
-        world = setup_test_world(properties; 
-            firms_S_i = [fill(0.0, 4); 10.0; fill(0.0, I-5)],
+        world = setup_test_world(
+            properties;
+            firms_S_i = [fill(0.0, 4); 10.0; fill(0.0, I - 5)],
             firms_Y_i = fill(0.0, I),
             firms_G_i = fill(1, I),
             rotw_Y_m = fill(20.0, G),
             rotw_P_m = fill(1.0, G),
-            w_act_C_d_h = [25.0; fill(0.0, H_act-1)]
+            w_act_C_d_h = [25.0; fill(0.0, H_act - 1)]
         )
         prop_res = Bit.properties(world)
         prop_res.product_coeffs.household_consumption .= 0.0
         prop_res.product_coeffs.household_consumption[1] = 1.0
-        
+
         Bit.search_and_matching!(world)
-        
+
         total_sales = 0.0
         for (_, sales) in Ark.Query(world, (Bit.Components.Sales,), with = (Bit.Components.Firm,))
             total_sales += sum(sales.amount)
         end
         @test total_sales == 10.0
-        
+
         total_cons = 0.0
         for (_, realised_c) in Ark.Query(world, (Bit.Components.RealisedConsumption,), with = (Bit.Components.Household,))
             total_cons += sum(realised_c.amount)
@@ -140,18 +143,18 @@ end
         # Firm 1 in Sector 1, Firm 2 in Sector 2
         # Demand only for Sector 2
         overrides = (
-            firms_S_i = [10.0; 10.0; fill(0.0, I-2)],
+            firms_S_i = [10.0; 10.0; fill(0.0, I - 2)],
             firms_Y_i = fill(0.0, I),
-            firms_G_i = [1; 2; fill(3, I-2)],
-            w_act_C_d_h = [15.0; fill(0.0, H_act-1)]
+            firms_G_i = [1; 2; fill(3, I - 2)],
+            w_act_C_d_h = [15.0; fill(0.0, H_act - 1)],
         )
         world = setup_test_world(properties; overrides...)
         prop_res = Bit.properties(world)
         prop_res.product_coeffs.household_consumption .= 0.0
         prop_res.product_coeffs.household_consumption[2] = 1.0 # Only demand for sector 2
-        
+
         Bit.search_and_matching!(world)
-        
+
         # Firm 1 (Sector 1) should have 0 sales
         # Firm 2 (Sector 2) should have 10 sales
         idx = 1
@@ -177,7 +180,7 @@ end
     J = properties.dimensions.local_governments
     L = properties.dimensions.foreign_consumers
 
-    n_runs = 10 
+    n_runs = 10
 
     agg_sales_old = zeros(n_runs)
     agg_sales_new = zeros(n_runs)
@@ -229,7 +232,7 @@ end
 
         world = setup_test_world(properties; overrides...)
         mock_model = build_mock_model(properties; overrides...)
-        
+
         mock_model.agg.P_bar_HH = 1.0
         mock_model.agg.P_bar_CF = 1.0
         mock_model.agg.P_bar_g .= 1.0

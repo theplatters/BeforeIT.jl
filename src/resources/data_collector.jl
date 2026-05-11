@@ -31,7 +31,7 @@ mutable struct DataCollector
     real_sector_gva::Vector{Vector{Float64}}
 
     function DataCollector(props::Properties)
-        new(
+        return new(
             Int64[], # collection_time
             Float64[], # nominal_gdp
             Float64[], # real_gdp

@@ -6,6 +6,7 @@ import BeforeIT as Bit
 import Ark
 
 using Test
+using Runic
 
 @testset "BeforeIT.jl Tests" begin
     @testset "Utils" begin
@@ -13,19 +14,11 @@ using Test
         include("utils/randpl.jl")
         # include("utils/nfvar3_and_estimate.jl")
         # include("utils/estimations.jl")
-        # include("utils/modify.jl")
         # include("utils/zenodo_calibration.jl")
     end
 
     @testset "Markets" begin
         # include("markets/search_and_matching.jl")
-    end
-
-    @testset "Agent Actions" begin
-        # include("agent_actions/bank.jl")
-        include("agent_actions/central_bank.jl")
-        # include("agent_actions/firms.jl")
-        # include("agent_actions/estimations.jl")
     end
 
     @testset "Accounting Identities" begin

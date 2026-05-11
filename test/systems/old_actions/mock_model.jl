@@ -329,7 +329,7 @@ function build_mock_model(prop::Bit.Properties; overrides...)
 
     model = MockModel(
         prop = mock_prop, cb = cb, bank = bank,
-        firms = firms, w_act = w_act, w_inact = w_inact, 
+        firms = firms, w_act = w_act, w_inact = w_inact,
         agg = agg, rotw = rotw, gov = gov
     )
 

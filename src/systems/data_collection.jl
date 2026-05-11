@@ -74,19 +74,23 @@ function collect_data!(world::Ark.World)
     end
 
     # GDP
-    push!(history.nominal_gdp, nominal_output_tax +
-        τ_VAT * tot_C_h +
-        τ_CF * tot_I_h +
-        τ_G * gov_C_j +
-        τ_EXPORT * rotw_C_l +
-        nominal_gva_at_basic_prices)
+    push!(
+        history.nominal_gdp, nominal_output_tax +
+            τ_VAT * tot_C_h +
+            τ_CF * tot_I_h +
+            τ_G * gov_C_j +
+            τ_EXPORT * rotw_C_l +
+            nominal_gva_at_basic_prices
+    )
 
-    push!(history.real_gdp, real_gva_at_basic_prices +
-        real_output_tax +
-        τ_VAT * tot_C_h / P_bar_h +
-        τ_CF * tot_I_h / P_bar_CF_h +
-        τ_G * gov_C_j / gov_P_j +
-        τ_EXPORT * rotw_C_l / rotw_P_l)
+    push!(
+        history.real_gdp, real_gva_at_basic_prices +
+            real_output_tax +
+            τ_VAT * tot_C_h / P_bar_h +
+            τ_CF * tot_I_h / P_bar_CF_h +
+            τ_G * gov_C_j / gov_P_j +
+            τ_EXPORT * rotw_C_l / rotw_P_l
+    )
 
     # GVA
     push!(history.nominal_gva, nominal_gva_at_basic_prices)
@@ -128,8 +132,10 @@ function collect_data!(world::Ark.World)
         real_final_goods_stock_change += sum(ds.amount)
     end
 
-    push!(history.real_capitalformation, real_firm_inv + (1.0 + τ_CF) * tot_I_h / P_bar_CF_h +
-        real_material_stock_adj + real_final_goods_stock_change)
+    push!(
+        history.real_capitalformation, real_firm_inv + (1.0 + τ_CF) * tot_I_h / P_bar_CF_h +
+            real_material_stock_adj + real_final_goods_stock_change
+    )
 
     push!(history.nominal_fixed_capitalformation, nominal_firm_inv + (1.0 + τ_CF) * tot_I_h)
     push!(history.real_fixed_capitalformation, real_firm_inv + (1.0 + τ_CF) * tot_I_h / P_bar_CF_h)
@@ -172,10 +178,10 @@ function collect_data!(world::Ark.World)
     for (_, p, q, ds, w_bar, n, beta, p_bar, tau_y, tau_k, y) in Ark.Query(world, (Components.Price, Components.Sales, Components.FinalGoodsStockChange, Components.AverageWageRate, Components.Employment, Components.IntermediateProductivity, Components.PriceIndex, Components.OutputTaxRate, Components.CapitalTaxRate, Components.Output))
         op_surplus += sum(
             p.value .* q.amount .+ p.value .* ds.amount .-
-            (1.0 + τ_SIF) .* w_bar.rate .* n.amount .* P_bar_h .-
-            1.0 ./ beta.value .* p_bar.value .* y.amount .-
-            tau_y.rate .* p.value .* y.amount .-
-            tau_k.rate .* p.value .* y.amount
+                (1.0 + τ_SIF) .* w_bar.rate .* n.amount .* P_bar_h .-
+                1.0 ./ beta.value .* p_bar.value .* y.amount .-
+                tau_y.rate .* p.value .* y.amount .-
+                tau_k.rate .* p.value .* y.amount
         )
     end
     push!(history.operating_surplus, op_surplus)
