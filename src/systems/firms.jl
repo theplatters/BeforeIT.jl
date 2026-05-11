@@ -543,7 +543,7 @@ function set_firms_profits!(world::Ark.World)
 
 
     for (
-            _,
+            e,
             profits,
             prices,
             sales,
@@ -562,27 +562,31 @@ function set_firms_profits!(world::Ark.World)
             loans,
         ) in Ark.Query(world, FIRM_PROFIT_COMPONENTS)
 
-        @inbounds profits.amount .= firm_profit.(
-            prices.value,
-            sales.amount,
-            final_goods_stock_change.amount,
-            deposits.amount,
-            wage_bill.amount,
-            employment.amount,
-            price_indices.household_consumption,
-            properties.social_insurance.employers_contribution,
-            intermediate_productivity.value,
-            intermediate_price.value,
-            production.amount,
-            depreciation_rate.rate,
-            capital_productivity.value,
-            cf_price_index.value,
-            product_tax_rate.rate,
-            capital_tax_rate.rate,
-            loans.amount,
-            r.rate,
-            r_bar.rate,
-        )
+        @inbounds for i in eachindex(e)
+
+            profits = firm_profit(
+                prices.value[i],
+                sales.amount[i],
+                final_goods_stock_change.amount[i],
+                deposits.amount[i],
+                wage_bill.amount[i],
+                employment.amount[i],
+                price_indices.household_consumption,
+                properties.social_insurance.employers_contribution,
+                intermediate_productivity.value[i],
+                intermediate_price.value[i],
+                production.amount[i],
+                depreciation_rate.rate[i],
+                capital_productivity.value[i],
+                cf_price_index.value[i],
+                product_tax_rate.rate[i],
+                capital_tax_rate.rate[i],
+                loans.amount[i],
+                r.rate,
+                r_bar.rate,
+            ) |> Components.Profits
+        end
+
     end
 
     return nothing
