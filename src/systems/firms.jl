@@ -481,26 +481,26 @@ end
 
 
 @inline function firm_profit(
-        price,
-        quantity,
-        excess_sales,
-        deposits,
-        wage,
-        employment,
-        household_price_index,
-        employer_contribution,
-        intermediate_productivity,
-        intermediate_price,
-        output,
-        depreciation_rate,
-        capital_productivity,
-        capital_goods_price,
-        product_tax_rate,
-        capital_tax_rate,
-        loans,
-        lending_rate,
-        deposit_rate,
-    )
+        price::T,
+        quantity::T,
+        excess_sales::T,
+        deposits::T,
+        wage::T,
+        employment::V,
+        household_price_index::T,
+        employer_contribution::T,
+        intermediate_productivity::T,
+        intermediate_price::T,
+        output::T,
+        depreciation_rate::T,
+        capital_productivity::T,
+        capital_goods_price::T,
+        product_tax_rate::T,
+        capital_tax_rate::T,
+        loans::T,
+        lending_rate::T,
+        deposit_rate::T,
+    ) where {T <: Real, V <: Real}
     in_sales = price * quantity + price * excess_sales
     in_deposits = deposit_rate * pos(deposits)
 
@@ -564,7 +564,7 @@ function set_firms_profits!(world::Ark.World)
 
         @inbounds for i in eachindex(e)
 
-            profits = firm_profit(
+            profits[i] = firm_profit(
                 prices.value[i],
                 sales.amount[i],
                 final_goods_stock_change.amount[i],
