@@ -481,26 +481,26 @@ end
 
 
 @inline function firm_profit(
-        price,
-        quantity,
-        excess_sales,
-        deposits,
-        wage,
-        employment,
-        household_price_index,
-        employer_contribution,
-        intermediate_productivity,
-        intermediate_price,
-        output,
-        depreciation_rate,
-        capital_productivity,
-        capital_goods_price,
-        product_tax_rate,
-        capital_tax_rate,
-        loans,
-        lending_rate,
-        deposit_rate,
-    )
+        price::T,
+        quantity::T,
+        excess_sales::T,
+        deposits::T,
+        wage::T,
+        employment::V,
+        household_price_index::T,
+        employer_contribution::T,
+        intermediate_productivity::T,
+        intermediate_price::T,
+        output::T,
+        depreciation_rate::T,
+        capital_productivity::T,
+        capital_goods_price::T,
+        product_tax_rate::T,
+        capital_tax_rate::T,
+        loans::T,
+        lending_rate::T,
+        deposit_rate::T,
+    ) where {T <: Real, V <: Real}
     in_sales = price * quantity + price * excess_sales
     in_deposits = deposit_rate * pos(deposits)
 
@@ -529,8 +529,7 @@ const FIRM_PROFIT_COMPONENTS = (
     Components.CapitalDeprecationRate,
     Components.CapitalProductivity,
     Components.CFPriceIndex,
-    Components.OutputTaxRate,
-    Components.CapitalTaxRate,
+    Components.TaxRates,
     Components.LoansOutstanding,
 )
 
@@ -543,7 +542,7 @@ function set_firms_profits!(world::Ark.World)
 
 
     for (
-            _,
+            e,
             profits,
             prices,
             sales,
@@ -557,32 +556,35 @@ function set_firms_profits!(world::Ark.World)
             depreciation_rate,
             capital_productivity,
             cf_price_index,
-            product_tax_rate,
-            capital_tax_rate,
+            tax_rates,
             loans,
         ) in Ark.Query(world, FIRM_PROFIT_COMPONENTS)
 
-        @inbounds profits.amount .= firm_profit.(
-            prices.value,
-            sales.amount,
-            final_goods_stock_change.amount,
-            deposits.amount,
-            wage_bill.amount,
-            employment.amount,
-            price_indices.household_consumption,
-            properties.social_insurance.employers_contribution,
-            intermediate_productivity.value,
-            intermediate_price.value,
-            production.amount,
-            depreciation_rate.rate,
-            capital_productivity.value,
-            cf_price_index.value,
-            product_tax_rate.rate,
-            capital_tax_rate.rate,
-            loans.amount,
-            r.rate,
-            r_bar.rate,
-        )
+        @inbounds for i in eachindex(e)
+
+            profits[i] = firm_profit(
+                prices.value[i],
+                sales.amount[i],
+                final_goods_stock_change.amount[i],
+                deposits.amount[i],
+                wage_bill.amount[i],
+                employment.amount[i],
+                price_indices.household_consumption,
+                properties.social_insurance.employers_contribution,
+                intermediate_productivity.value[i],
+                intermediate_price.value[i],
+                production.amount[i],
+                depreciation_rate.rate[i],
+                capital_productivity.value[i],
+                cf_price_index.value[i],
+                tax_rates.output[i],
+                tax_rates.capital[i],
+                loans.amount[i],
+                r.rate,
+                r_bar.rate,
+            ) |> Components.Profits
+        end
+
     end
 
     return nothing
@@ -688,9 +690,8 @@ const FIRM_DEPOSIT_COMPONENTS = (
     Components.Employment,
     Components.MaterialsStockChange,
     Components.PriceIndex,
-    Components.OutputTaxRate,
+    Components.TaxRates,
     Components.Output,
-    Components.CapitalTaxRate,
     Components.CFPriceIndex,
     Components.Profits,
     Components.LoansOutstanding,
@@ -721,9 +722,8 @@ function set_firms_deposits!(world::Ark.World)
             employment,
             materials_stock_change,
             price_index,
-            output_tax_rate,
+            tax_rates,
             output,
-            capital_tax_rate,
             cf_price_index,
             profits,
             loans,
@@ -741,9 +741,9 @@ function set_firms_deposits!(world::Ark.World)
             employer_contribution,
             materials_stock_change.amount,
             price_index.value,
-            output_tax_rate.rate,
+            tax_rates.output,
             output.amount,
-            capital_tax_rate.rate,
+            tax_rates.capital,
             profits.amount,
             corporate_tax_rate,
             dividend_payout_ratio,

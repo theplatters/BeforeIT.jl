@@ -62,8 +62,9 @@ function set_inflation_priceindex!(world::Ark.World)
         total_output += sum(quantities.amount)
     end
     price_index = total_monetary_output_value / total_output
-    price_indices.aggregate = price_index / price_indices.aggregate
-    inflation = log(price_indices.aggregate)
+
+    inflation = log(price_index / price_indices.aggregate)
+    price_indices.aggregate = price_index
     push!(macro_state.inflation_history, 0.0)
     macro_state.inflation_history[interval + t] = inflation
 
