@@ -3,7 +3,7 @@ function search_and_matching!(world::Ark.World)
     build_consumption_demand_cache!(world)
     build_stock_cache!(world)
     zero_out_components_for_search_and_match!(world)
-    Threads.@threads for g in 1:BeforeIT.properties(world).dimensions.sectors
+    for g in 1:BeforeIT.properties(world).dimensions.sectors
         perform_firm_market!(world, g)
         perform_retail_market!(world, g)
     end
@@ -280,7 +280,7 @@ function allocate_intermediate_from_available_stocks!(
             weights[firm_index - stock_cache.sector_offset[sector] + 1] *=
                 (stock_cache.available_stocks[firm_index] > 0.0)
 
-            if iszero(demand_cache.vals[buyer, sector])
+            if demand_cache.vals[buyer, sector] < 1.0e-8
                 active[i] = active[nactive]
                 nactive -= 1
             else
@@ -320,7 +320,7 @@ function allocate_intermediate_from_stock_capacity!(
             weights[firm_index - stock_cache.sector_offset[sector] + 1] *=
                 (stock_cache.stock_capacity[firm_index] > 0.0)
 
-            if iszero(demand_cache.vals[buyer, sector])
+            if demand_cache.vals[buyer, sector] < 1.0e-8
                 active[i] = active[nactive]
                 nactive -= 1
             else
@@ -466,7 +466,8 @@ function allocate_retail_from_available_stocks!(
         remaining_stocks,
     )
     nactive = rebuild_active_buyers!(active, demand_cache.vals, sector)
-
+    iter = 0
+    warn = true
     while nactive > 0 && remaining_stocks > 0.0&& !iszero(weights)
         i = 1
         shuffle!(view(active, 1:nactive))
@@ -482,16 +483,24 @@ function allocate_retail_from_available_stocks!(
             demand_cache.nominal[buyer, sector] += sold_amount
             demand_cache.vals[buyer, sector] = max(demand_cache.vals[buyer, sector] - sold_amount * price, 0.0)
             weights[firm_index - stock_cache.sector_offset[sector] + 1] *=
-                !iszero(stock_cache.available_stocks[firm_index])
+                (stock_cache.available_stocks[firm_index] > 1.0e-8)
             remaining_stocks = max(0.0, remaining_stocks - sold_amount)
 
-            if iszero(demand_cache.vals[buyer, sector])
+            if demand_cache.vals[buyer, sector] <= 1.0e-8
                 active[i] = active[nactive]
                 nactive -= 1
             else
                 i += 1
             end
+            iter += 1
+            if iter > 10_000 && warn
+                @info "Surpassed 10000 iters"
+                @info weights
+                @info stock_cache.available_stocks
+                warn = false
+            end
         end
+
     end
 
 
@@ -528,7 +537,7 @@ function allocate_retail_from_stock_capacity!(
             weights[firm_index - stock_cache.sector_offset[sector] + 1] *=
                 (stock_cache.stock_capacity[firm_index] > 0.0)
 
-            if iszero(demand_cache.vals[buyer, sector])
+            if demand_cache.vals[buyer, sector] <= 1.0e-8
                 active[i] = active[nactive]
                 nactive -= 1
             else
