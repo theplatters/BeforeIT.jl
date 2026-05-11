@@ -179,6 +179,9 @@ end
 
 
 struct Properties
+    # Preserve the legacy dictionary-style parameter access used by tests and examples.
+    parameters::Dict{String, Any}
+
     # Core dimensions and demographics
     dimensions::Dimensions
     population::Population
@@ -360,6 +363,7 @@ function Properties(parameters::Dict{String, Any}, initial_conditions::Dict{Stri
     )
 
     return Properties(
+        parameters,
         dimensions,
         population,
         tax_rates,
@@ -373,5 +377,31 @@ function Properties(parameters::Dict{String, Any}, initial_conditions::Dict{Stri
         sectoral_params,
         external_params,
         init_conds
+    )
+end
+
+function initial_conditions_dict(initial_conditions::InitialConditions)
+    return Dict(
+        "N_s" => initial_conditions.sectors.employment,
+        "D_I" => initial_conditions.firms.total_debt,
+        "L_I" => initial_conditions.firms.total_loans,
+        "omega" => initial_conditions.firms.capacity_utilization,
+        "Y_I" => initial_conditions.firms.output,
+        "D_H" => initial_conditions.households.debt,
+        "K_H" => initial_conditions.households.capital,
+        "w_UB" => initial_conditions.households.unemployment_benefit,
+        "C_G" => initial_conditions.government.consumption,
+        "L_G" => initial_conditions.government.debt,
+        "sb_inact" => initial_conditions.government.subsidies_inactive,
+        "sb_other" => initial_conditions.government.subsidies_other,
+        "E_CB" => initial_conditions.banking.central_bank_equity,
+        "E_k" => initial_conditions.banking.equity_ratio,
+        "r_bar" => initial_conditions.banking.policy_rate,
+        "D_RoW" => initial_conditions.external.debt,
+        "C_E" => initial_conditions.external.exports,
+        "Y_EA" => initial_conditions.external.foreign_output,
+        "pi_EA" => initial_conditions.external.foreign_inflation,
+        "Y" => initial_conditions.economy.total_output,
+        "pi" => initial_conditions.economy.inflation,
     )
 end

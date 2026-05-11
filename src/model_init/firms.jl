@@ -117,10 +117,9 @@ function setup_firms!(world::Ark.World, properties::Properties)
                 Components.FinalGoodsStockChange(0.0),
                 Components.MaterialsStockChange(0.0),
                 Components.LoanFlow(0.0),
-                Components.Owner(),
+                Components.Owner() => owner,
                 Components.Firm(),
-            ),
-            relations = (Components.Owner => owner,)
+            )
         )
     end
 

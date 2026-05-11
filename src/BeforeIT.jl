@@ -21,6 +21,7 @@ include("utils/nfvar3.jl")
 include("utils/julia_svd.jl")
 include("utils/positive.jl")
 include("utils/misc.jl")
+include("utils/extensions.jl")
 
 include("components/components.jl")
 

@@ -3,8 +3,14 @@ struct ECSModel{CS <: Tuple, CT <: Tuple, ST <: Tuple, N, M} <: AbstractModel
     world::Ark.World{CS, CT, ST, N, M}
 end
 
+const Model = ECSModel
+
 function ECSModel(parameters::Dict{String, Any}, init_conditions::Dict{String, Any})
     return ECSModel(Properties(parameters, init_conditions))
+end
+
+function ECSModel(parameters::Dict{String, Any}, init_conditions::InitialConditions)
+    return ECSModel(parameters, initial_conditions_dict(init_conditions))
 end
 
 function ECSModel(properties::Properties)

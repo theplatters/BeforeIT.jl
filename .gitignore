@@ -82,3 +82,6 @@ Temporary Items
 *.icloud
 
 .vscode/settings.json
+
+test/Manifest.toml
+Manifest.toml
