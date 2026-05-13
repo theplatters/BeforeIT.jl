@@ -21,7 +21,8 @@ end
 function toannual(ftsa)
 
     m = 4
-    fts = zeros(size(ftsa, 1), div(size(ftsa, 2), m))
+    ncols = cld(size(ftsa, 2), m)
+    fts = zeros(size(ftsa, 1), ncols)
 
     if size(ftsa, 1) > 1
         for i in 1:m:size(ftsa, 2)
@@ -39,15 +40,18 @@ end
 function toannual_mean(ftsa)
 
     m = 4
-    fts = zeros(size(ftsa, 1), div(size(ftsa, 2), m))
+    ncols = cld(size(ftsa, 2), m)
+    fts = zeros(size(ftsa, 1), ncols)
 
     if size(ftsa, 1) > 1
         for i in 1:m:size(ftsa, 2)
-            fts[:, div(i, m) + 1] = mean(ftsa[:, i:min(i + m - 1, end)], dims = 2)
+            window = ftsa[:, i:min(i + m - 1, end)]
+            fts[:, div(i, m) + 1] = sum(window, dims = 2) ./ size(window, 2)
         end
     else
         for i in 1:m:size(ftsa, 2)
-            fts[div(i, m) + 1] = mean(ftsa[i:min(i + m - 1, end)])
+            window = ftsa[i:min(i + m - 1, end)]
+            fts[div(i, m) + 1] = sum(window) / length(window)
         end
     end
 

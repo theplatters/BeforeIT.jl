@@ -1,5 +1,3 @@
-import Distributions as Dist
-
 using Distributions, LinearAlgebra
 
 function epsilon(C::AbstractMatrix)
@@ -7,7 +5,7 @@ function epsilon(C::AbstractMatrix)
         return zeros(size(C, 1))
     end
 
-    return rand(Dist.MvNormal(zeros(size(C, 1)), Symmetric(C)))
+    return cholesky(Symmetric(C)).L * randn(size(C, 1))
 end
 
 function set_epsilon!(model::Ark.World)

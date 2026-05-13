@@ -124,10 +124,16 @@ function set_households_deposit!(world::Ark.World)
     (_, r) = single(Ark.Query(world, (Components.LendingRate,)))
 
     for (_, net_disposable_income, realised_consumption, realised_investment, deposits) in Ark.Query(world, (Components.NetDisposableIncome, Components.RealisedConsumption, Components.RealisedInvestment, Components.Deposits))
-        deposits.amount .+= net_disposable_income.amount
-        .- (1 + τ_VAT) .* realised_consumption.amount
-        .- (1 + τ_CF) .* realised_investment.amount
-        .+ r_bar.rate .* max.(0.0, deposits.amount) .+ r.rate .* min.(0.0, deposits.amount)
+        previous_deposits = copy(deposits.amount)
+        updated_deposits = (
+            previous_deposits
+                .+ net_disposable_income.amount
+                .- (1 + τ_VAT) .* realised_consumption.amount
+                .- (1 + τ_CF) .* realised_investment.amount
+                .+ r_bar.rate .* max.(0.0, previous_deposits)
+                .+ r.rate .* min.(0.0, previous_deposits)
+        )
+        deposits.amount .= updated_deposits
     end
 
 

@@ -1,5 +1,5 @@
 """
-    run!(model, T; shock! = NoShock(), parallel = false)
+    run!(model, T; shock! = nothing, parallel = false)
 
 Run a single simulation based on the provided `model`. 
 The simulation runs for a number of steps `T`.
@@ -22,16 +22,27 @@ model = Bit.Model(parameters, initial_conditions)
 Bit.run!(model, 2)
 ```
 """
-function run!(model::AbstractModel, T = 1; parallel = false, shock! = NoShock())
+function _foreach_index(f, parallel::Bool, range)
+    return if parallel && Threads.nthreads() > 1
+        Threads.@threads for i in range
+            f(i)
+        end
+    else
+        for i in range
+            f(i)
+        end
+    end
+end
+
+function run!(model::AbstractModel, T = 1; parallel = false, shock! = nothing)
     for _ in 1:T
-        Bit.step!(model; parallel, shock!)
-        Bit.collect_data!(model)
+        step!(model; parallel, shock!)
     end
     return model
 end
 
 """
-    ensemblerun!(models, T=1; shock! = NoShock(), parallel = true)
+    ensemblerun!(models, T=1; shock! = nothing, parallel = true)
 
 A function that runs the models simulations for `T` steps on each of them.
 
@@ -52,17 +63,17 @@ models = (Bit.Model(parameters, initial_conditions) for _ in 1:10)
 Bit.ensemblerun!(models, 2)
 ```
 """
-function ensemblerun!(models::Vector, T = 1; parallel = true, shock! = NoShock())
-    @maybe_threads parallel for i in 1:length(models)
+function ensemblerun!(models::Vector, T = 1; parallel = true, shock! = nothing)
+    _foreach_index(parallel, 1:length(models)) do i
         run!(models[i], T; shock!, parallel)
     end
     return models
 end
-function ensemblerun!(models::Base.Generator, T = 1; parallel = true, shock! = NoShock())
+function ensemblerun!(models::Base.Generator, T = 1; parallel = true, shock! = nothing)
     if models.iter == AbstractRange
         f, iter = models.f, models.iter
         models = Vector{Base.@default_eltype(models)}(undef, length(models))
-        @maybe_threads parallel for i in 1:length(models)
+        _foreach_index(parallel, 1:length(models)) do i
             model = f(iter[i])
             run!(model, T; shock!, parallel)
             models[i] = model
@@ -74,7 +85,7 @@ function ensemblerun!(models::Base.Generator, T = 1; parallel = true, shock! = N
 end
 
 """
-    ensemblerun(model, T, n_sims; shock! = NoShock(), parallel = true)
+    ensemblerun(model, T, n_sims; shock! = nothing, parallel = true)
 
 A function that creates `n_sims` copies of a model and runs simulations for `T` steps on each of them.
 
@@ -84,7 +95,7 @@ A function that creates `n_sims` copies of a model and runs simulations for `T` 
 - `n_sims`: The number of model copies to create and simulate.
 
 # Keyword Arguments
-- `shock`: The shock to apply during simulation (default: `NoShock()`).
+- `shock`: The shock to apply during simulation (default: `nothing`).
 - `parallel`: Whether to run simulations in parallel (default: `true`).
 
 # Returns
@@ -98,9 +109,9 @@ model = Bit.Model(parameters, initial_conditions)
 models = Bit.ensemblerun(model, 2, 10)  # Create 10 copies and run for 2 steps
 ```
 """
-function ensemblerun(model::AbstractModel, T::Int, n_sims::Int; parallel = true, shock! = NoShock())
+function ensemblerun(model::AbstractModel, T::Int, n_sims::Int; parallel = true, shock! = nothing)
     models = Vector{typeof(model)}(undef, n_sims)
-    @maybe_threads parallel for i in 1:n_sims
+    _foreach_index(parallel, 1:n_sims) do i
         model_copy = deepcopy(model)
         run!(model_copy, T; shock!, parallel)
         models[i] = model_copy

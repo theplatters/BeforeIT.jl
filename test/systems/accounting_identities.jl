@@ -56,7 +56,7 @@ end
         Bit.single(Ark.Query(world, (Bit.Components.NetForeignPosition,)))[2].amount -
         single_component_amount(world, Bit.Components.GovernmentDebt; with = (Bit.Components.Government,)) +
         single_component_amount(world, Bit.Components.ResidualItems; with = (Bit.Components.Bank,))
-    @test_broken isapprox(cb_balance, 0.0, atol = 1.0e-8)
+    @test isapprox(cb_balance, 0.0, atol = 1.0e-7)
 
     bank_balance =
         sum_component_amount(world, Bit.Components.Deposits; with = ()) +

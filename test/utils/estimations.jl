@@ -1,25 +1,33 @@
 import BeforeIT as Bit
+import Ark
 
 using Random
 
 @testset "estimation functions" begin
-    dir = @__DIR__
-
     parameters = Bit.AUSTRIA2010Q1.parameters
     initial_conditions = Bit.AUSTRIA2010Q1.initial_conditions
-    model = Bit.Model(parameters, initial_conditions)
-
-    Y, T_prime = model.agg.Y, model.prop.T_prime
+    world = Bit.Model(parameters, initial_conditions).world
+    expectations = Bit.expectations(world)
+    macroeconomic_state = Ark.get_resource(world, Bit.MacroeconomicState)
+    properties = Ark.get_resource(world, Bit.Properties)
+    time_index = Ark.get_resource(world, Bit.TimeIndex)
 
     Random.seed!(123)
 
-    model.agg.t = 1
+    time_index.step = 1
 
-    Y_e, gamma_e, pi_e = Bit.growth_inflation_expectations(model)
+    Bit.set_growth_inflation_expectations!(world)
+    Y_e = expectations.gross_domestic_product
+    gamma_e = expectations.output_growth
+    pi_e = expectations.inflation
     Y_e_matlab_single_run, pi_e_matlab_single_run = 136263.963578048, 0.0120934296669606
+
+    @test time_index.step == 1
+    @test length(macroeconomic_state.gross_domestic_product_history) >= properties.dimensions.interval_for_expectation_estimation
 
     @test isapprox(Y_e, Y_e_matlab_single_run, rtol = 0.1)
     @test isapprox(pi_e, pi_e_matlab_single_run, atol = 0.1)
+    @test isfinite(gamma_e)
 
     r_bar = collect(Float64, 1:10)
     pi_EA = collect(Float64, 5:15)

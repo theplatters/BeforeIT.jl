@@ -8,13 +8,14 @@ properties = Bit.properties(model)
 
 
 @testset "Population accounting" begin
+    employed_count = Ark.count_entities(Ark.Query(world, (Bit.Components.Employed,)))
     inactive_count = Ark.count_entities(Ark.Query(world, (Bit.Components.Inactive,)))
     unemployed_count = Ark.count_entities(Ark.Query(world, (Bit.Components.Unemployed,)))
     capitalist_count = Ark.count_entities(Ark.Query(world, (Bit.Components.Capitalist,)))
     firm_count = Ark.count_entities(Ark.Query(world, (Bit.Components.Output,)))
 
     @test inactive_count == properties.population.inactive
-    @test unemployed_count == properties.population.active - properties.dimensions.total_firms - 1
+    @test employed_count + unemployed_count == properties.population.active - properties.dimensions.total_firms - 1
     @test capitalist_count == properties.dimensions.total_firms
     @test firm_count == properties.dimensions.total_firms
 end
@@ -78,8 +79,18 @@ end
     debt = properties.initial_conditions.households.debt
     capital = properties.initial_conditions.households.capital
     unemployment_benefit = properties.initial_conditions.households.unemployment_benefit
+    total_disposable_income = sum(sum(income.amount) for (_, income) in Ark.Query(world, (Bit.Components.NetDisposableIncome,)))
 
-    expected_unemployed_val = unemployment_benefit / unemployment_benefit_rate
+    expected_unemployment_benefits = unemployment_benefit / unemployment_benefit_rate
+    expected_unemployed_income = Bit.unemployed_worker_income(
+        expected_unemployment_benefits,
+        unemployment_benefit_rate,
+        subsidies_other,
+        1.0,
+        0.0,
+    )
+    expected_unemployed_deposits = debt * expected_unemployed_income / total_disposable_income
+    expected_unemployed_capital = capital * expected_unemployed_income / total_disposable_income
     expected_inactive_income = subsidies_other + subsidies_inactive
 
     # 1. Test Employable (Unemployed) Households
@@ -98,11 +109,11 @@ end
     )
 
     for (_, _, unemployed, income, deposits, expected_income, capital_stock, c_budget, i_budget) in unemployed_query
-        @test all(isapprox.(unemployed.unemployment_benefits, expected_unemployed_val, atol = 1.0e-7))
-        @test all(iszero, income.amount)
-        @test all(iszero, deposits.amount)
+        @test all(isapprox.(unemployed.unemployment_benefits, expected_unemployment_benefits, atol = 1.0e-7))
+        @test all(isapprox.(income.amount, expected_unemployed_income, atol = 1.0e-7))
+        @test all(isapprox.(deposits.amount, expected_unemployed_deposits, atol = 1.0e-7))
         @test all(iszero, expected_income.amount)
-        @test all(iszero, capital_stock.amount)
+        @test all(isapprox.(capital_stock.amount, expected_unemployed_capital, atol = 1.0e-7))
         @test all(iszero, c_budget.amount)
         @test all(iszero, i_budget.amount)
     end

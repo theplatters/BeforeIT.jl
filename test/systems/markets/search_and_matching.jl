@@ -354,8 +354,8 @@ end
     run_pre_market_pipeline!(world)
     metrics = collect_market_integration_metrics(world)
 
-    @test isapprox(metrics[:mean_I_h], 0.28012067227587173, rtol = 0.02)
-    @test isapprox(metrics[:mean_C_h], 3.373900754892568, rtol = 0.02)
+    @test isapprox(metrics[:mean_I_h], 0.30026601234146955, rtol = 0.02)
+    @test isapprox(metrics[:mean_C_h], 3.616540391241689, rtol = 0.02)
     @test isapprox(metrics[:mean_I_i], 20.44490406457435, rtol = 0.02)
     @test isapprox(metrics[:mean_DM_i], 108.98282471230276, rtol = 0.02)
     @test isapprox(metrics[:mean_P_bar_i], 0.9967957252316543, rtol = 0.02)

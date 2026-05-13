@@ -13,12 +13,8 @@ using Runic
         include("utils/positive.jl")
         include("utils/randpl.jl")
         include("utils/nfvar3_and_estimate.jl")
-        # include("utils/estimations.jl")
-        # include("utils/zenodo_calibration.jl")
-    end
-
-    @testset "Accounting Identities" begin
-        # include("accounting_identities.jl")
+        include("utils/estimations.jl")
+        include("utils/zenodo_calibration.jl")
     end
 
     @testset "Shocks" begin
@@ -49,8 +45,9 @@ using Runic
         include("package_sanity_tests.jl")
     end
 
-    # WARNING: this should be the last include when the deterministic suite is re-enabled.
-    # include("deterministic/runtests_deterministic.jl")
+    # WARNING: this should be the last include among behavior tests because it
+    # overrides randomness to make subsequent model runs deterministic.
+    include("deterministic/runtests_deterministic.jl")
 
     @testset "Format (Runic.jl)" begin
         isformat = Bit.format_package(check = true)

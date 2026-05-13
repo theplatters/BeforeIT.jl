@@ -24,10 +24,63 @@ function ECSModel(properties::Properties)
     setup_rotw!(world, properties)
     setup_aggregates!(world, properties)
 
+    seed_initial_employment!(world, properties)
+    initialize_household_incomes_and_balance_sheets!(world, properties)
     normalize_deposits_and_capital_stocks!(world)
     add_deposits_to_bank!(world)
 
     return ECSModel(world)
+end
+
+function seed_initial_employment!(world::Ark.World, properties::Properties)
+    unemployed_workers = Ark.Entity[]
+    for (worker_e, _) in Ark.Query(world, (Components.Unemployed,))
+        append!(unemployed_workers, worker_e)
+    end
+
+    initial_assignments = Tuple{Ark.Entity, Ark.Entity, Float64}[]
+    worker_index = 1
+    for (firm_e, employment, average_wages) in Ark.Query(world, (Components.Employment, Components.AverageWageRate))
+        for i in eachindex(firm_e)
+            for _ in 1:employment[i].amount
+                worker_index > length(unemployed_workers) && return nothing
+                push!(initial_assignments, (unemployed_workers[worker_index], firm_e[i], average_wages[i].rate))
+                worker_index += 1
+            end
+        end
+    end
+
+    for (worker_e, firm_e, wage_rate) in initial_assignments
+        Ark.exchange_components!(
+            world,
+            worker_e,
+            remove = (Components.Unemployed,),
+            add = (Components.Employed(wage_rate), Components.EmployedAt() => firm_e),
+        )
+    end
+
+    return nothing
+end
+
+function initialize_household_incomes_and_balance_sheets!(world::Ark.World, properties::Properties)
+    set_households_income!(world)
+
+    household_debt_ratio = properties.initial_conditions.households.debt
+    household_capital_ratio = properties.initial_conditions.households.capital
+    for (_, income, deposits, capital) in Ark.Query(
+            world,
+            (
+                Components.NetDisposableIncome,
+                Components.Deposits,
+                Components.CapitalStock,
+            ),
+            with = (Components.Household,),
+        )
+        deposits.amount .= household_debt_ratio .* income.amount
+        capital.amount .= household_capital_ratio .* income.amount
+    end
+
+    return nothing
 end
 
 function normalize_deposits_and_capital_stocks!(world)

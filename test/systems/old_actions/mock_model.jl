@@ -438,8 +438,12 @@ function set_mock_components!(world::Ark.World; overrides...)
         elseif haskey(w_act_mappings, k)
             CompType = w_act_mappings[k]
             idx = 1
-            # Active workers start as Unemployed in the ECS
-            for (e, comp) in Ark.Query(world, (CompType,), with = (Bit.Components.Unemployed,))
+            for (e, comp) in Ark.Query(
+                    world,
+                    (CompType,),
+                    with = (Bit.Components.Household,),
+                    without = (Bit.Components.Inactive, Bit.Components.Capitalist, Bit.Components.Banker)
+                )
                 for i in eachindex(e)
                     comp[i] = CompType(v[idx])
                     idx += 1

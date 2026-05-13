@@ -1,4 +1,4 @@
-function step!(model)
+function _step_impl!(model)
     world = model.world
 
     BeforeIT.finance_insolvent_firms!(world)
@@ -125,4 +125,8 @@ function step!(model)
     BeforeIT.set_time!(world)
 
     return nothing
+end
+
+function step!(model; parallel = nothing, shock! = nothing)
+    return _step_impl!(model)
 end

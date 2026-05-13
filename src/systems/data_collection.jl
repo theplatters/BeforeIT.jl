@@ -1,5 +1,9 @@
 # src/systems/data_collection.jl
 
+function collect_data!(model::AbstractModel)
+    return collect_data!(model.world)
+end
+
 function collect_data!(world::Ark.World)
     history = Ark.get_resource(world, DataCollector)
     t_resource = Ark.get_resource(world, TimeIndex)

@@ -26,9 +26,6 @@ end
 function Bit.epsilon(C::Matrix{Float64})
     return 0.0, 0.0, 0.0
 end
-function shuffle!(v::Vector)
-    # do nothing
-end
-function Bit.fshuffle!(v::Vector)
+function shuffle!(v::AbstractVector)
     # do nothing
 end

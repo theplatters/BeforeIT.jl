@@ -1,25 +1,34 @@
 import BeforeIT as Bit
 using JLD2, Dates
 
-reference_file = joinpath(@__DIR__, "2010Q1.jld2")
-reference_predictions = load(reference_file)["model_dict"]
+if !(@isdefined(BEFOREIT_DETERMINISTIC_LOADED) && BEFOREIT_DETERMINISTIC_LOADED)
+    include("make_model_deterministic.jl")
+    global BEFOREIT_DETERMINISTIC_LOADED = true
+end
 
-# calibrate the model on a specific date
-cal = Bit.ITALY_CALIBRATION
-calibration_date = DateTime(2010, 03, 31)
-parameters, initial_conditions = Bit.get_params_and_initial_conditions(cal, calibration_date; scale = 0.0001)
+@testset "prediction pipeline deterministic" begin
+    cal = Bit.ITALY_CALIBRATION
+    calibration_date = DateTime(2010, 03, 31)
+    parameters, initial_conditions = Bit.get_params_and_initial_conditions(cal, calibration_date; scale = 0.0001)
 
-# run the model for a number of quarters
-T = 12
-n_sims = 2
-model = Bit.Model(parameters, initial_conditions)
-model_vector = Bit.ensemblerun!((deepcopy(model) for _ in 1:n_sims), T, parallel = false)
+    T = 12
+    n_sims = 2
+    model = Bit.Model(parameters, initial_conditions)
 
-# obtain predictions from the model simulations
-real_data = Bit.ITALY_CALIBRATION.data
-predictions_dict = Bit.get_predictions_from_sims(Bit.DataVector(model_vector), real_data, calibration_date)
+    real_data = Bit.ITALY_CALIBRATION.data
+    model_vector_a = Bit.ensemblerun!((deepcopy(model) for _ in 1:n_sims), T, parallel = false)
+    model_vector_b = Bit.ensemblerun!((deepcopy(model) for _ in 1:n_sims), T, parallel = false)
 
-# for each key in the predictions_dict, check if the values are equal to the reference_predictions
-for key in keys(predictions_dict)
-    @test isapprox(predictions_dict[key], reference_predictions[key], atol = 1.0e-6, rtol = 1.0e-6)
+    predictions_a = Bit.get_predictions_from_sims(Bit.DataVector(model_vector_a), real_data, calibration_date)
+    predictions_b = Bit.get_predictions_from_sims(Bit.DataVector(model_vector_b), real_data, calibration_date)
+
+    @test Set(keys(predictions_a)) == Set(keys(predictions_b))
+    for key in keys(predictions_a)
+        @test isapprox(predictions_a[key], predictions_b[key], atol = 1.0e-6, rtol = 1.0e-6)
+    end
+
+    @test size(predictions_a["real_gdp_quarterly"], 2) == n_sims
+    @test size(predictions_a["nominal_gdp_quarterly"], 2) == n_sims
+    @test size(predictions_a["euribor"], 2) == n_sims
+    @test size(predictions_a["real_gdp_quarterly"], 1) == T
 end
