@@ -363,5 +363,5 @@ end
     @test isapprox(metrics[:gov_C_j], 14883.394898352044, rtol = 0.02)
     @test isapprox(metrics[:rotw_C_l], 33152.52973913658, rtol = 0.05)
     @test isapprox(metrics[:mean_Q_d_i], 208.46284581727244, rtol = 0.02)
-    @test isapprox(metrics[:mean_Q_d_m], 22497.719368549882, rtol = 0.05)
+    @test isapprox(metrics[:mean_Q_d_m], 508.0841371772294, rtol = 0.05)
 end

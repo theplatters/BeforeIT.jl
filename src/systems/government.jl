@@ -48,8 +48,15 @@ function set_gov_revenues!(world::Ark.World)
     cpi = Ark.get_resource(world, PriceIndices).household_consumption
 
     total_wages = @sum_over (w.rate for  w in Ark.Query(world, (Components.Employed,)))
-    total_consumption = @sum_over (c.amount for c in Ark.Query(world, (Components.RealisedConsumption,)))
-    total_investment = @sum_over (c.amount for c in Ark.Query(world, (Components.RealisedInvestment,)))
+    total_consumption = 0.0
+    for (_, consumption) in Ark.Query(world, (Components.RealisedConsumption,), with = (Components.Household,))
+        total_consumption += sum(consumption.amount)
+    end
+
+    total_investment = 0.0
+    for (_, investment) in Ark.Query(world, (Components.RealisedInvestment,), with = (Components.Household,))
+        total_investment += sum(investment.amount)
+    end
     total_profits = @sum_over (max(0, p.amount) for p in Ark.Query(world, (Components.Profits,)))
 
     social_security = (employees_contribution + employers_contribution) * total_wages * cpi

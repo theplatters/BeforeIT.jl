@@ -674,7 +674,7 @@ function update_import_demand_from_remaining_stocks!(world::Ark.World, sector::I
     for (e, principal_product, good_demand, good_supply) in
         Ark.Query(world, (Components.PrincipalProduct, Components.ImportDemand, Components.ImportSupply))
         for i in eachindex(e)
-            principal_product[i].id == sector && continue
+            principal_product[i].id != sector && continue
             rotw_index = BeforeIT.find_entity_index(e[i], stock_cache)
 
             good_demand[i] = Components.ImportDemand(

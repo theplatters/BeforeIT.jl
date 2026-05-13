@@ -39,7 +39,7 @@ end
             history.nominal_exports .+
             history.nominal_imports,
     )
-    @test_broken isapprox(gdp_and_expenditure, 0.0, atol = 1.0e-8)
+    @test isapprox(gdp_and_expenditure, 0.0, atol = 1.0e-8)
 
     gdp_and_expenditure_real = sum(
         history.real_gdp .-
@@ -49,7 +49,7 @@ end
             history.real_exports .+
             history.real_imports,
     )
-    @test_broken isapprox(gdp_and_expenditure_real, 0.0, atol = 1.0e-8)
+    @test isapprox(gdp_and_expenditure_real, 0.0, atol = 1.0e-8)
 
     cb_balance =
         single_component_amount(world, Bit.Components.Equity; with = (Bit.Components.CentralBank,)) +
