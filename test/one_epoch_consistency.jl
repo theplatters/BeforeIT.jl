@@ -9,8 +9,6 @@ initial_conditions = matread(joinpath(dir, "../data/steady_state/initial_conditi
 
 model = Bit.Model(parameters, initial_conditions)
 
-println(Bit.get_accounting_identity_banks(model))
-
 """
 Testing an entire step of the model
 """
@@ -277,34 +275,25 @@ Bit.collect_data!(model)
 
 data = model.data
 
-println("Identities")
-println(Bit.get_accounting_identities(data))
-println(Bit.get_accounting_identity_banks(model))
-
 # income accounting and production accounting should be equal
 zero = sum(data.nominal_gva - data.compensation_employees - data.operating_surplus - data.taxes_production)
-println(zero)
 
 # compare nominal_gdp to total expenditure
 zero = sum(
     data.nominal_gdp - data.nominal_household_consumption - data.nominal_government_consumption -
         data.nominal_capitalformation - data.nominal_exports + data.nominal_imports,
 )
-println(zero)
 # @assert isapprox(zero, 0.0, atol = 1e-7)
 
 # compare real_gdp to total expenditure
 zero = sum(
     data.real_gdp - data.real_household_consumption - data.real_government_consumption - data.real_capitalformation - data.real_exports + data.real_imports,
 )
-println(zero)
 
 # accounting identity of balance sheet of central bank
 zero = model.cb.E_CB + model.rotw.D_RoW - model.gov.L_G + model.bank.D_k
-println(zero)
 
 # accounting identity of balance sheet of commercial bank
 zero =
     sum(model.firms.D_i) + sum(model.w_act.D_h) + sum(model.w_inact.D_h) + sum(model.bank.E_k) - sum(model.firms.L_i) -
     model.bank.D_k
-println(zero)
