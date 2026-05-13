@@ -405,3 +405,6 @@ function initial_conditions_dict(initial_conditions::InitialConditions)
         "pi" => initial_conditions.economy.inflation,
     )
 end
+
+Base.getindex(initial_conditions::InitialConditions, key::AbstractString) =
+    initial_conditions_dict(initial_conditions)[String(key)]
