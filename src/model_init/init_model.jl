@@ -44,9 +44,10 @@ end
 
 function add_deposits_to_bank!(world)
     total_deposits = @sum_over (deposits.amount for deposits in Ark.Query(world, (Components.Deposits,)))
+    total_loans = @sum_over (loans.amount for loans in Ark.Query(world, (Components.LoansOutstanding,)))
 
-    for (e, b) in Ark.Query(world, (Components.ResidualItems,))
-        b.amount .+= total_deposits
+    for (_, equity, residual_items) in Ark.Query(world, (Components.Equity, Components.ResidualItems), with = (Components.Bank,))
+        residual_items.amount .= equity.amount .- total_loans .+ total_deposits
     end
 
     return

@@ -553,7 +553,7 @@ function update_government_realised_consumption!(world::Ark.World, sector::Int64
         Ark.Query(world, (Components.RealisedConsumption, Components.PriceInflationGovernmentGoods), with = (Components.Government,))
         for i in eachindex(e)
             for (local_gov_e, consumption_demand) in
-                Ark.Query(world, (Components.ConsumptionDemand,), with = (Components.LocalGovernment,), relations = (Components.LocalGovernment => e[i],))
+                Ark.Query(world, (Components.ConsumptionDemand,), with = (Components.LocalGovernment => e[i],))
                 for j in eachindex(local_gov_e)
                     idx = BeforeIT.find_entity_index(local_gov_e[j], demand_cache)
                     realised_consumption[i] = Components.RealisedConsumption(

@@ -17,10 +17,6 @@ using Runic
         # include("utils/zenodo_calibration.jl")
     end
 
-    @testset "Markets" begin
-        # include("markets/search_and_matching.jl")
-    end
-
     @testset "Accounting Identities" begin
         # include("accounting_identities.jl")
     end
@@ -36,6 +32,7 @@ using Runic
     @testset "Systems" begin
         include("systems/old_actions/mock_model.jl")
         include("systems/aggregates.jl")
+        include("systems/accounting_identities.jl")
         include("systems/banks.jl")
         include("systems/central_bank.jl")
         include("systems/epsilon.jl")
@@ -43,8 +40,8 @@ using Runic
         include("systems/firms.jl")
         include("systems/government.jl")
         include("systems/households.jl")
+        include("systems/markets/search_and_matching.jl")
         include("systems/rotw.jl")
-        # include("systems/markets/search_and_matching.jl")
     end
 
 

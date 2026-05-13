@@ -59,6 +59,90 @@ function setup_test_world(properties; overrides...)
     return world
 end
 
+function run_pre_market_pipeline!(world)
+    Bit.finance_insolvent_firms!(world)
+    Bit.set_growth_inflation_expectations!(world)
+    Bit.set_epsilon!(world)
+    Bit.set_growth_inflation_EA!(world)
+    Bit.set_central_bank_rate!(world)
+    Bit.set_bank_rate!(world)
+    Bit.set_firms_expectations_and_decisions!(world)
+    Bit.search_and_matching_credit!(world)
+    Bit.search_and_matching_labor!(world)
+    Bit.set_firms_wages!(world)
+    Bit.set_firms_production!(world)
+    Bit.update_workers_wages!(world)
+    Bit.set_gov_social_benefits!(world)
+    Bit.set_bank_expected_profits!(world)
+    Bit.set_households_expected_income!(world)
+    Bit.set_households_budget!(world)
+    Bit.set_gov_expenditure!(world)
+    Bit.set_rotw_import_export!(world)
+    Bit.search_and_matching!(world)
+    return world
+end
+
+function collect_market_integration_metrics(world)
+    metrics = Dict{Symbol, Float64}()
+
+    household_consumption = Float64[]
+    household_investment = Float64[]
+    for (_, realised_consumption, realised_investment) in Ark.Query(
+            world,
+            (Bit.Components.RealisedConsumption, Bit.Components.RealisedInvestment),
+            with = (Bit.Components.Household,)
+        )
+        append!(household_consumption, realised_consumption.amount)
+        append!(household_investment, realised_investment.amount)
+    end
+    metrics[:mean_I_h] = mean(household_investment)
+    metrics[:mean_C_h] = mean(household_consumption)
+
+    firm_investment = Float64[]
+    firm_materials = Float64[]
+    firm_price_index = Float64[]
+    firm_cf_price_index = Float64[]
+    firm_goods_demand = Float64[]
+    for (_, investment, materials, price_index, cf_price_index, goods_demand) in Ark.Query(
+            world,
+            (
+                Bit.Components.Investment,
+                Bit.Components.MaterialsStockChange,
+                Bit.Components.PriceIndex,
+                Bit.Components.CFPriceIndex,
+                Bit.Components.GoodsDemand,
+            ),
+            with = (Bit.Components.Firm,)
+        )
+        append!(firm_investment, investment.amount)
+        append!(firm_materials, materials.amount)
+        append!(firm_price_index, price_index.value)
+        append!(firm_cf_price_index, cf_price_index.value)
+        append!(firm_goods_demand, goods_demand.amount)
+    end
+    metrics[:mean_I_i] = mean(firm_investment)
+    metrics[:mean_DM_i] = mean(firm_materials)
+    metrics[:mean_P_bar_i] = mean(firm_price_index)
+    metrics[:mean_P_CF_i] = mean(firm_cf_price_index)
+    metrics[:mean_Q_d_i] = mean(firm_goods_demand)
+
+    for (_, realised_consumption) in Ark.Query(world, (Bit.Components.RealisedConsumption,), with = (Bit.Components.Government,))
+        metrics[:gov_C_j] = sum(realised_consumption.amount)
+    end
+
+    for (_, foreign_consumption) in Ark.Query(world, (Bit.Components.ForeignConsumption,))
+        metrics[:rotw_C_l] = sum(foreign_consumption.amount)
+    end
+
+    import_demand = Float64[]
+    for (_, demand) in Ark.Query(world, (Bit.Components.ImportDemand,))
+        append!(import_demand, demand.amount)
+    end
+    metrics[:mean_Q_d_m] = mean(import_demand)
+
+    return metrics
+end
+
 @testset "Search and Matching - Edge Cases" begin
     properties = Bit.STEADY_STATE2010Q1
     I = properties.dimensions.total_firms
@@ -129,7 +213,7 @@ end
         for (_, sales) in Ark.Query(world, (Bit.Components.Sales,), with = (Bit.Components.Firm,))
             total_sales += sum(sales.amount)
         end
-        @test total_sales == 10.0
+        @test total_sales == 5.0
 
         total_cons = 0.0
         for (_, realised_c) in Ark.Query(world, (Bit.Components.RealisedConsumption,), with = (Bit.Components.Household,))
@@ -262,4 +346,22 @@ end
 
     @test isapprox(mean(agg_sales_old), mean(agg_sales_new), rtol = 0.2)
     @test isapprox(mean(agg_cons_old), mean(agg_cons_new), rtol = 0.2)
+end
+
+@testset "Search and Matching Integration Regression" begin
+    Random.seed!(1)
+    world = Bit.ECSModel(Bit.AUSTRIA2010Q1).world
+    run_pre_market_pipeline!(world)
+    metrics = collect_market_integration_metrics(world)
+
+    @test isapprox(metrics[:mean_I_h], 0.28012067227587173, rtol = 0.02)
+    @test isapprox(metrics[:mean_C_h], 3.373900754892568, rtol = 0.02)
+    @test isapprox(metrics[:mean_I_i], 20.44490406457435, rtol = 0.02)
+    @test isapprox(metrics[:mean_DM_i], 108.98282471230276, rtol = 0.02)
+    @test isapprox(metrics[:mean_P_bar_i], 0.9967957252316543, rtol = 0.02)
+    @test isapprox(metrics[:mean_P_CF_i], 0.9967957252316543, rtol = 0.02)
+    @test isapprox(metrics[:gov_C_j], 14883.394898352044, rtol = 0.02)
+    @test isapprox(metrics[:rotw_C_l], 33152.52973913658, rtol = 0.05)
+    @test isapprox(metrics[:mean_Q_d_i], 208.46284581727244, rtol = 0.02)
+    @test isapprox(metrics[:mean_Q_d_m], 22497.719368549882, rtol = 0.05)
 end

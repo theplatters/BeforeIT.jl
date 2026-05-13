@@ -40,7 +40,7 @@ function build_worker_cache!(world)
 
     for (firm_e, _employment) in Ark.Query(world, (Components.Employment,))
         for i in eachindex(firm_e)
-            for (worker_e, _) in Ark.Query(world, (Components.EmployedAt,), relations = (Components.EmployedAt => firm_e[i],))
+            for (worker_e, _) in Ark.Query(world, (Components.EmployedAt => firm_e[i],))
                 for j in eachindex(worker_e)
                     BeforeIT.emblace_employed!(worker_e[j], firm_e[i], cache)
                 end
@@ -57,7 +57,7 @@ function fire_employed_workers!(world::Ark.World)
     remove_employment = Vector{Ark.Entity}()
     for (firm_e, vacancies, employment) in Ark.Query(world, (Components.Vacancies, Components.Employment))
         for i in eachindex(firm_e)
-            for (worker_e, _) in Ark.Query(world, (Components.EmployedAt,), relations = (Components.EmployedAt => firm_e[i],))
+            for (worker_e, _) in Ark.Query(world, (Components.EmployedAt => firm_e[i],))
                 for j in eachindex(worker_e)
                     vacancies[i].amount >= 0 && break
                     push!(remove_employment, worker_e[j])
@@ -114,8 +114,7 @@ function hire_workers!(world::Ark.World)
         Ark.exchange_components!(
             world, worker_e,
             remove = (Components.Unemployed,),
-            add = (Components.Employed(0.0), Components.EmployedAt()),
-            relations = (Components.EmployedAt => firm_e,)
+            add = (Components.Employed(0.0), Components.EmployedAt() => firm_e)
         )
     end
 

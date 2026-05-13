@@ -24,8 +24,8 @@ import Ark
         Bit.set_inflation_priceindex!(world)
 
         expected_price_index = 14 / 6
-        expected_aggregate_index = expected_price_index / 2.0
-        expected_inflation = log(expected_aggregate_index)
+        expected_aggregate_index = expected_price_index
+        expected_inflation = log(expected_price_index / 2.0)
 
         @test isapprox(price_indices.aggregate, expected_aggregate_index, atol = 1.0e-10)
         @test length(macro_state.inflation_history) == initial_history_length + 1

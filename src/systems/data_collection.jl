@@ -28,12 +28,10 @@ function collect_data!(world::Ark.World)
     end
 
 
-    # We assume P_j is uniform or we take an average if multiple gov entities exist,
-    # but usually there is one government.
     gov_P_j = 0.0
     gov_C_j = 0.0
     gov_count = 0
-    for (_, p_j, c_j) in Ark.Query(world, (Components.PriceInflationGovernmentGoods, Components.ConsumptionDemand), with = (Components.Government,))
+    for (_, p_j, c_j) in Ark.Query(world, (Components.PriceInflationGovernmentGoods, Components.RealisedConsumption), with = (Components.Government,))
         gov_P_j += sum(p_j.value)
         gov_C_j += sum(c_j.amount)
         gov_count += length(p_j.value)
