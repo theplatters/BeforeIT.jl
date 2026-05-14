@@ -19,6 +19,7 @@ end
 
     model = Bit.ECSModel(Bit.AUSTRIA2010Q1)
     Bit.step!(model)
+    Bit.collect_data!(model)
 
     world = model.world
     history = Ark.get_resource(world, Bit.DataCollector)

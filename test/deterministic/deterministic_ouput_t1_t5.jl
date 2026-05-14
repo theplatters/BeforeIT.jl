@@ -7,6 +7,7 @@ using MAT: matread
 
     model = Bit.Model(parameters, initial_conditions)
     Bit.step!(model; parallel = false)
+    Bit.collect_data!(model)
 
     output_t1 = matread(joinpath(dir, "../matlab_code/output_t1.mat"))
 
@@ -28,6 +29,7 @@ using MAT: matread
     model = Bit.Model(parameters, initial_conditions)
     for _ in 1:5
         Bit.step!(model; parallel = false)
+        Bit.collect_data!(model)
     end
 
     output_t5 = matread(joinpath(dir, "../matlab_code/output_t5.mat"))

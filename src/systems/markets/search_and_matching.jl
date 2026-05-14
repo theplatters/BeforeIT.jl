@@ -1,4 +1,4 @@
-function search_and_matching!(world::Ark.World)
+function search_and_matching!(world::Ark.World; parallel = false)
     build_intermediate_demand_cache!(world)
     build_consumption_demand_cache!(world)
     build_stock_cache!(world)

@@ -37,6 +37,7 @@ end
 function run!(model::AbstractModel, T = 1; parallel = false, shock! = nothing)
     for _ in 1:T
         step!(model; parallel, shock!)
+        BeforeIT.collect_data!(model)
     end
     return model
 end
