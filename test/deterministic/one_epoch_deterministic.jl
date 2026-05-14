@@ -45,7 +45,14 @@
     @test isapprox(_component_mean(world, Bit.Components.Output; with = (Bit.Components.Firm,)), 220.0311; rtol = 1.0e-6)
 
     Bit.update_workers_wages!(world)
-    @test isapprox(_component_mean(world, Bit.Components.Employed; with = (Bit.Components.Household,), field = :rate), 7.5221; rtol = 1.0e-5)
+    active_worker_wages = Float64[]
+    for (_, employed) in Bit.Ark.Query(world, (Bit.Components.Employed,), with = (Bit.Components.Household,))
+        append!(active_worker_wages, employed.rate)
+    end
+    for (_, unemployed) in Bit.Ark.Query(world, (Bit.Components.Unemployed,), with = (Bit.Components.Household,))
+        append!(active_worker_wages, unemployed.unemployment_benefits)
+    end
+    @test isapprox(sum(active_worker_wages) / length(active_worker_wages), 7.5221; rtol = 1.0e-5)
 
     Bit.set_gov_social_benefits!(world)
     @test isapprox(_single_component_value(world, Bit.Components.SocialBenefitsOther; with = (Bit.Components.Government,)), 0.59157; rtol = 1.0e-5)

@@ -30,4 +30,8 @@ function shuffle!(v::AbstractVector)
     # do nothing
 end
 
+function Bit.Ark.shuffle_entities!(::Bit.Ark.Filter)
+    return nothing
+end
+
 const BEFOREIT_DETERMINISTIC_LOADED = true

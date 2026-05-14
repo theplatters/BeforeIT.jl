@@ -260,10 +260,10 @@ function allocate_intermediate_from_available_stocks!(
     nactive = rebuild_active_buyers!(active, demand_cache.vals, sector)
 
     while nactive > 0 && !iszero(weights)
-        i = 1
         shuffle!(view(active, 1:nactive))
 
-        while i <= nactive && !iszero(weights)
+        for i in 1:nactive
+            iszero(weights) && break
 
             buyer = active[i]
 
@@ -279,14 +279,9 @@ function allocate_intermediate_from_available_stocks!(
 
             weights[firm_index - stock_cache.sector_offset[sector] + 1] *=
                 (stock_cache.available_stocks[firm_index] > 0.0)
-
-            if demand_cache.vals[buyer, sector] < 1.0e-8
-                active[i] = active[nactive]
-                nactive -= 1
-            else
-                i += 1
-            end
         end
+
+        nactive = rebuild_active_buyers!(active, demand_cache.vals, sector)
     end
 
     return nothing
@@ -303,10 +298,10 @@ function allocate_intermediate_from_stock_capacity!(
     nactive = rebuild_active_buyers!(active, demand_cache.vals, sector)
 
     while nactive > 0 && !iszero(weights)
-        i = 1
         shuffle!(view(active, 1:nactive))
 
-        while i <= nactive && !iszero(weights)
+        for i in 1:nactive
+            iszero(weights) && break
 
             buyer = active[i]
             firm_index = BeforeIT.choose_random_firm(stock_cache, sector, weights)
@@ -319,14 +314,9 @@ function allocate_intermediate_from_stock_capacity!(
 
             weights[firm_index - stock_cache.sector_offset[sector] + 1] *=
                 (stock_cache.stock_capacity[firm_index] > 0.0)
-
-            if demand_cache.vals[buyer, sector] < 1.0e-8
-                active[i] = active[nactive]
-                nactive -= 1
-            else
-                i += 1
-            end
         end
+
+        nactive = rebuild_active_buyers!(active, demand_cache.vals, sector)
     end
 
     return nothing
@@ -466,13 +456,13 @@ function allocate_retail_from_available_stocks!(
         remaining_stocks,
     )
     nactive = rebuild_active_buyers!(active, demand_cache.vals, sector)
-    iter = 0
-    warn = true
     while nactive > 0 && remaining_stocks > 0.0&& !iszero(weights)
-        i = 1
         shuffle!(view(active, 1:nactive))
 
-        while i <= nactive && remaining_stocks > 0.0 && !iszero(weights)
+        for i in 1:nactive
+            remaining_stocks <= 0.0 && break
+            iszero(weights) && break
+
             buyer = active[i]
             firm_index = BeforeIT.choose_random_firm(stock_cache, sector, weights)
 
@@ -485,15 +475,9 @@ function allocate_retail_from_available_stocks!(
             weights[firm_index - stock_cache.sector_offset[sector] + 1] *=
                 (stock_cache.available_stocks[firm_index] > 1.0e-8)
             remaining_stocks = max(0.0, remaining_stocks - sold_amount)
-
-            if demand_cache.vals[buyer, sector] <= 1.0e-8
-                active[i] = active[nactive]
-                nactive -= 1
-            else
-                i += 1
-            end
-            iter += 1
         end
+
+        nactive = rebuild_active_buyers!(active, demand_cache.vals, sector)
 
     end
 
@@ -512,10 +496,11 @@ function allocate_retail_from_stock_capacity!(
     nactive = rebuild_active_buyers!(active, demand_cache.vals, sector)
 
     while nactive > 0 && !iszero(weights)
-        i = 1
         shuffle!(view(active, 1:nactive))
 
-        while i <= nactive && !iszero(weights)
+        for i in 1:nactive
+            iszero(weights) && break
+
             buyer = active[i]
 
             firm_index = BeforeIT.choose_random_firm(stock_cache, sector, weights)
@@ -530,14 +515,9 @@ function allocate_retail_from_stock_capacity!(
             demand_cache.vals[buyer, sector] = max(demand_cache.vals[buyer, sector] - sold_amount * price, 0.0)
             weights[firm_index - stock_cache.sector_offset[sector] + 1] *=
                 (stock_cache.stock_capacity[firm_index] > 0.0)
-
-            if demand_cache.vals[buyer, sector] <= 1.0e-8
-                active[i] = active[nactive]
-                nactive -= 1
-            else
-                i += 1
-            end
         end
+
+        nactive = rebuild_active_buyers!(active, demand_cache.vals, sector)
     end
     return nothing
 end

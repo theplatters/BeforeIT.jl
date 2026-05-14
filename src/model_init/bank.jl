@@ -1,6 +1,12 @@
 function setup_bank!(world::Ark.World, properties::Properties)
     (; equity_ratio, policy_rate) = properties.initial_conditions.banking
     risk_premium = properties.banking_params.risk_premium
+    total_loans = 0.0
+    for (_, loans) in Ark.Query(world, (Components.LoansOutstanding,), with = (Components.Firm,))
+        total_loans += sum(loans.amount)
+    end
+    initial_profits = risk_premium * total_loans + policy_rate * equity_ratio
+
     owner = Ark.new_entity!(
         world,
         (
@@ -20,8 +26,8 @@ function setup_bank!(world::Ark.World, properties::Properties)
         world, (
             Components.Equity(equity_ratio),
             Components.ResidualItems(0.0),
-            Components.Profits(0.0),
-            Components.ExpectedProfits(0.0),
+            Components.Profits(initial_profits),
+            Components.ExpectedProfits(initial_profits),
             Components.LendingRate(policy_rate + risk_premium),
             Components.Owner() => owner,
             Components.Bank(),
