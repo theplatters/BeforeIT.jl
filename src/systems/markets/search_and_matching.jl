@@ -586,7 +586,13 @@ function allocate_retail_from_stock_capacity!(
     return nothing
 end
 
-function update_government_realised_consumption!(world::Ark.World, sector::Int64, demand_cache, government_consumption)
+function update_government_realised_consumption!(
+        world::Ark.World,
+        sector::Int64,
+        demand_cache,
+        first_pass_vals,
+        government_consumption,
+    )
     for (e, realised_consumption, price_inflation) in
         Ark.Query(world, (Components.RealisedConsumption, Components.PriceInflationGovernmentGoods), with = (Components.Government,))
         for i in eachindex(e)
@@ -597,7 +603,7 @@ function update_government_realised_consumption!(world::Ark.World, sector::Int64
                     realised_consumption[i] = Components.RealisedConsumption(
                         realised_consumption[i].amount +
                             government_consumption[sector] * consumption_demand[j].amount -
-                            demand_cache.vals[idx, sector],
+                            first_pass_vals[idx, sector],
                     )
                     price_inflation[i] = Components.PriceInflationGovernmentGoods(
                         price_inflation[i].value + demand_cache.nominal[idx, sector]
@@ -610,7 +616,7 @@ function update_government_realised_consumption!(world::Ark.World, sector::Int64
     return nothing
 end
 
-function update_foreign_consumption!(world::Ark.World, sector::Int64, demand_cache, exports)
+function update_foreign_consumption!(world::Ark.World, sector::Int64, demand_cache, first_pass_vals, exports)
     for (e, foreign_consumption, export_price) in Ark.Query(world, (Components.ForeignConsumption, Components.ExportPriceInflation))
         for i in eachindex(e)
             for (foreign_sector_e, consumption_demand) in
@@ -620,7 +626,7 @@ function update_foreign_consumption!(world::Ark.World, sector::Int64, demand_cac
                     foreign_consumption[i] = Components.ForeignConsumption(
                         foreign_consumption[i].amount +
                             exports[sector] * consumption_demand[j].amount -
-                            demand_cache.vals[idx, sector],
+                            first_pass_vals[idx, sector],
                     )
                     export_price[i] = Components.ExportPriceInflation(
                         export_price[i].value + demand_cache.nominal[idx, sector]
@@ -637,6 +643,7 @@ function update_household_realised_consumption_and_prices!(
         world::Ark.World,
         sector::Int64,
         demand_cache,
+    first_pass_vals,
         household_consumption,
         household_investment,
     )
@@ -665,7 +672,7 @@ function update_household_realised_consumption_and_prices!(
 
             residual =
                 household_investment[sector] * investment_budget[i].amount -
-                demand_cache.vals[household_index, sector]
+                first_pass_vals[household_index, sector]
             sector_consumption_demand = household_consumption[sector] * consumption_budget[i].amount
 
             realised_consumption_comp = sector_consumption_demand - max(0.0, -residual)
@@ -733,7 +740,14 @@ function perform_retail_market!(world::Ark.World, sector::Int64)
     (; government_consumption, exports, household_consumption, household_investment) =
         BeforeIT.properties(world).product_coeffs
 
-    weights = BeforeIT.get_weights(stock_cache, sector) |> FixedSizeWeightVector
+    sector_weights = BeforeIT.get_weights(stock_cache, sector)
+    original_sector_weights = copy(sector_weights)
+
+    zero_inactive_retail_weights!(
+        sector_weights,
+        BeforeIT.get_available_stocks(stock_cache, sector),
+    )
+    weights = sector_weights |> FixedSizeWeightVector
     remaining_stocks = sum(BeforeIT.get_available_stocks(stock_cache, sector))
 
     allocate_retail_from_available_stocks!(
@@ -745,18 +759,32 @@ function perform_retail_market!(world::Ark.World, sector::Int64)
         remaining_stocks,
     )
 
+    first_pass_vals = copy(demand_cache.vals)
 
-    update_government_realised_consumption!(world, sector, demand_cache, government_consumption)
-    update_foreign_consumption!(world, sector, demand_cache, exports)
+
+    update_government_realised_consumption!(
+        world,
+        sector,
+        demand_cache,
+        first_pass_vals,
+        government_consumption,
+    )
+    update_foreign_consumption!(world, sector, demand_cache, first_pass_vals, exports)
     update_household_realised_consumption_and_prices!(
         world,
         sector,
         demand_cache,
+        first_pass_vals,
         household_consumption,
         household_investment,
     )
 
-    weights = BeforeIT.get_weights(stock_cache, sector) |> FixedSizeWeightVector
+    sector_weights .= original_sector_weights
+    zero_inactive_retail_weights!(
+        sector_weights,
+        BeforeIT.get_stock_capacity(stock_cache, sector),
+    )
+    weights = sector_weights |> FixedSizeWeightVector
     remaining_stocks = sum(BeforeIT.get_stock_capacity(stock_cache, sector))
 
     allocate_retail_from_stock_capacity!(
@@ -772,6 +800,13 @@ function perform_retail_market!(world::Ark.World, sector::Int64)
     update_import_demand_from_remaining_stocks!(world, sector, stock_cache)
 
 
+    return nothing
+end
+
+function zero_inactive_retail_weights!(weights, live_stocks)
+    @inbounds for i in eachindex(weights, live_stocks)
+        live_stocks[i] > 0.0 || (weights[i] = 0.0)
+    end
     return nothing
 end
 
