@@ -129,12 +129,16 @@ function hire_workers!(world::Ark.World)
             push!(add_employment, (worker_e, firm_e))
             hired_workers[firm_e] = get(hired_workers, firm_e, 0) + 1
 
-            worker_cache.active[1] = worker_cache.active[worker_cache.n_unemployed]
+            if worker_cache.n_unemployed > 1
+                worker_cache.active[1:(worker_cache.n_unemployed - 1)] = worker_cache.active[2:worker_cache.n_unemployed]
+            end
             worker_cache.n_unemployed -= 1
             cache.vacancies[firm_index] -= 1
 
             if iszero(cache.vacancies[firm_index])
-                cache.active[i] = cache.active[cache.nhiring]
+                if i < cache.nhiring
+                    cache.active[i:(cache.nhiring - 1)] = cache.active[(i + 1):cache.nhiring]
+                end
                 cache.nhiring -= 1
             else
                 i += 1

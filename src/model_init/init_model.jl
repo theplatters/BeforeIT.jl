@@ -38,16 +38,23 @@ function seed_initial_employment!(world::Ark.World, properties::Properties)
     for (worker_e, _) in Ark.Query(world, (Components.Unemployed,))
         append!(unemployed_workers, worker_e)
     end
+    sort!(unemployed_workers)
 
     initial_assignments = Tuple{Ark.Entity, Ark.Entity, Float64}[]
     worker_index = 1
+    firm_rows = Tuple{Ark.Entity, Int, Float64}[]
     for (firm_e, employment, average_wages) in Ark.Query(world, (Components.Employment, Components.AverageWageRate))
         for i in eachindex(firm_e)
-            for _ in 1:employment[i].amount
+            push!(firm_rows, (firm_e[i], employment[i].amount, average_wages[i].rate))
+        end
+    end
+    sort!(firm_rows; by = first)
+
+    for (firm_e, employment, wage_rate) in firm_rows
+        for _ in 1:employment
                 worker_index > length(unemployed_workers) && return nothing
-                push!(initial_assignments, (unemployed_workers[worker_index], firm_e[i], average_wages[i].rate))
+                push!(initial_assignments, (unemployed_workers[worker_index], firm_e, wage_rate))
                 worker_index += 1
-            end
         end
     end
 
