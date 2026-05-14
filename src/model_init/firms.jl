@@ -90,7 +90,7 @@ function setup_firms!(world::Ark.World, properties::Properties)
                 Components.TaxRates(output_tax_rate[i], capital_tax_rate[i]),
                 Components.Employment(employment[i]),
                 Components.Output(output[i]),
-                Components.Sales(output[i]),
+                Components.Sales(0.0),
                 Components.GoodsDemand(output[i]),
                 Components.Price(1.0),
                 Components.Inventories(0.0),

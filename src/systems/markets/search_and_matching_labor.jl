@@ -55,17 +55,27 @@ function fire_employed_workers!(world::Ark.World)
     f = Ark.Filter(world, (Components.Employed,), with = (Components.EmployedAt,))
     Ark.shuffle_entities!(f)
     remove_employment = Vector{Ark.Entity}()
+    employed_workers = Tuple{Ark.Entity, Ark.Entity}[]
+    firm_state = Dict{Ark.Entity, Tuple{Any, Any, Int}}()
+
     for (firm_e, vacancies, employment) in Ark.Query(world, (Components.Vacancies, Components.Employment))
         for i in eachindex(firm_e)
+            firm_state[firm_e[i]] = (vacancies, employment, i)
             for (worker_e, _) in Ark.Query(world, (Components.EmployedAt => firm_e[i],))
                 for j in eachindex(worker_e)
-                    vacancies[i].amount >= 0 && break
-                    push!(remove_employment, worker_e[j])
-                    vacancies[i] = Components.Vacancies(vacancies[i].amount + 1)
-                    employment[i] = Components.Employment(employment[i].amount - 1)
+                    push!(employed_workers, (worker_e[j], firm_e[i]))
                 end
             end
         end
+    end
+
+    shuffle!(employed_workers)
+    for (worker_e, firm_e) in employed_workers
+        vacancies, employment, index = firm_state[firm_e]
+        vacancies[index].amount >= 0 && continue
+        push!(remove_employment, worker_e)
+        vacancies[index] = Components.Vacancies(vacancies[index].amount + 1)
+        employment[index] = Components.Employment(employment[index].amount - 1)
     end
 
     for now_unemployed in remove_employment
