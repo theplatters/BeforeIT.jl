@@ -64,17 +64,81 @@ end
 function build_household_consumption_demand_cache!(world::Ark.World, demand_cache, coeffs)
     (; household_consumption, household_investment) = coeffs
 
+    append_household_consumption_demand!(
+        world,
+        demand_cache,
+        household_consumption,
+        household_investment;
+        with = (),
+        without = (Components.Inactive, Components.Capitalist, Components.Banker),
+    )
+    append_household_consumption_demand!(
+        world,
+        demand_cache,
+        household_consumption,
+        household_investment;
+        with = (Components.Inactive,),
+        without = (),
+    )
+    append_household_consumption_demand!(
+        world,
+        demand_cache,
+        household_consumption,
+        household_investment;
+        with = (Components.Capitalist,),
+        without = (),
+    )
+    append_household_consumption_demand!(
+        world,
+        demand_cache,
+        household_consumption,
+        household_investment;
+        with = (Components.Banker,),
+        without = (),
+    )
+
+    return nothing
+end
+
+function append_household_consumption_demand!(
+        world::Ark.World,
+        demand_cache,
+        household_consumption,
+        household_investment;
+        with,
+        without,
+    )
+    rows = Tuple{Int, Ark.Entity, Float64, Float64}[]
     for (e, consumption_budget, investment_budget) in
-        Ark.Query(world, (Components.ConsumptionBudget, Components.InvestmentBudget))
+        Ark.Query(
+            world,
+            (Components.ConsumptionBudget, Components.InvestmentBudget),
+            with = (Components.Household, with...),
+            without = without,
+        )
         for i in eachindex(e)
-            demand =
-                household_consumption .* consumption_budget[i].amount +
-                household_investment .* investment_budget[i].amount
-            BeforeIT.emblace!(demand, e[i], demand_cache)
+            push!(rows, (
+                entity_order_key(e[i]),
+                e[i],
+                consumption_budget[i].amount,
+                investment_budget[i].amount,
+            ))
         end
     end
 
+    sort!(rows; by = first)
+    for (_, entity, consumption_amount, investment_amount) in rows
+        demand =
+            household_consumption .* consumption_amount +
+            household_investment .* investment_amount
+        BeforeIT.emblace!(demand, entity, demand_cache)
+    end
+
     return nothing
+end
+
+function entity_order_key(entity)
+    return parse(Int, match(r"Entity\((\d+),", string(entity)).captures[1])
 end
 
 function build_import_consumption_demand_cache!(world::Ark.World, demand_cache, exports)
@@ -473,7 +537,7 @@ function allocate_retail_from_available_stocks!(
             demand_cache.nominal[buyer, sector] += sold_amount
             demand_cache.vals[buyer, sector] = max(demand_cache.vals[buyer, sector] - sold_amount * price, 0.0)
             weights[firm_index - stock_cache.sector_offset[sector] + 1] *=
-                (stock_cache.available_stocks[firm_index] > 1.0e-8)
+                (stock_cache.available_stocks[firm_index] > 0.0)
             remaining_stocks = max(0.0, remaining_stocks - sold_amount)
         end
 
