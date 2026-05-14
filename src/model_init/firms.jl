@@ -100,7 +100,7 @@ function setup_firms!(world::Ark.World, properties::Properties)
                 Components.OperatingMargins(operating_margins[i]),
                 Components.Deposits(deposits[i]),
                 Components.Profits(profits[i]),
-                Components.Vacancies(employment[i]),
+                Components.Vacancies(0.0),
                 Components.Investment(0.0),
                 Components.Equity(0.0),
                 Components.PriceIndex(0.0),

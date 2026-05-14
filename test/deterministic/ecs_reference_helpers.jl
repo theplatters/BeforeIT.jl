@@ -50,19 +50,29 @@ end
 function _active_household_reference_state(model)
     world = model.world
     rows = NamedTuple[]
+    firm_entities = [row.entity for row in _query_rows(world, (Bit.Components.Firm,))]
+    firm_index = Dict(entity => Float64(index) for (index, entity) in pairs(firm_entities))
 
     for row in _query_rows(
             world,
             (
                 Bit.Components.Employed,
+                Bit.Components.EmployedAt,
                 Bit.Components.NetDisposableIncome,
                 Bit.Components.Deposits,
                 Bit.Components.CapitalStock,
             );
             with = (Bit.Components.Household,),
         )
-        employed, income, deposits, capital = row.components
-        push!(rows, (entity = row.entity, w_h = employed.rate, O_h = 1.0, Y_h = income.amount, D_h = deposits.amount, K_h = capital.amount))
+        employed, employed_at, income, deposits, capital = row.components
+        push!(rows, (
+            entity = row.entity,
+            w_h = employed.rate,
+            O_h = firm_index[employed_at.entity],
+            Y_h = income.amount,
+            D_h = deposits.amount,
+            K_h = capital.amount,
+        ))
     end
 
     for row in _query_rows(
@@ -223,4 +233,5 @@ function _all_household_reference_state(model)
     )
 end
 
+_mat_vector(x::Number) = x
 _mat_vector(x) = vec(x')
