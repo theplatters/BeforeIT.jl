@@ -1,10 +1,6 @@
 import BeforeIT as Bit
 using JLD2, Dates
 
-if !(@isdefined(BEFOREIT_DETERMINISTIC_LOADED) && BEFOREIT_DETERMINISTIC_LOADED)
-    include("make_model_deterministic.jl")
-    global BEFOREIT_DETERMINISTIC_LOADED = true
-end
 
 @testset "prediction pipeline deterministic" begin
     cal = Bit.ITALY_CALIBRATION
