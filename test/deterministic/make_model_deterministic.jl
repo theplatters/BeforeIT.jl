@@ -29,3 +29,5 @@ end
 function shuffle!(v::AbstractVector)
     # do nothing
 end
+
+const BEFOREIT_DETERMINISTIC_LOADED = true

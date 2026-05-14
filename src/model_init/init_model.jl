@@ -28,6 +28,7 @@ function ECSModel(properties::Properties)
     initialize_household_incomes_and_balance_sheets!(world, properties)
     normalize_deposits_and_capital_stocks!(world)
     add_deposits_to_bank!(world)
+    collect_data!(world)
 
     return ECSModel(world)
 end

@@ -12,6 +12,7 @@ function setup_rotw!(world::Ark.World, properties::Properties)
             Components.EuroAreaGDP(external.foreign_output),
             Components.EuroAreaGrowth(0.0),
             Components.EuroAreaInflation(external.foreign_inflation),
+            Components.ExportPriceInflation(0.0),
             Components.NetForeignPosition(external.debt),
             Components.ForeignConsumption(0.0),
             Components.TotalExportDemand(external.exports[T_prime]),

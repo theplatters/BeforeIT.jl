@@ -194,10 +194,10 @@ function zero_out_components_for_search_and_match!(world::Ark.World)
         end
     end
 
-    for (e, foreign_consumption, price_inflation) in Ark.Query(world, (Components.ForeignConsumption, Components.EuroAreaInflation))
+    for (e, foreign_consumption, export_price) in Ark.Query(world, (Components.ForeignConsumption, Components.ExportPriceInflation))
         for i in eachindex(e)
             foreign_consumption[i] = Components.ForeignConsumption(0.0)
-            price_inflation[i] = Components.EuroAreaInflation(0.0)
+            export_price[i] = Components.ExportPriceInflation(0.0)
         end
     end
 
@@ -567,7 +567,7 @@ function update_government_realised_consumption!(world::Ark.World, sector::Int64
 end
 
 function update_foreign_consumption!(world::Ark.World, sector::Int64, demand_cache, exports)
-    for (e, foreign_consumption, price_inflation) in Ark.Query(world, (Components.ForeignConsumption, Components.EuroAreaInflation))
+    for (e, foreign_consumption, export_price) in Ark.Query(world, (Components.ForeignConsumption, Components.ExportPriceInflation))
         for i in eachindex(e)
             for (foreign_sector_e, consumption_demand) in
                 Ark.Query(world, (Components.ForeignConsumptionDemand,))
@@ -578,8 +578,8 @@ function update_foreign_consumption!(world::Ark.World, sector::Int64, demand_cac
                             exports[sector] * consumption_demand[j].amount -
                             demand_cache.vals[idx, sector],
                     )
-                    price_inflation[i] = Components.EuroAreaInflation(
-                        price_inflation[i].rate + demand_cache.nominal[idx, sector]
+                    export_price[i] = Components.ExportPriceInflation(
+                        export_price[i].value + demand_cache.nominal[idx, sector]
                     )
                 end
             end
@@ -763,9 +763,9 @@ function finalize_search_and_match!(world::Ark.World)
         end
     end
 
-    for (e, foreign_consumption, price_inflation) in Ark.Query(world, (Components.ForeignConsumption, Components.EuroAreaInflation))
+    for (e, foreign_consumption, export_price) in Ark.Query(world, (Components.ForeignConsumption, Components.ExportPriceInflation))
         for i in eachindex(e)
-            price_inflation[i] = Components.EuroAreaInflation(foreign_consumption[i].amount / BeforeIT.zero_to_one(price_inflation[i].rate))
+            export_price[i] = Components.ExportPriceInflation(foreign_consumption[i].amount / BeforeIT.zero_to_one(export_price[i].value))
         end
     end
 
