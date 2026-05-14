@@ -4,6 +4,10 @@ function search_and_matching_credit!(world::Ark.World)
     total_loans = 0.0
     (_, E_k) = single(Ark.Query(world, (Components.Equity,), with = (Components.Bank,)))
 
+    for (_, loan_flow) in Ark.Query(world, (Components.LoanFlow,), with = (Components.Firm,))
+        loan_flow.amount .= 0.0
+    end
+
     rows = NamedTuple[]
     for (e, loan_flow, target_loan, expected_loan, expected_capital) in Ark.Query(
             world,

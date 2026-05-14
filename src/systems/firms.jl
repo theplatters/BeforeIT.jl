@@ -36,6 +36,10 @@ end
     return max(1, round(Int64, expected_sales / labor_productivity))
 end
 
+@inline function entity_creation_order(entity)
+    return parse(Int, match(r"Entity\((\d+),", string(entity)).captures[1])
+end
+
 @inline function expected_profit_amount(
         current_profit::Float64,
         growth::Float64,
@@ -212,6 +216,37 @@ const FIRM_EXPECTATION_COMPONENTS = (
     Components.TargetLoans,
 )
 
+function legacy_desired_investment_sales_by_entity(world::Ark.World, growth::Float64)
+    rows = Tuple{Int, Ark.Entity, Float64, Float64}[]
+
+    for (e, goods_demand, capital_stock, capital_productivity) in Ark.Query(
+            world,
+            (
+                Components.GoodsDemand,
+                Components.CapitalStock,
+                Components.CapitalProductivity,
+            ),
+            with = (Components.Firm,),
+        )
+        @inbounds for i in eachindex(e)
+            push!(rows, (
+                entity_creation_order(e[i]),
+                e[i],
+                expected_sales_amount(goods_demand[i].amount, growth),
+                capital_stock[i].amount * capital_productivity[i].value,
+            ))
+        end
+    end
+
+    sort!(rows; by = first)
+
+    expected_sales = [row[3] for row in rows]
+    capacity_sales = [row[4] for row in rows]
+    selected_sales = min(expected_sales, capacity_sales)
+
+    return Dict(row[2] => selected_sales[i] for (i, row) in enumerate(rows))
+end
+
 function set_firms_expectations_and_decisions!(world::Ark.World)
     expectations = Ark.get_resource(world, Expectations)
     price_indices = Ark.get_resource(world, PriceIndices)
@@ -220,6 +255,8 @@ function set_firms_expectations_and_decisions!(world::Ark.World)
 
     growth = expectations.output_growth
     inflation = expectations.inflation
+
+    legacy_desired_investment_sales = legacy_desired_investment_sales_by_entity(world, growth)
 
     sector = price_indices.sector
     household = price_indices.household_consumption
@@ -296,7 +333,7 @@ function set_firms_expectations_and_decisions!(world::Ark.World)
 
             (
                 expected_sales_amount,
-                desired_investment_amount,
+                _,
                 desired_materials_amount,
                 desired_employment_amount,
                 expected_profit_amount,
@@ -321,7 +358,13 @@ function set_firms_expectations_and_decisions!(world::Ark.World)
                 corporate_tax,
             )
 
-            desired_investment[i] = Components.DesiredInvestment(desired_investment_amount)
+            desired_investment_level = desired_investment_amount(
+                δ,
+                a_k,
+                legacy_desired_investment_sales[e[i]],
+            )
+
+            desired_investment[i] = Components.DesiredInvestment(desired_investment_level)
             desired_materials[i] = Components.DesiredMaterials(desired_materials_amount)
             desired_employment[i] = Components.DesiredEmployment(desired_employment_amount)
             expected_sales[i] = Components.ExpectedSales(expected_sales_amount)
