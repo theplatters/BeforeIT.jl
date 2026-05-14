@@ -52,28 +52,28 @@ function build_worker_cache!(world)
 end
 
 function fire_employed_workers!(world::Ark.World)
-    f = Ark.Filter(world, (Components.Employed,), with = (Components.EmployedAt,))
-    Ark.shuffle_entities!(f)
     remove_employment = Vector{Ark.Entity}()
-    employed_workers = Tuple{Ark.Entity, Ark.Entity}[]
+    unemployment_benefits = Dict{Ark.Entity, Float64}()
+    employed_workers = Tuple{Ark.Entity, Ark.Entity, Float64}[]
     firm_state = Dict{Ark.Entity, Tuple{Any, Any, Int}}()
 
     for (firm_e, vacancies, employment) in Ark.Query(world, (Components.Vacancies, Components.Employment))
         for i in eachindex(firm_e)
             firm_state[firm_e[i]] = (vacancies, employment, i)
-            for (worker_e, _) in Ark.Query(world, (Components.EmployedAt => firm_e[i],))
+            for (worker_e, employed) in Ark.Query(world, (Components.Employed,), with = (Components.EmployedAt => firm_e[i],))
                 for j in eachindex(worker_e)
-                    push!(employed_workers, (worker_e[j], firm_e[i]))
+                    push!(employed_workers, (worker_e[j], firm_e[i], employed[j].rate))
                 end
             end
         end
     end
 
     shuffle!(employed_workers)
-    for (worker_e, firm_e) in employed_workers
+    for (worker_e, firm_e, wage_rate) in employed_workers
         vacancies, employment, index = firm_state[firm_e]
         vacancies[index].amount >= 0 && continue
         push!(remove_employment, worker_e)
+        unemployment_benefits[worker_e] = wage_rate
         vacancies[index] = Components.Vacancies(vacancies[index].amount + 1)
         employment[index] = Components.Employment(employment[index].amount - 1)
     end
@@ -82,7 +82,7 @@ function fire_employed_workers!(world::Ark.World)
         Ark.exchange_components!(
             world, now_unemployed,
             remove = (Components.Employed, Components.EmployedAt),
-            add = (Components.Unemployed(0.0),)
+            add = (Components.Unemployed(unemployment_benefits[now_unemployed]),)
         )
     end
 

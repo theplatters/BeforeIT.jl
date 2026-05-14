@@ -255,6 +255,62 @@ end
     end
 end
 
+@testset "Labor Firing Preserves Benefit Base" begin
+    world = Bit.ECSModel(Bit.STEADY_STATE2010Q1).world
+
+    firm_entity = nothing
+    worker_entity = nothing
+    target_wage = nothing
+    for (firm_e, employment, average_wage) in collect(Ark.Query(
+            world,
+            (
+                Bit.Components.Employment,
+                Bit.Components.AverageWageRate,
+            ),
+            with = (Bit.Components.Firm,)
+        ))
+        for i in eachindex(firm_e)
+            employment[i].amount > 0 || continue
+            firm_entity = firm_e[i]
+            target_wage = average_wage[i].rate
+            break
+        end
+        firm_entity === nothing || break
+    end
+
+    for (worker_e, employed) in collect(Ark.Query(world, (Bit.Components.Employed,), with = (Bit.Components.EmployedAt => firm_entity,)))
+        worker_entity = worker_e[1]
+        target_wage = employed[1].rate
+        break
+    end
+
+    for (firm_e, employment, desired_employment) in collect(Ark.Query(
+            world,
+            (
+                Bit.Components.Employment,
+                Bit.Components.DesiredEmployment,
+            ),
+            with = (Bit.Components.Firm,)
+        ))
+        for i in eachindex(firm_e)
+            firm_e[i] == firm_entity || continue
+            desired_employment[i] = Bit.Components.DesiredEmployment(0)
+        end
+    end
+
+    @test firm_entity !== nothing
+    @test worker_entity !== nothing
+    @test target_wage !== nothing
+
+    Bit.calculate_initial_vacancies!(world)
+    Bit.fire_employed_workers!(world)
+
+    @test !Ark.has_components(world, worker_entity, (Bit.Components.Employed, Bit.Components.EmployedAt))
+    @test Ark.has_components(world, worker_entity, (Bit.Components.Unemployed,))
+    (unemployed,) = Ark.get_components(world, worker_entity, (Bit.Components.Unemployed,))
+    @test isapprox(unemployed.unemployment_benefits, target_wage; atol = 1.0e-9, rtol = 1.0e-9)
+end
+
 @testset "Search and Matching Parity - Monte Carlo" begin
     properties = Bit.STEADY_STATE2010Q1
     I = properties.dimensions.total_firms
