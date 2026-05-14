@@ -493,12 +493,6 @@ function allocate_retail_from_available_stocks!(
                 i += 1
             end
             iter += 1
-            if iter > 10_000 && warn
-                @info "Surpassed 10000 iters"
-                @info weights
-                @info stock_cache.available_stocks
-                warn = false
-            end
         end
 
     end
