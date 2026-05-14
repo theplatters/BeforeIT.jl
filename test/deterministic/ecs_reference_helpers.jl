@@ -51,24 +51,30 @@ function _active_household_reference_state(model)
     world = model.world
     rows = NamedTuple[]
     firm_entities = [row.entity for row in _query_rows(world, (Bit.Components.Firm,))]
-    firm_index = Dict(entity => Float64(index) for (index, entity) in pairs(firm_entities))
+    worker_firm_index = Dict{Bit.Ark.Entity, Float64}()
+    for (index, firm_entity) in pairs(firm_entities)
+        for (worker_entities, _) in Bit.Ark.Query(world, (Bit.Components.EmployedAt => firm_entity,))
+            for worker_entity in worker_entities
+                worker_firm_index[worker_entity] = Float64(index)
+            end
+        end
+    end
 
     for row in _query_rows(
             world,
             (
                 Bit.Components.Employed,
-                Bit.Components.EmployedAt,
                 Bit.Components.NetDisposableIncome,
                 Bit.Components.Deposits,
                 Bit.Components.CapitalStock,
             );
             with = (Bit.Components.Household,),
         )
-        employed, employed_at, income, deposits, capital = row.components
+        employed, income, deposits, capital = row.components
         push!(rows, (
             entity = row.entity,
             w_h = employed.rate,
-            O_h = firm_index[employed_at.entity],
+            O_h = worker_firm_index[row.entity],
             Y_h = income.amount,
             D_h = deposits.amount,
             K_h = capital.amount,
