@@ -85,6 +85,7 @@ function hire_workers!(world::Ark.World)
     worker_cache = Ark.get_resource(world, WorkersCache)
 
     add_employment = Dict{Ark.Entity, Ark.Entity}()
+    hired_workers = Dict{Ark.Entity, Int}()
 
 
     shuffle!(view(worker_cache.active, 1:worker_cache.n_unemployed))
@@ -98,6 +99,7 @@ function hire_workers!(world::Ark.World)
             worker_e = worker_cache.worker[worker_cache.active[worker_cache.n_unemployed]]
             firm_e = cache.firms[firm_index]
             add_employment[worker_e] = firm_e
+            hired_workers[firm_e] = get(hired_workers, firm_e, 0) + 1
             worker_cache.n_unemployed -= 1
             cache.vacancies[firm_index] -= 1
 
@@ -116,6 +118,14 @@ function hire_workers!(world::Ark.World)
             remove = (Components.Unemployed,),
             add = (Components.Employed(0.0), Components.EmployedAt() => firm_e)
         )
+    end
+
+    for (firm_e, employment) in Ark.Query(world, (Components.Employment,))
+        for i in eachindex(firm_e)
+            hired = get(hired_workers, firm_e[i], 0)
+            hired == 0 && continue
+            employment[i] = Components.Employment(employment[i].amount + hired)
+        end
     end
 
 

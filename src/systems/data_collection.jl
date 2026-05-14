@@ -163,8 +163,8 @@ function collect_data!(world::Ark.World)
 
     # OS / Wages / Taxes
     wages_val_acc = 0.0
-    for (_, w_bar, n) in Ark.Query(world, (Components.AverageWageRate, Components.Employment))
-        wages_val_acc += sum(w_bar.rate .* n.amount)
+    for (_, wage_bill, n) in Ark.Query(world, (Components.WageBill, Components.Employment))
+        wages_val_acc += sum(wage_bill.amount .* n.amount)
     end
     wages_val = wages_val_acc * P_bar_h
     push!(history.wages, wages_val)
@@ -177,10 +177,10 @@ function collect_data!(world::Ark.World)
     push!(history.taxes_production, taxes_prod)
 
     op_surplus = 0.0
-    for (_, p, q, ds, w_bar, n, beta, p_bar, tau, y) in Ark.Query(world, (Components.Price, Components.Sales, Components.FinalGoodsStockChange, Components.AverageWageRate, Components.Employment, Components.IntermediateProductivity, Components.PriceIndex, Components.TaxRates, Components.Output))
+    for (_, p, q, ds, wage_bill, n, beta, p_bar, tau, y) in Ark.Query(world, (Components.Price, Components.Sales, Components.FinalGoodsStockChange, Components.WageBill, Components.Employment, Components.IntermediateProductivity, Components.PriceIndex, Components.TaxRates, Components.Output))
         op_surplus += sum(
             p.value .* q.amount .+ p.value .* ds.amount .-
-                (1.0 + τ_SIF) .* w_bar.rate .* n.amount .* P_bar_h .-
+                (1.0 + τ_SIF) .* wage_bill.amount .* n.amount .* P_bar_h .-
                 1.0 ./ beta.value .* p_bar.value .* y.amount .-
                 tau.output .* p.value .* y.amount .-
                 tau.capital .* p.value .* y.amount
