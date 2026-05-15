@@ -2,6 +2,7 @@ using Test
 import Ark
 
 include("old_actions/bank.jl")
+
 @testset "Banking System Parity with Automated Setup" begin
 
     # --- Existing Test ---
