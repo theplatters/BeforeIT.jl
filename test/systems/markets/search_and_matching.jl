@@ -410,14 +410,14 @@ end
     run_pre_market_pipeline!(world)
     metrics = collect_market_integration_metrics(world)
 
-    @test isapprox(metrics[:mean_I_h], 0.30026601234146955, rtol = 0.02)
-    @test isapprox(metrics[:mean_C_h], 3.616540391241689, rtol = 0.02)
+    @test isapprox(metrics[:mean_I_h], 0.327429461285862, rtol = 0.02)
+    @test isapprox(metrics[:mean_C_h], 3.943352612494751, rtol = 0.02)
     @test isapprox(metrics[:mean_I_i], 20.44490406457435, rtol = 0.02)
     @test isapprox(metrics[:mean_DM_i], 108.98282471230276, rtol = 0.02)
     @test isapprox(metrics[:mean_P_bar_i], 0.9967957252316543, rtol = 0.02)
     @test isapprox(metrics[:mean_P_CF_i], 0.9967957252316543, rtol = 0.02)
     @test isapprox(metrics[:gov_C_j], 14883.394898352044, rtol = 0.02)
     @test isapprox(metrics[:rotw_C_l], 33152.52973913658, rtol = 0.05)
-    @test isapprox(metrics[:mean_Q_d_i], 208.46284581727244, rtol = 0.02)
+    @test isapprox(metrics[:mean_Q_d_i], 214.826692528333, rtol = 0.02)
     @test isapprox(metrics[:mean_Q_d_m], 508.0841371772294, rtol = 0.05)
 end

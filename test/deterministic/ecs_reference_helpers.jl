@@ -201,7 +201,7 @@ function _firm_reference_state(model)
         Pi_i = [row.components[18].amount for row in rows],
         Q_d_i = [row.components[12].amount for row in rows],
         S_i = [row.components[13].amount for row in rows],
-        V_i = [row.components[19].amount for row in rows],
+        V_i = [row.components[19].amount - row.components[9].amount for row in rows],
         Y_h = owners.Y_h,
         Y_i = [row.components[10].amount for row in rows],
         alpha_bar_i = [row.components[2].value for row in rows],

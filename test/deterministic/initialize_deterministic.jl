@@ -1,5 +1,8 @@
 using MAT: matread
 
+@isdefined(BEFOREIT_DETERMINISTIC_LOADED) || include("make_model_deterministic.jl")
+@isdefined(_firm_reference_state) || include("ecs_reference_helpers.jl")
+
 @testset "initialize deterministic" begin
     dir = @__DIR__
     model = Bit.Model(Bit.AUSTRIA2010Q1.parameters, Bit.AUSTRIA2010Q1.initial_conditions)
