@@ -1,4 +1,3 @@
-
 abstract type FirmComponent <: AbstractComponent end
 
 struct PrincipalProduct <: FirmComponent #G_i

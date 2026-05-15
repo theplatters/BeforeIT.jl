@@ -1,4 +1,3 @@
-
 struct LoansOutstanding <: AbstractComponent #L_i
     amount::FloatType
 end

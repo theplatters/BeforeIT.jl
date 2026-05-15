@@ -1,4 +1,3 @@
-
 struct EuroAreaGDP <: AbstractComponent
     value::FloatType
 end
@@ -38,6 +37,7 @@ end
 struct ImportDemand <: AbstractComponent
     amount::FloatType
 end
+
 struct ImportPrice <: AbstractComponent
     value::FloatType
 end

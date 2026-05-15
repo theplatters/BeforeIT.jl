@@ -1,4 +1,3 @@
-
 struct ResidualItems <: AbstractComponent
     amount::FloatType
 end

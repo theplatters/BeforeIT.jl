@@ -1,4 +1,3 @@
-
 struct NetDisposableIncome <: AbstractComponent
     amount::FloatType
 end
@@ -30,4 +29,5 @@ end
 struct RealisedInvestment <: AbstractComponent
     amount::FloatType
 end
+
 struct Household <: AbstractComponent end

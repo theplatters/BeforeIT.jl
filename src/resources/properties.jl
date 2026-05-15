@@ -17,8 +17,8 @@ struct Population
     total::Int64                # H = active + inactive (derived)
 end
 
-# === TAX RATES ===
-struct TaxRates
+# === GLOBAL TAX RATES ===
+struct GlobalTaxRates
     income::Float64             # tau_INC: income tax rate
     corporate::Float64          # tau_FIRM: corporate tax rate
     value_added::Float64        # tau_VAT: VAT rate
@@ -187,7 +187,7 @@ struct Properties
     population::Population
 
     # Policy parameters
-    tax_rates::TaxRates
+    tax_rates::GlobalTaxRates
     sector_tax_rates::SectorTaxRates
     social_insurance::SocialInsurance
     monetary_policy::MonetaryPolicy
@@ -230,7 +230,7 @@ function Properties(parameters::Dict{String, Any}, initial_conditions::Dict{Stri
     population = Population(H_act, H_inact, H)
 
     # === TAX RATES ===
-    tax_rates = TaxRates(
+    tax_rates = GlobalTaxRates(
         Float64(parameters["tau_INC"]),
         Float64(parameters["tau_FIRM"]),
         Float64(parameters["tau_VAT"]),

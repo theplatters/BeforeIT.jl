@@ -1,4 +1,3 @@
-
 abstract type GovernmentComponent <: AbstractComponent end
 
 struct GovernmentRevenues <: GovernmentComponent #Y_G

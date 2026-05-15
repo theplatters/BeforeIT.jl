@@ -1,4 +1,3 @@
-
 struct Profits <: AbstractComponent
     amount::FloatType
 end

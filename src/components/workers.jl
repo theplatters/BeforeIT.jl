@@ -1,4 +1,3 @@
-
 struct Employed <: AbstractComponent
     rate::FloatType
 end
