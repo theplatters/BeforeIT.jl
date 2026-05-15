@@ -17,10 +17,6 @@ using Runic
         include("utils/zenodo_calibration.jl")
     end
 
-    @testset "Shocks" begin
-        # include("shocks/shocks.jl")
-    end
-
     @testset "Invariants" begin
         include("invariants/init_model.jl")
         include("invariants/accounting_identities.jl")
