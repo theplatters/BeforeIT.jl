@@ -6,18 +6,18 @@ function setup_government!(world, properties::Properties)::Nothing
 
     e = Ark.new_entity!(
         world, (
-            Components.GovernmentRevenues(0.0),
-            Components.ConsumptionDemand(consumption[T_prime]),
-            Components.RealisedConsumption(0.0),
-            Components.GovernmentDebt(debt),
-            Components.SocialBenefitsInactive(subsidies_inactive),
-            Components.SocialBenefitsOther(subsidies_other),
-            Components.PriceInflationGovernmentGoods(0.0),
-            Components.Government(),
+            GovernmentRevenues(0.0),
+            ConsumptionDemand(consumption[T_prime]),
+            RealisedConsumption(0.0),
+            GovernmentDebt(debt),
+            SocialBenefitsInactive(subsidies_inactive),
+            SocialBenefitsOther(subsidies_other),
+            PriceInflationGovernmentGoods(0.0),
+            Government(),
 
         )
     )
 
-    Ark.new_entities!(world, local_governments, (Components.ConsumptionDemand(0.0), Components.LocalGovernment() => e))
+    Ark.new_entities!(world, local_governments, (ConsumptionDemand(0.0), LocalGovernment() => e))
     return nothing
 end

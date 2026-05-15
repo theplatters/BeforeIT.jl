@@ -58,26 +58,26 @@ include("old_actions/firms.jl")
 
         for (e, P, Q_d, K, Pi, L, D, w_bar, delta, beta, alpha_bar, kappa, G) in Ark.Query(
                 world, (
-                    Bit.Components.Price, Bit.Components.GoodsDemand, Bit.Components.CapitalStock,
-                    Bit.Components.Profits, Bit.Components.LoansOutstanding, Bit.Components.Deposits,
-                    Bit.Components.AverageWageRate, Bit.Components.CapitalDeprecationRate,
-                    Bit.Components.IntermediateProductivity, Bit.Components.LaborProductivity,
-                    Bit.Components.CapitalProductivity, Bit.Components.PrincipalProduct,
-                ), with = (Bit.Components.Firm,)
+                    Bit.Price, Bit.GoodsDemand, Bit.CapitalStock,
+                    Bit.Profits, Bit.LoansOutstanding, Bit.Deposits,
+                    Bit.AverageWageRate, Bit.CapitalDeprecationRate,
+                    Bit.IntermediateProductivity, Bit.LaborProductivity,
+                    Bit.CapitalProductivity, Bit.PrincipalProduct,
+                ), with = (Bit.Firm,)
             )
             for i in eachindex(e)
-                P[i] = Bit.Components.Price(test_P_i[i])
-                Q_d[i] = Bit.Components.GoodsDemand(test_Q_d_i[i])
-                K[i] = Bit.Components.CapitalStock(test_K_i[i])
-                Pi[i] = Bit.Components.Profits(test_Pi_i[i])
-                L[i] = Bit.Components.LoansOutstanding(test_L_i[i])
-                D[i] = Bit.Components.Deposits(test_D_i[i])
-                w_bar[i] = Bit.Components.AverageWageRate(test_w_bar_i[i])
-                delta[i] = Bit.Components.CapitalDeprecationRate(test_delta_i[i])
-                beta[i] = Bit.Components.IntermediateProductivity(test_beta_i[i])
-                alpha_bar[i] = Bit.Components.LaborProductivity(test_alpha_bar_i[i])
-                kappa[i] = Bit.Components.CapitalProductivity(test_kappa_i[i])
-                G[i] = Bit.Components.PrincipalProduct(test_G_i[i])
+                P[i] = Bit.Price(test_P_i[i])
+                Q_d[i] = Bit.GoodsDemand(test_Q_d_i[i])
+                K[i] = Bit.CapitalStock(test_K_i[i])
+                Pi[i] = Bit.Profits(test_Pi_i[i])
+                L[i] = Bit.LoansOutstanding(test_L_i[i])
+                D[i] = Bit.Deposits(test_D_i[i])
+                w_bar[i] = Bit.AverageWageRate(test_w_bar_i[i])
+                delta[i] = Bit.CapitalDeprecationRate(test_delta_i[i])
+                beta[i] = Bit.IntermediateProductivity(test_beta_i[i])
+                alpha_bar[i] = Bit.LaborProductivity(test_alpha_bar_i[i])
+                kappa[i] = Bit.CapitalProductivity(test_kappa_i[i])
+                G[i] = Bit.PrincipalProduct(test_G_i[i])
             end
         end
 
@@ -87,12 +87,12 @@ include("old_actions/firms.jl")
         # Verify
         for (e, Q_s, I_d, DM_d, N_d, Pi_e, DL_d, K_e, L_e, P) in Ark.Query(
                 world, (
-                    Bit.Components.ExpectedSales, Bit.Components.DesiredInvestment,
-                    Bit.Components.DesiredMaterials, Bit.Components.DesiredEmployment,
-                    Bit.Components.ExpectedProfits, Bit.Components.TargetLoans,
-                    Bit.Components.ExpectedCapital, Bit.Components.ExpectedLoans,
-                    Bit.Components.Price,
-                ), with = (Bit.Components.Firm,)
+                    Bit.ExpectedSales, Bit.DesiredInvestment,
+                    Bit.DesiredMaterials, Bit.DesiredEmployment,
+                    Bit.ExpectedProfits, Bit.TargetLoans,
+                    Bit.ExpectedCapital, Bit.ExpectedLoans,
+                    Bit.Price,
+                ), with = (Bit.Firm,)
             )
             for i in eachindex(e)
                 @test isapprox(Q_s[i].amount, mock_model.firms.Q_s_i[i], atol = 1.0e-7)
@@ -136,27 +136,27 @@ include("old_actions/firms.jl")
 
         for (e, Q_s, w_bar, K, M, N, kappa, beta, alpha_bar) in Ark.Query(
                 world, (
-                    Bit.Components.ExpectedSales, Bit.Components.AverageWageRate, Bit.Components.CapitalStock,
-                    Bit.Components.Intermediates, Bit.Components.Employment, Bit.Components.CapitalProductivity,
-                    Bit.Components.IntermediateProductivity, Bit.Components.LaborProductivity,
-                ), with = (Bit.Components.Firm,)
+                    Bit.ExpectedSales, Bit.AverageWageRate, Bit.CapitalStock,
+                    Bit.Intermediates, Bit.Employment, Bit.CapitalProductivity,
+                    Bit.IntermediateProductivity, Bit.LaborProductivity,
+                ), with = (Bit.Firm,)
             )
             for i in eachindex(e)
-                Q_s[i] = Bit.Components.ExpectedSales(test_Q_s_i[i])
-                w_bar[i] = Bit.Components.AverageWageRate(test_w_bar_i[i])
-                K[i] = Bit.Components.CapitalStock(test_K_i[i])
-                M[i] = Bit.Components.Intermediates(test_M_i[i])
-                N[i] = Bit.Components.Employment(test_N_i[i])
-                kappa[i] = Bit.Components.CapitalProductivity(test_kappa_i[i])
-                beta[i] = Bit.Components.IntermediateProductivity(test_beta_i[i])
-                alpha_bar[i] = Bit.Components.LaborProductivity(test_alpha_bar_i[i])
+                Q_s[i] = Bit.ExpectedSales(test_Q_s_i[i])
+                w_bar[i] = Bit.AverageWageRate(test_w_bar_i[i])
+                K[i] = Bit.CapitalStock(test_K_i[i])
+                M[i] = Bit.Intermediates(test_M_i[i])
+                N[i] = Bit.Employment(test_N_i[i])
+                kappa[i] = Bit.CapitalProductivity(test_kappa_i[i])
+                beta[i] = Bit.IntermediateProductivity(test_beta_i[i])
+                alpha_bar[i] = Bit.LaborProductivity(test_alpha_bar_i[i])
             end
         end
 
         set_firms_wages!(mock_model)
         Bit.set_firms_wages!(world)
 
-        for (e, w) in Ark.Query(world, (Bit.Components.WageBill,), with = (Bit.Components.Firm,))
+        for (e, w) in Ark.Query(world, (Bit.WageBill,), with = (Bit.Firm,))
             for i in eachindex(e)
                 @test isapprox(w[i].amount, mock_model.firms.w_i[i], atol = 1.0e-7)
             end
@@ -189,26 +189,26 @@ include("old_actions/firms.jl")
 
         for (e, Q_s, K, M, N, kappa, beta, alpha_bar) in Ark.Query(
                 world, (
-                    Bit.Components.ExpectedSales, Bit.Components.CapitalStock, Bit.Components.Intermediates,
-                    Bit.Components.Employment, Bit.Components.CapitalProductivity,
-                    Bit.Components.IntermediateProductivity, Bit.Components.LaborProductivity,
-                ), with = (Bit.Components.Firm,)
+                    Bit.ExpectedSales, Bit.CapitalStock, Bit.Intermediates,
+                    Bit.Employment, Bit.CapitalProductivity,
+                    Bit.IntermediateProductivity, Bit.LaborProductivity,
+                ), with = (Bit.Firm,)
             )
             for i in eachindex(e)
-                Q_s[i] = Bit.Components.ExpectedSales(test_Q_s_i[i])
-                K[i] = Bit.Components.CapitalStock(test_K_i[i])
-                M[i] = Bit.Components.Intermediates(test_M_i[i])
-                N[i] = Bit.Components.Employment(test_N_i[i])
-                kappa[i] = Bit.Components.CapitalProductivity(test_kappa_i[i])
-                beta[i] = Bit.Components.IntermediateProductivity(test_beta_i[i])
-                alpha_bar[i] = Bit.Components.LaborProductivity(test_alpha_bar_i[i])
+                Q_s[i] = Bit.ExpectedSales(test_Q_s_i[i])
+                K[i] = Bit.CapitalStock(test_K_i[i])
+                M[i] = Bit.Intermediates(test_M_i[i])
+                N[i] = Bit.Employment(test_N_i[i])
+                kappa[i] = Bit.CapitalProductivity(test_kappa_i[i])
+                beta[i] = Bit.IntermediateProductivity(test_beta_i[i])
+                alpha_bar[i] = Bit.LaborProductivity(test_alpha_bar_i[i])
             end
         end
 
         set_firms_production!(mock_model)
         Bit.set_firms_production!(world)
 
-        for (e, Y) in Ark.Query(world, (Bit.Components.Output,), with = (Bit.Components.CapitalStock,))
+        for (e, Y) in Ark.Query(world, (Bit.Output,), with = (Bit.CapitalStock,))
             for i in eachindex(e)
                 @test isapprox(Y[i].amount, mock_model.firms.Y_i[i], atol = 1.0e-7)
             end
@@ -264,45 +264,45 @@ include("old_actions/firms.jl")
         price_indices = Ark.get_resource(world, Bit.PriceIndices)
         price_indices.household_consumption = 1.0
 
-        for (e, r) in Ark.Query(world, (Bit.Components.LendingRate,))
-            r[1] = Bit.Components.LendingRate(0.05)
+        for (e, r) in Ark.Query(world, (Bit.LendingRate,))
+            r[1] = Bit.LendingRate(0.05)
         end
-        for (e, r_bar) in Ark.Query(world, (Bit.Components.NominalInterestRate,))
-            r_bar[1] = Bit.Components.NominalInterestRate(0.02)
+        for (e, r_bar) in Ark.Query(world, (Bit.NominalInterestRate,))
+            r_bar[1] = Bit.NominalInterestRate(0.02)
         end
 
         for (e, P, Q, DS, D, w, N, beta, P_bar, Y, delta, kappa, P_CF, tau, L) in Ark.Query(
                 world, (
-                    Bit.Components.Price, Bit.Components.Sales, Bit.Components.FinalGoodsStockChange,
-                    Bit.Components.Deposits, Bit.Components.WageBill, Bit.Components.Employment,
-                    Bit.Components.IntermediateProductivity, Bit.Components.PriceIndex, Bit.Components.Output,
-                    Bit.Components.CapitalDeprecationRate, Bit.Components.CapitalProductivity,
-                    Bit.Components.CFPriceIndex, Bit.Components.TaxRates,
-                    Bit.Components.LoansOutstanding,
-                ), with = (Bit.Components.Firm,)
+                    Bit.Price, Bit.Sales, Bit.FinalGoodsStockChange,
+                    Bit.Deposits, Bit.WageBill, Bit.Employment,
+                    Bit.IntermediateProductivity, Bit.PriceIndex, Bit.Output,
+                    Bit.CapitalDeprecationRate, Bit.CapitalProductivity,
+                    Bit.CFPriceIndex, Bit.TaxRates,
+                    Bit.LoansOutstanding,
+                ), with = (Bit.Firm,)
             )
             for i in eachindex(e)
-                P[i] = Bit.Components.Price(test_P_i[i])
-                Q[i] = Bit.Components.Sales(test_Q_i[i])
-                DS[i] = Bit.Components.FinalGoodsStockChange(test_DS_i[i])
-                D[i] = Bit.Components.Deposits(test_D_i[i])
-                w[i] = Bit.Components.WageBill(test_w_i[i])
-                N[i] = Bit.Components.Employment(test_N_i[i])
-                beta[i] = Bit.Components.IntermediateProductivity(test_beta_i[i])
-                P_bar[i] = Bit.Components.PriceIndex(test_P_bar_i[i])
-                Y[i] = Bit.Components.Output(test_Y_i[i])
-                delta[i] = Bit.Components.CapitalDeprecationRate(test_delta_i[i])
-                kappa[i] = Bit.Components.CapitalProductivity(test_kappa_i[i])
-                P_CF[i] = Bit.Components.CFPriceIndex(test_P_CF_i[i])
-                tau[i] = Bit.Components.TaxRates(test_tau_Y_i[i], test_tau_K_i[i])
-                L[i] = Bit.Components.LoansOutstanding(test_L_i[i])
+                P[i] = Bit.Price(test_P_i[i])
+                Q[i] = Bit.Sales(test_Q_i[i])
+                DS[i] = Bit.FinalGoodsStockChange(test_DS_i[i])
+                D[i] = Bit.Deposits(test_D_i[i])
+                w[i] = Bit.WageBill(test_w_i[i])
+                N[i] = Bit.Employment(test_N_i[i])
+                beta[i] = Bit.IntermediateProductivity(test_beta_i[i])
+                P_bar[i] = Bit.PriceIndex(test_P_bar_i[i])
+                Y[i] = Bit.Output(test_Y_i[i])
+                delta[i] = Bit.CapitalDeprecationRate(test_delta_i[i])
+                kappa[i] = Bit.CapitalProductivity(test_kappa_i[i])
+                P_CF[i] = Bit.CFPriceIndex(test_P_CF_i[i])
+                tau[i] = Bit.TaxRates(test_tau_Y_i[i], test_tau_K_i[i])
+                L[i] = Bit.LoansOutstanding(test_L_i[i])
             end
         end
 
         set_firms_profits!(mock_model)
         Bit.set_firms_profits!(world)
 
-        for (e, Pi) in Ark.Query(world, (Bit.Components.Profits,), with = (Bit.Components.Firm,))
+        for (e, Pi) in Ark.Query(world, (Bit.Profits,), with = (Bit.Firm,))
             for i in eachindex(e)
                 @test isapprox(Pi[i].amount, mock_model.firms.Pi_i[i], atol = 1.0e-7)
             end
@@ -358,44 +358,44 @@ include("old_actions/firms.jl")
         price_indices = Ark.get_resource(world, Bit.PriceIndices)
         price_indices.household_consumption = 1.0
 
-        for (e, r) in Ark.Query(world, (Bit.Components.LendingRate,))
-            r[1] = Bit.Components.LendingRate(0.05)
+        for (e, r) in Ark.Query(world, (Bit.LendingRate,))
+            r[1] = Bit.LendingRate(0.05)
         end
-        for (e, r_bar) in Ark.Query(world, (Bit.Components.NominalInterestRate,))
-            r_bar[1] = Bit.Components.NominalInterestRate(0.02)
+        for (e, r_bar) in Ark.Query(world, (Bit.NominalInterestRate,))
+            r_bar[1] = Bit.NominalInterestRate(0.02)
         end
 
         for (e, P, Q, w, N, DM, P_bar, tau, Y, Pi, L, D, P_CF, I, DL) in Ark.Query(
                 world, (
-                    Bit.Components.Price, Bit.Components.Sales, Bit.Components.WageBill,
-                    Bit.Components.Employment, Bit.Components.MaterialsStockChange, Bit.Components.PriceIndex,
-                    Bit.Components.TaxRates, Bit.Components.Output,
-                    Bit.Components.Profits, Bit.Components.LoansOutstanding, Bit.Components.Deposits,
-                    Bit.Components.CFPriceIndex, Bit.Components.Investment, Bit.Components.LoanFlow,
-                ), with = (Bit.Components.Firm,)
+                    Bit.Price, Bit.Sales, Bit.WageBill,
+                    Bit.Employment, Bit.MaterialsStockChange, Bit.PriceIndex,
+                    Bit.TaxRates, Bit.Output,
+                    Bit.Profits, Bit.LoansOutstanding, Bit.Deposits,
+                    Bit.CFPriceIndex, Bit.Investment, Bit.LoanFlow,
+                ), with = (Bit.Firm,)
             )
             for i in eachindex(e)
-                P[i] = Bit.Components.Price(test_P_i[i])
-                Q[i] = Bit.Components.Sales(test_Q_i[i])
-                w[i] = Bit.Components.WageBill(test_w_i[i])
-                N[i] = Bit.Components.Employment(test_N_i[i])
-                DM[i] = Bit.Components.MaterialsStockChange(test_DM_i[i])
-                P_bar[i] = Bit.Components.PriceIndex(test_P_bar_i[i])
-                tau[i] = Bit.Components.TaxRates(test_tau_Y_i[i], test_tau_K_i[i])
-                Y[i] = Bit.Components.Output(test_Y_i[i])
-                Pi[i] = Bit.Components.Profits(test_Pi_i[i])
-                L[i] = Bit.Components.LoansOutstanding(test_L_i[i])
-                D[i] = Bit.Components.Deposits(test_D_i[i])
-                P_CF[i] = Bit.Components.CFPriceIndex(test_P_CF_i[i])
-                I[i] = Bit.Components.Investment(test_I_i[i])
-                DL[i] = Bit.Components.LoanFlow(test_DL_i[i])
+                P[i] = Bit.Price(test_P_i[i])
+                Q[i] = Bit.Sales(test_Q_i[i])
+                w[i] = Bit.WageBill(test_w_i[i])
+                N[i] = Bit.Employment(test_N_i[i])
+                DM[i] = Bit.MaterialsStockChange(test_DM_i[i])
+                P_bar[i] = Bit.PriceIndex(test_P_bar_i[i])
+                tau[i] = Bit.TaxRates(test_tau_Y_i[i], test_tau_K_i[i])
+                Y[i] = Bit.Output(test_Y_i[i])
+                Pi[i] = Bit.Profits(test_Pi_i[i])
+                L[i] = Bit.LoansOutstanding(test_L_i[i])
+                D[i] = Bit.Deposits(test_D_i[i])
+                P_CF[i] = Bit.CFPriceIndex(test_P_CF_i[i])
+                I[i] = Bit.Investment(test_I_i[i])
+                DL[i] = Bit.LoanFlow(test_DL_i[i])
             end
         end
 
         set_firms_deposits!(mock_model)
         Bit.set_firms_deposits!(world)
 
-        for (e, D) in Ark.Query(world, (Bit.Components.Deposits,), with = (Bit.Components.Firm,))
+        for (e, D) in Ark.Query(world, (Bit.Deposits,), with = (Bit.Firm,))
             for i in eachindex(e)
                 @test isapprox(D[i].amount, mock_model.firms.D_i[i], atol = 1.0e-7)
             end
@@ -435,26 +435,26 @@ include("old_actions/firms.jl")
 
         for (e, D, M, G, P, S, K, L) in Ark.Query(
                 world, (
-                    Bit.Components.Deposits, Bit.Components.Intermediates, Bit.Components.PrincipalProduct,
-                    Bit.Components.Price, Bit.Components.Inventories, Bit.Components.CapitalStock,
-                    Bit.Components.LoansOutstanding,
-                ), with = (Bit.Components.Firm,)
+                    Bit.Deposits, Bit.Intermediates, Bit.PrincipalProduct,
+                    Bit.Price, Bit.Inventories, Bit.CapitalStock,
+                    Bit.LoansOutstanding,
+                ), with = (Bit.Firm,)
             )
             for i in eachindex(e)
-                D[i] = Bit.Components.Deposits(test_D_i[i])
-                M[i] = Bit.Components.Intermediates(test_M_i[i])
-                G[i] = Bit.Components.PrincipalProduct(test_G_i[i])
-                P[i] = Bit.Components.Price(test_P_i[i])
-                S[i] = Bit.Components.Inventories(test_S_i[i])
-                K[i] = Bit.Components.CapitalStock(test_K_i[i])
-                L[i] = Bit.Components.LoansOutstanding(test_L_i[i])
+                D[i] = Bit.Deposits(test_D_i[i])
+                M[i] = Bit.Intermediates(test_M_i[i])
+                G[i] = Bit.PrincipalProduct(test_G_i[i])
+                P[i] = Bit.Price(test_P_i[i])
+                S[i] = Bit.Inventories(test_S_i[i])
+                K[i] = Bit.CapitalStock(test_K_i[i])
+                L[i] = Bit.LoansOutstanding(test_L_i[i])
             end
         end
 
         set_firms_equity!(mock_model)
         Bit.set_firms_equity!(world)
 
-        for (e, E) in Ark.Query(world, (Bit.Components.Equity,), with = (Bit.Components.Firm,))
+        for (e, E) in Ark.Query(world, (Bit.Equity,), with = (Bit.Firm,))
             for i in eachindex(e)
                 @test isapprox(E[i].amount, mock_model.firms.E_i[i], atol = 1.0e-7)
             end
@@ -483,7 +483,7 @@ include("old_actions/firms.jl")
         set_firms_loans!(mock_model)
         Bit.set_firms_loans!(world)
 
-        for (e, L) in Ark.Query(world, (Bit.Components.LoansOutstanding,), with = (Bit.Components.Firm,))
+        for (e, L) in Ark.Query(world, (Bit.LoansOutstanding,), with = (Bit.Firm,))
             for i in eachindex(e)
                 @test isapprox(L[i].amount, mock_model.firms.L_i[i], atol = 1.0e-7)
             end
@@ -522,23 +522,23 @@ include("old_actions/firms.jl")
 
         for (e, K, delta, kappa, Y, I_comp, M, beta, DM, Q, S) in Ark.Query(
                 world, (
-                    Bit.Components.CapitalStock, Bit.Components.CapitalDeprecationRate,
-                    Bit.Components.CapitalProductivity, Bit.Components.Output, Bit.Components.Investment,
-                    Bit.Components.Intermediates, Bit.Components.IntermediateProductivity,
-                    Bit.Components.MaterialsStockChange, Bit.Components.Sales, Bit.Components.Inventories,
-                ), with = (Bit.Components.Firm,)
+                    Bit.CapitalStock, Bit.CapitalDeprecationRate,
+                    Bit.CapitalProductivity, Bit.Output, Bit.Investment,
+                    Bit.Intermediates, Bit.IntermediateProductivity,
+                    Bit.MaterialsStockChange, Bit.Sales, Bit.Inventories,
+                ), with = (Bit.Firm,)
             )
             for i in eachindex(e)
-                K[i] = Bit.Components.CapitalStock(test_K_i[i])
-                delta[i] = Bit.Components.CapitalDeprecationRate(test_delta_i[i])
-                kappa[i] = Bit.Components.CapitalProductivity(test_kappa_i[i])
-                Y[i] = Bit.Components.Output(test_Y_i[i])
-                I_comp[i] = Bit.Components.Investment(test_I_i[i])
-                M[i] = Bit.Components.Intermediates(test_M_i[i])
-                beta[i] = Bit.Components.IntermediateProductivity(test_beta_i[i])
-                DM[i] = Bit.Components.MaterialsStockChange(test_DM_i[i])
-                Q[i] = Bit.Components.Sales(test_Q_i[i])
-                S[i] = Bit.Components.Inventories(test_S_i[i])
+                K[i] = Bit.CapitalStock(test_K_i[i])
+                delta[i] = Bit.CapitalDeprecationRate(test_delta_i[i])
+                kappa[i] = Bit.CapitalProductivity(test_kappa_i[i])
+                Y[i] = Bit.Output(test_Y_i[i])
+                I_comp[i] = Bit.Investment(test_I_i[i])
+                M[i] = Bit.Intermediates(test_M_i[i])
+                beta[i] = Bit.IntermediateProductivity(test_beta_i[i])
+                DM[i] = Bit.MaterialsStockChange(test_DM_i[i])
+                Q[i] = Bit.Sales(test_Q_i[i])
+                S[i] = Bit.Inventories(test_S_i[i])
             end
         end
 
@@ -547,9 +547,9 @@ include("old_actions/firms.jl")
 
         for (e, K, M, DS, S) in Ark.Query(
                 world, (
-                    Bit.Components.CapitalStock, Bit.Components.Intermediates,
-                    Bit.Components.FinalGoodsStockChange, Bit.Components.Inventories,
-                ), with = (Bit.Components.Firm,)
+                    Bit.CapitalStock, Bit.Intermediates,
+                    Bit.FinalGoodsStockChange, Bit.Inventories,
+                ), with = (Bit.Firm,)
             )
             for i in eachindex(e)
                 @test isapprox(K[i].amount, mock_model.firms.K_i[i], atol = 1.0e-7)

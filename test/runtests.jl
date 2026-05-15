@@ -8,6 +8,8 @@ import Ark
 using Test
 using Runic
 
+include("include_internals.jl")
+
 @testset "BeforeIT.jl Tests" begin
     @testset "Utils" begin
         include("utils/positive.jl")

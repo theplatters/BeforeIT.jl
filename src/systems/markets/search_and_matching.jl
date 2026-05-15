@@ -20,7 +20,7 @@ function build_intermediate_demand_cache!(world::Ark.World)
     (; technology_matrix, capital_formation) = properties.product_coeffs
 
     for (e, principal_product, desired_investment, desired_materials) in
-        Ark.Query(world, (Components.PrincipalProduct, Components.DesiredInvestment, Components.DesiredMaterials))
+        Ark.Query(world, (PrincipalProduct, DesiredInvestment, DesiredMaterials))
         for i in eachindex(e)
             demand = compute_intermediate_demand_vector(
                 technology_matrix,
@@ -70,14 +70,14 @@ function build_household_consumption_demand_cache!(world::Ark.World, demand_cach
         household_consumption,
         household_investment;
         with = (),
-        without = (Components.Inactive, Components.Capitalist, Components.Banker),
+        without = (Inactive, Capitalist, Banker),
     )
     append_household_consumption_demand!(
         world,
         demand_cache,
         household_consumption,
         household_investment;
-        with = (Components.Inactive,),
+        with = (Inactive,),
         without = (),
     )
     append_household_consumption_demand!(
@@ -85,7 +85,7 @@ function build_household_consumption_demand_cache!(world::Ark.World, demand_cach
         demand_cache,
         household_consumption,
         household_investment;
-        with = (Components.Capitalist,),
+        with = (Capitalist,),
         without = (),
     )
     append_household_consumption_demand!(
@@ -93,7 +93,7 @@ function build_household_consumption_demand_cache!(world::Ark.World, demand_cach
         demand_cache,
         household_consumption,
         household_investment;
-        with = (Components.Banker,),
+        with = (Banker,),
         without = (),
     )
 
@@ -112,8 +112,8 @@ function append_household_consumption_demand!(
     for (e, consumption_budget, investment_budget) in
         Ark.Query(
             world,
-            (Components.ConsumptionBudget, Components.InvestmentBudget),
-            with = (Components.Household, with...),
+            (ConsumptionBudget, InvestmentBudget),
+            with = (Household, with...),
             without = without,
         )
         for i in eachindex(e)
@@ -144,7 +144,7 @@ function entity_order_key(entity)
 end
 
 function build_import_consumption_demand_cache!(world::Ark.World, demand_cache, exports)
-    for (e, export_demand) in Ark.Query(world, (Components.ForeignConsumptionDemand,))
+    for (e, export_demand) in Ark.Query(world, (ForeignConsumptionDemand,))
         for i in eachindex(e)
             BeforeIT.emblace!(exports * export_demand[i].amount, e[i], demand_cache)
         end
@@ -155,7 +155,7 @@ end
 
 function build_government_consumption_demand_cache!(world::Ark.World, demand_cache, government_consumption)
     for (e, consumption_demand) in
-        Ark.Query(world, (Components.ConsumptionDemand,), with = (Components.LocalGovernment,))
+        Ark.Query(world, (ConsumptionDemand,), with = (LocalGovernment,))
         for i in eachindex(e)
             BeforeIT.emblace!(
                 government_consumption * consumption_demand[i].amount,
@@ -184,12 +184,12 @@ function build_domestic_stock_cache!(world::Ark.World, stock_cache)
         Ark.Query(
             world,
             (
-                Components.PrincipalProduct,
-                Components.Output,
-                Components.Inventories,
-                Components.CapitalStock,
-                Components.CapitalProductivity,
-                Components.Price,
+                PrincipalProduct,
+                Output,
+                Inventories,
+                CapitalStock,
+                CapitalProductivity,
+                Price,
             ),
         )
         @inbounds for i in eachindex(e)
@@ -214,8 +214,8 @@ function build_import_stock_cache!(world::Ark.World, stock_cache)
     for (e, pp, import_supply, price) in
         Ark.Query(
             world, (
-                Components.PrincipalProduct,
-                Components.ImportSupply, Components.ImportPrice,
+                PrincipalProduct,
+                ImportSupply, ImportPrice,
             )
         )
         @inbounds for i in eachindex(e)
@@ -238,32 +238,32 @@ function zero_out_components_for_search_and_match!(world::Ark.World)
         Ark.Query(
             world,
             (
-                Components.MaterialsStockChange,
-                Components.Investment,
-                Components.PriceIndex,
-                Components.CFPriceIndex,
+                MaterialsStockChange,
+                Investment,
+                PriceIndex,
+                CFPriceIndex,
             ),
         )
         for i in eachindex(e)
-            material_stock_change[i] = Components.MaterialsStockChange(0.0)
-            investment[i] = Components.Investment(0.0)
-            price_index[i] = Components.PriceIndex(0.0)
-            cf_price_index[i] = Components.CFPriceIndex(0.0)
+            material_stock_change[i] = MaterialsStockChange(0.0)
+            investment[i] = Investment(0.0)
+            price_index[i] = PriceIndex(0.0)
+            cf_price_index[i] = CFPriceIndex(0.0)
 
         end
     end
     for (e, realised_consumption, price_inflation) in
-        Ark.Query(world, (Components.RealisedConsumption, Components.PriceInflationGovernmentGoods), with = (Components.Government,))
+        Ark.Query(world, (RealisedConsumption, PriceInflationGovernmentGoods), with = (Government,))
         for i in eachindex(e)
-            realised_consumption[i] = Components.RealisedConsumption(0.0)
-            price_inflation[i] = Components.PriceInflationGovernmentGoods(0.0)
+            realised_consumption[i] = RealisedConsumption(0.0)
+            price_inflation[i] = PriceInflationGovernmentGoods(0.0)
         end
     end
 
-    for (e, foreign_consumption, export_price) in Ark.Query(world, (Components.ForeignConsumption, Components.ExportPriceInflation))
+    for (e, foreign_consumption, export_price) in Ark.Query(world, (ForeignConsumption, ExportPriceInflation))
         for i in eachindex(e)
-            foreign_consumption[i] = Components.ForeignConsumption(0.0)
-            export_price[i] = Components.ExportPriceInflation(0.0)
+            foreign_consumption[i] = ForeignConsumption(0.0)
+            export_price[i] = ExportPriceInflation(0.0)
         end
     end
 
@@ -271,28 +271,28 @@ function zero_out_components_for_search_and_match!(world::Ark.World)
         Ark.Query(
             world,
             (
-                Components.RealisedConsumption,
-                Components.RealisedInvestment,
+                RealisedConsumption,
+                RealisedInvestment,
             ),
-            with = (Components.Household,),
+            with = (Household,),
         )
         for i in eachindex(e)
-            realised_consumption[i] = Components.RealisedConsumption(0.0)
-            realised_investment[i] = Components.RealisedInvestment(0.0)
+            realised_consumption[i] = RealisedConsumption(0.0)
+            realised_investment[i] = RealisedInvestment(0.0)
         end
     end
 
-    for (e, sales, goods_demand) in Ark.Query(world, (Components.Sales, Components.GoodsDemand))
+    for (e, sales, goods_demand) in Ark.Query(world, (Sales, GoodsDemand))
         for i in eachindex(e)
-            sales[i] = Components.Sales(0.0)
-            goods_demand[i] = Components.GoodsDemand(0.0)
+            sales[i] = Sales(0.0)
+            goods_demand[i] = GoodsDemand(0.0)
         end
     end
 
-    for (e, sales, demand) in Ark.Query(world, (Components.ImportSales, Components.ImportDemand))
+    for (e, sales, demand) in Ark.Query(world, (ImportSales, ImportDemand))
         for i in eachindex(e)
-            sales[i] = Components.ImportSales(0.0)
-            demand[i] = Components.ImportDemand(0.0)
+            sales[i] = ImportSales(0.0)
+            demand[i] = ImportDemand(0.0)
         end
     end
 
@@ -393,13 +393,13 @@ function update_firm_realisations!(world::Ark.World, sector::Int64, demand_cache
         Ark.Query(
             world,
             (
-                Components.MaterialsStockChange,
-                Components.Investment,
-                Components.PrincipalProduct,
-                Components.DesiredMaterials,
-                Components.DesiredInvestment,
-                Components.PriceIndex,
-                Components.CFPriceIndex,
+                MaterialsStockChange,
+                Investment,
+                PrincipalProduct,
+                DesiredMaterials,
+                DesiredInvestment,
+                PriceIndex,
+                CFPriceIndex,
             ),
         )
         for i in eachindex(e)
@@ -450,25 +450,25 @@ function update_firm_realisation_components!(
     residual_investment = investment_component - residual_demand
     material_stock_change_amount = materials_component - max(0.0, - residual_investment)
     investment_amount = max(0.0, residual_investment)
-    material_stock_change[i] = Components.MaterialsStockChange(
+    material_stock_change[i] = MaterialsStockChange(
         material_stock_change[i].amount + material_stock_change_amount
 
     )
 
-    investment[i] = Components.Investment(
+    investment[i] = Investment(
         investment[i].amount + investment_amount
     )
 
 
     realised_quantities = BeforeIT.zero_to_one(realised_quantities)
 
-    price_index[i] = Components.PriceIndex(
+    price_index[i] = PriceIndex(
         price_index[i].value +
             demand_cache.nominal[entity_index, sector] *
             material_stock_change_amount / realised_quantities,
     )
 
-    cf_price_index[i] = Components.CFPriceIndex(
+    cf_price_index[i] = CFPriceIndex(
         cf_price_index[i].value +
             demand_cache.nominal[entity_index, sector] *
             investment_amount / realised_quantities,
@@ -596,18 +596,18 @@ function update_government_realised_consumption!(
         government_consumption,
     )
     for (e, realised_consumption, price_inflation) in
-        Ark.Query(world, (Components.RealisedConsumption, Components.PriceInflationGovernmentGoods), with = (Components.Government,))
+        Ark.Query(world, (RealisedConsumption, PriceInflationGovernmentGoods), with = (Government,))
         for i in eachindex(e)
             for (local_gov_e, consumption_demand) in
-                Ark.Query(world, (Components.ConsumptionDemand,), with = (Components.LocalGovernment => e[i],))
+                Ark.Query(world, (ConsumptionDemand,), with = (LocalGovernment => e[i],))
                 for j in eachindex(local_gov_e)
                     idx = BeforeIT.find_entity_index(local_gov_e[j], demand_cache)
-                    realised_consumption[i] = Components.RealisedConsumption(
+                    realised_consumption[i] = RealisedConsumption(
                         realised_consumption[i].amount +
                             government_consumption[sector] * consumption_demand[j].amount -
                             first_pass_vals[idx, sector],
                     )
-                    price_inflation[i] = Components.PriceInflationGovernmentGoods(
+                    price_inflation[i] = PriceInflationGovernmentGoods(
                         price_inflation[i].value + demand_cache.nominal[idx, sector]
                     )
                 end
@@ -619,18 +619,18 @@ function update_government_realised_consumption!(
 end
 
 function update_foreign_consumption!(world::Ark.World, sector::Int64, demand_cache, first_pass_vals, exports)
-    for (e, foreign_consumption, export_price) in Ark.Query(world, (Components.ForeignConsumption, Components.ExportPriceInflation))
+    for (e, foreign_consumption, export_price) in Ark.Query(world, (ForeignConsumption, ExportPriceInflation))
         for i in eachindex(e)
             for (foreign_sector_e, consumption_demand) in
-                Ark.Query(world, (Components.ForeignConsumptionDemand,))
+                Ark.Query(world, (ForeignConsumptionDemand,))
                 for j in eachindex(foreign_sector_e)
                     idx = BeforeIT.find_entity_index(foreign_sector_e[j], demand_cache)
-                    foreign_consumption[i] = Components.ForeignConsumption(
+                    foreign_consumption[i] = ForeignConsumption(
                         foreign_consumption[i].amount +
                             exports[sector] * consumption_demand[j].amount -
                             first_pass_vals[idx, sector],
                     )
-                    export_price[i] = Components.ExportPriceInflation(
+                    export_price[i] = ExportPriceInflation(
                         export_price[i].value + demand_cache.nominal[idx, sector]
                     )
                 end
@@ -660,12 +660,12 @@ function update_household_realised_consumption_and_prices!(
         Ark.Query(
             world,
             (
-                Components.ConsumptionBudget,
-                Components.InvestmentBudget,
-                Components.RealisedConsumption,
-                Components.RealisedInvestment,
+                ConsumptionBudget,
+                InvestmentBudget,
+                RealisedConsumption,
+                RealisedInvestment,
             ),
-            with = (Components.Household,),
+            with = (Household,),
         )
         for i in eachindex(e)
             household_index = BeforeIT.find_entity_index(e[i], demand_cache)
@@ -678,13 +678,13 @@ function update_household_realised_consumption_and_prices!(
             sector_consumption_demand = household_consumption[sector] * consumption_budget[i].amount
 
             realised_consumption_comp = sector_consumption_demand - max(0.0, -residual)
-            realised_consumption[i] = Components.RealisedConsumption(
+            realised_consumption[i] = RealisedConsumption(
                 realised_consumption[i].amount + realised_consumption_comp,
             )
             total_realized_consumption_expenditure += realised_consumption_comp
 
             realized_investment_comp = max(0.0, residual)
-            realised_investment[i] = Components.RealisedInvestment(
+            realised_investment[i] = RealisedInvestment(
                 realised_investment[i].amount + realized_investment_comp,
             )
             total_realized_investment_expenditure += realized_investment_comp
@@ -703,11 +703,11 @@ end
 
 function update_goods_demand_from_remaining_stocks!(world::Ark.World, sector::Int64, stock_cache)
     for (e, principal_product, good_demand, output, inventories) in
-        Ark.Query(world, (Components.PrincipalProduct, Components.GoodsDemand, Components.Output, Components.Inventories))
+        Ark.Query(world, (PrincipalProduct, GoodsDemand, Output, Inventories))
         for i in eachindex(e)
             principal_product[i].id != sector && continue
             firm_index = BeforeIT.find_entity_index(e[i], stock_cache)
-            good_demand[i] = Components.GoodsDemand(
+            good_demand[i] = GoodsDemand(
                 good_demand[i].amount +
                     output[i].amount + inventories[i].amount - stock_cache.available_stocks[firm_index],
             )
@@ -719,12 +719,12 @@ end
 
 function update_import_demand_from_remaining_stocks!(world::Ark.World, sector::Int64, stock_cache)
     for (e, principal_product, good_demand, good_supply) in
-        Ark.Query(world, (Components.PrincipalProduct, Components.ImportDemand, Components.ImportSupply))
+        Ark.Query(world, (PrincipalProduct, ImportDemand, ImportSupply))
         for i in eachindex(e)
             principal_product[i].id != sector && continue
             rotw_index = BeforeIT.find_entity_index(e[i], stock_cache)
 
-            good_demand[i] = Components.ImportDemand(
+            good_demand[i] = ImportDemand(
                 good_demand[i].amount +
                     good_supply[i].amount - stock_cache.available_stocks[rotw_index],
             )
@@ -822,11 +822,11 @@ function finalize_search_and_match!(world::Ark.World)
         Ark.Query(
             world,
             (
-                Components.RealisedConsumption,
-                Components.RealisedInvestment,
-                Components.CapitalStock,
+                RealisedConsumption,
+                RealisedInvestment,
+                CapitalStock,
             ),
-            with = (Components.Household,),
+            with = (Household,),
         )
         total_consumption += sum(realised_consumption.amount)
         total_investment += sum(realised_investment.amount)
@@ -838,35 +838,35 @@ function finalize_search_and_match!(world::Ark.World)
 
 
     for (e, realised_consumption, price_inflation) in
-        Ark.Query(world, (Components.RealisedConsumption, Components.PriceInflationGovernmentGoods), with = (Components.Government,))
+        Ark.Query(world, (RealisedConsumption, PriceInflationGovernmentGoods), with = (Government,))
         for i in eachindex(e)
-            price_inflation[i] = Components.PriceInflationGovernmentGoods(realised_consumption[i].amount / BeforeIT.zero_to_one(price_inflation[i].value))
+            price_inflation[i] = PriceInflationGovernmentGoods(realised_consumption[i].amount / BeforeIT.zero_to_one(price_inflation[i].value))
         end
     end
 
-    for (e, foreign_consumption, export_price) in Ark.Query(world, (Components.ForeignConsumption, Components.ExportPriceInflation))
+    for (e, foreign_consumption, export_price) in Ark.Query(world, (ForeignConsumption, ExportPriceInflation))
         for i in eachindex(e)
-            export_price[i] = Components.ExportPriceInflation(foreign_consumption[i].amount / BeforeIT.zero_to_one(export_price[i].value))
+            export_price[i] = ExportPriceInflation(foreign_consumption[i].amount / BeforeIT.zero_to_one(export_price[i].value))
         end
     end
 
     for (_, sales, good_demand, output, inventories) in
-        Ark.Query(world, (Components.Sales, Components.GoodsDemand, Components.Output, Components.Inventories))
+        Ark.Query(world, (Sales, GoodsDemand, Output, Inventories))
         sales.amount .= min.(good_demand.amount, output.amount .+ inventories.amount)
     end
 
     for (_, sales, demand, output) in
-        Ark.Query(world, (Components.ImportSales, Components.ImportDemand, Components.ImportSupply))
+        Ark.Query(world, (ImportSales, ImportDemand, ImportSupply))
         sales.amount .= min.(demand.amount, output.amount)
     end
 
-    for (_, price_index, cf_price_index, materials, investment) in Ark.Query(world, (Components.PriceIndex, Components.CFPriceIndex, Components.MaterialsStockChange, Components.Investment))
+    for (_, price_index, cf_price_index, materials, investment) in Ark.Query(world, (PriceIndex, CFPriceIndex, MaterialsStockChange, Investment))
         for i in eachindex(price_index)
             if materials[i].amount > 0.0
-                price_index[i] = Components.PriceIndex(price_index[i].value / materials[i].amount)
+                price_index[i] = PriceIndex(price_index[i].value / materials[i].amount)
             end
             if investment[i].amount > 0.0
-                cf_price_index[i] = Components.CFPriceIndex(cf_price_index[i].value / investment[i].amount)
+                cf_price_index[i] = CFPriceIndex(cf_price_index[i].value / investment[i].amount)
             end
         end
     end

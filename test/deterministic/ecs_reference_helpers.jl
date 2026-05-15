@@ -50,10 +50,10 @@ end
 function _active_household_reference_state(model)
     world = model.world
     rows = NamedTuple[]
-    firm_entities = [row.entity for row in _query_rows(world, (Bit.Components.Firm,))]
+    firm_entities = [row.entity for row in _query_rows(world, (Bit.Firm,))]
     worker_firm_index = Dict{Bit.Ark.Entity, Float64}()
     for (index, firm_entity) in pairs(firm_entities)
-        for (worker_entities, _) in Bit.Ark.Query(world, (Bit.Components.EmployedAt => firm_entity,))
+        for (worker_entities, _) in Bit.Ark.Query(world, (Bit.EmployedAt => firm_entity,))
             for worker_entity in worker_entities
                 worker_firm_index[worker_entity] = Float64(index)
             end
@@ -63,12 +63,12 @@ function _active_household_reference_state(model)
     for row in _query_rows(
             world,
             (
-                Bit.Components.Employed,
-                Bit.Components.NetDisposableIncome,
-                Bit.Components.Deposits,
-                Bit.Components.CapitalStock,
+                Bit.Employed,
+                Bit.NetDisposableIncome,
+                Bit.Deposits,
+                Bit.CapitalStock,
             );
-            with = (Bit.Components.Household,),
+            with = (Bit.Household,),
         )
         employed, income, deposits, capital = row.components
         push!(
@@ -86,12 +86,12 @@ function _active_household_reference_state(model)
     for row in _query_rows(
             world,
             (
-                Bit.Components.Unemployed,
-                Bit.Components.NetDisposableIncome,
-                Bit.Components.Deposits,
-                Bit.Components.CapitalStock,
+                Bit.Unemployed,
+                Bit.NetDisposableIncome,
+                Bit.Deposits,
+                Bit.CapitalStock,
             );
-            with = (Bit.Components.Household,),
+            with = (Bit.Household,),
         )
         unemployed, income, deposits, capital = row.components
         push!(rows, (entity = row.entity, w_h = unemployed.unemployment_benefits, O_h = 0.0, Y_h = income.amount, D_h = deposits.amount, K_h = capital.amount))
@@ -112,11 +112,11 @@ function _inactive_household_reference_state(model)
     rows = _query_rows(
         world,
         (
-            Bit.Components.NetDisposableIncome,
-            Bit.Components.Deposits,
-            Bit.Components.CapitalStock,
+            Bit.NetDisposableIncome,
+            Bit.Deposits,
+            Bit.CapitalStock,
         );
-        with = (Bit.Components.Inactive,),
+        with = (Bit.Inactive,),
     )
     return (
         Y_h = [row.components[1].amount for row in rows],
@@ -130,11 +130,11 @@ function _firm_owner_reference_state(model)
     rows = _query_rows(
         world,
         (
-            Bit.Components.NetDisposableIncome,
-            Bit.Components.Deposits,
-            Bit.Components.CapitalStock,
+            Bit.NetDisposableIncome,
+            Bit.Deposits,
+            Bit.CapitalStock,
         );
-        with = (Bit.Components.Capitalist,),
+        with = (Bit.Capitalist,),
     )
     return (
         Y_h = [row.components[1].amount for row in rows],
@@ -148,11 +148,11 @@ function _bank_owner_reference_state(model)
     rows = _query_rows(
         world,
         (
-            Bit.Components.NetDisposableIncome,
-            Bit.Components.Deposits,
-            Bit.Components.CapitalStock,
+            Bit.NetDisposableIncome,
+            Bit.Deposits,
+            Bit.CapitalStock,
         );
-        with = (Bit.Components.Banker,),
+        with = (Bit.Banker,),
     )
     @assert length(rows) == 1
     return (
@@ -167,27 +167,27 @@ function _firm_reference_state(model)
     rows = _query_rows(
         world,
         (
-            Bit.Components.PrincipalProduct,
-            Bit.Components.LaborProductivity,
-            Bit.Components.IntermediateProductivity,
-            Bit.Components.CapitalDeprecationRate,
-            Bit.Components.CapitalProductivity,
-            Bit.Components.OperatingMargins,
-            Bit.Components.TaxRates,
-            Bit.Components.AverageWageRate,
-            Bit.Components.Employment,
-            Bit.Components.Output,
-            Bit.Components.Price,
-            Bit.Components.GoodsDemand,
-            Bit.Components.Inventories,
-            Bit.Components.CapitalStock,
-            Bit.Components.Intermediates,
-            Bit.Components.LoansOutstanding,
-            Bit.Components.Deposits,
-            Bit.Components.Profits,
-            Bit.Components.Vacancies,
+            Bit.PrincipalProduct,
+            Bit.LaborProductivity,
+            Bit.IntermediateProductivity,
+            Bit.CapitalDeprecationRate,
+            Bit.CapitalProductivity,
+            Bit.OperatingMargins,
+            Bit.TaxRates,
+            Bit.AverageWageRate,
+            Bit.Employment,
+            Bit.Output,
+            Bit.Price,
+            Bit.GoodsDemand,
+            Bit.Inventories,
+            Bit.CapitalStock,
+            Bit.Intermediates,
+            Bit.LoansOutstanding,
+            Bit.Deposits,
+            Bit.Profits,
+            Bit.Vacancies,
         );
-        with = (Bit.Components.Firm,),
+        with = (Bit.Firm,),
     )
     owners = _firm_owner_reference_state(model)
     return (
@@ -220,10 +220,10 @@ end
 function _bank_reference_state(model)
     world = model.world
     return (
-        D_k = _single_component_value(world, Bit.Components.ResidualItems; with = (Bit.Components.Bank,)),
-        E_k = _single_component_value(world, Bit.Components.Equity; with = (Bit.Components.Bank,)),
-        Pi_k = _single_component_value(world, Bit.Components.Profits; with = (Bit.Components.Bank,)),
-        r = _single_component_value(world, Bit.Components.LendingRate; with = (Bit.Components.Bank,), field = :rate),
+        D_k = _single_component_value(world, Bit.ResidualItems; with = (Bit.Bank,)),
+        E_k = _single_component_value(world, Bit.Equity; with = (Bit.Bank,)),
+        Pi_k = _single_component_value(world, Bit.Profits; with = (Bit.Bank,)),
+        r = _single_component_value(world, Bit.LendingRate; with = (Bit.Bank,), field = :rate),
     )
 end
 

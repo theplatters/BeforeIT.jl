@@ -8,11 +8,11 @@ properties = Bit.properties(model)
 
 
 @testset "Population accounting" begin
-    employed_count = Ark.count_entities(Ark.Query(world, (Bit.Components.Employed,)))
-    inactive_count = Ark.count_entities(Ark.Query(world, (Bit.Components.Inactive,)))
-    unemployed_count = Ark.count_entities(Ark.Query(world, (Bit.Components.Unemployed,)))
-    capitalist_count = Ark.count_entities(Ark.Query(world, (Bit.Components.Capitalist,)))
-    firm_count = Ark.count_entities(Ark.Query(world, (Bit.Components.Output,)))
+    employed_count = Ark.count_entities(Ark.Query(world, (Bit.Employed,)))
+    inactive_count = Ark.count_entities(Ark.Query(world, (Bit.Inactive,)))
+    unemployed_count = Ark.count_entities(Ark.Query(world, (Bit.Unemployed,)))
+    capitalist_count = Ark.count_entities(Ark.Query(world, (Bit.Capitalist,)))
+    firm_count = Ark.count_entities(Ark.Query(world, (Bit.Output,)))
 
     @test inactive_count == properties.population.inactive
     @test employed_count + unemployed_count == properties.population.active - properties.dimensions.total_firms - 1
@@ -24,15 +24,15 @@ end
     for (e, _, output, sales, demand, price, inventories, vacancies, investment, equity) in Ark.Query(
             world,
             (
-                Bit.Components.PrincipalProduct,
-                Bit.Components.Output,
-                Bit.Components.Sales,
-                Bit.Components.GoodsDemand,
-                Bit.Components.Price,
-                Bit.Components.Inventories,
-                Bit.Components.Vacancies,
-                Bit.Components.Investment,
-                Bit.Components.Equity,
+                Bit.PrincipalProduct,
+                Bit.Output,
+                Bit.Sales,
+                Bit.GoodsDemand,
+                Bit.Price,
+                Bit.Inventories,
+                Bit.Vacancies,
+                Bit.Investment,
+                Bit.Equity,
             )
         )
         @test all(output.amount .>= 0.0)
@@ -52,15 +52,15 @@ end
     for (_, _, output, capital, intermediates, employment, vacancies, labor_prod, capital_prod, material_prod) in Ark.Query(
             world,
             (
-                Bit.Components.PrincipalProduct,
-                Bit.Components.Output,
-                Bit.Components.CapitalStock,
-                Bit.Components.Intermediates,
-                Bit.Components.Employment,
-                Bit.Components.Vacancies,
-                Bit.Components.LaborProductivity,
-                Bit.Components.CapitalProductivity,
-                Bit.Components.IntermediateProductivity,
+                Bit.PrincipalProduct,
+                Bit.Output,
+                Bit.CapitalStock,
+                Bit.Intermediates,
+                Bit.Employment,
+                Bit.Vacancies,
+                Bit.LaborProductivity,
+                Bit.CapitalProductivity,
+                Bit.IntermediateProductivity,
             )
         )
         @test all(isapprox.(output.amount, labor_prod.value .* employment.amount, atol = 1.0e-7))
@@ -79,7 +79,7 @@ end
     debt = properties.initial_conditions.households.debt
     capital = properties.initial_conditions.households.capital
     unemployment_benefit = properties.initial_conditions.households.unemployment_benefit
-    total_disposable_income = sum(sum(income.amount) for (_, income) in Ark.Query(world, (Bit.Components.NetDisposableIncome,)))
+    total_disposable_income = sum(sum(income.amount) for (_, income) in Ark.Query(world, (Bit.NetDisposableIncome,)))
 
     expected_unemployment_benefits = unemployment_benefit / unemployment_benefit_rate
     expected_unemployed_income = Bit.unemployed_worker_income(
@@ -97,14 +97,14 @@ end
     unemployed_query = Ark.Query(
         world,
         (
-            Bit.Components.Household,
-            Bit.Components.Unemployed,
-            Bit.Components.NetDisposableIncome,
-            Bit.Components.Deposits,
-            Bit.Components.ExpectedIncome,
-            Bit.Components.CapitalStock,
-            Bit.Components.ConsumptionBudget,
-            Bit.Components.InvestmentBudget,
+            Bit.Household,
+            Bit.Unemployed,
+            Bit.NetDisposableIncome,
+            Bit.Deposits,
+            Bit.ExpectedIncome,
+            Bit.CapitalStock,
+            Bit.ConsumptionBudget,
+            Bit.InvestmentBudget,
         )
     )
 
@@ -122,14 +122,14 @@ end
     inactive_query = Ark.Query(
         world,
         (
-            Bit.Components.Household,
-            Bit.Components.Inactive,
-            Bit.Components.NetDisposableIncome,
-            Bit.Components.Deposits,
-            Bit.Components.ExpectedIncome,
-            Bit.Components.CapitalStock,
-            Bit.Components.ConsumptionBudget,
-            Bit.Components.InvestmentBudget,
+            Bit.Household,
+            Bit.Inactive,
+            Bit.NetDisposableIncome,
+            Bit.Deposits,
+            Bit.ExpectedIncome,
+            Bit.CapitalStock,
+            Bit.ConsumptionBudget,
+            Bit.InvestmentBudget,
         )
     )
 
@@ -143,7 +143,7 @@ end
     # 3. Disjointness Check: Ensure no Household is both Inactive and Unemployed
     overlap_query = Ark.Query(
         world,
-        (Bit.Components.Household, Bit.Components.Inactive, Bit.Components.Unemployed)
+        (Bit.Household, Bit.Inactive, Bit.Unemployed)
     )
     @test Ark.count_entities(overlap_query) == 0
 end
@@ -160,13 +160,13 @@ end
     rotw_main_query = Ark.Query(
         world,
         (
-            Bit.Components.EuroAreaGDP,
-            Bit.Components.EuroAreaGrowth,
-            Bit.Components.EuroAreaInflation,
-            Bit.Components.NetForeignPosition,
-            Bit.Components.ForeignConsumption,
-            Bit.Components.TotalExportDemand,
-            Bit.Components.TotalImportSupply,
+            Bit.EuroAreaGDP,
+            Bit.EuroAreaGrowth,
+            Bit.EuroAreaInflation,
+            Bit.NetForeignPosition,
+            Bit.ForeignConsumption,
+            Bit.TotalExportDemand,
+            Bit.TotalImportSupply,
         )
     )
 
@@ -190,8 +190,8 @@ end
     foreign_consumers_query = Ark.Query(
         world,
         (
-            Bit.Components.ForeignConsumptionDemand,
-            Bit.Components.RestOfWorldEntity,
+            Bit.ForeignConsumptionDemand,
+            Bit.RestOfWorldEntity,
         )
     )
 
@@ -205,13 +205,13 @@ end
     foreign_sectors_query = Ark.Query(
         world,
         (
-            Bit.Components.ForeignSector,
-            Bit.Components.PrincipalProduct,
-            Bit.Components.ImportSupply,
-            Bit.Components.ImportSales,
-            Bit.Components.ImportDemand,
-            Bit.Components.ImportPrice,
-            Bit.Components.ExportPriceInflation,
+            Bit.ForeignSector,
+            Bit.PrincipalProduct,
+            Bit.ImportSupply,
+            Bit.ImportSales,
+            Bit.ImportDemand,
+            Bit.ImportPrice,
+            Bit.ExportPriceInflation,
         )
     )
 

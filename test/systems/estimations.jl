@@ -10,7 +10,7 @@ import Ark
         interval = Ark.get_resource(world, Bit.Properties).dimensions.interval_for_expectation_estimation
 
         firm_index = 0
-        for (_, prices, output) in Ark.Query(world, (Bit.Components.Price, Bit.Components.Output), with = (Bit.Components.Firm,))
+        for (_, prices, output) in Ark.Query(world, (Bit.Price, Bit.Output), with = (Bit.Firm,))
             for index in eachindex(prices.value)
                 firm_index += 1
                 prices.value[index] = firm_index <= 3 ? Float64(firm_index) : 0.0
@@ -39,8 +39,8 @@ import Ark
         firm_index = 0
         for (_, principal_product, prices, sales) in Ark.Query(
                 world,
-                (Bit.Components.PrincipalProduct, Bit.Components.Price, Bit.Components.Sales),
-                with = (Bit.Components.Firm,)
+                (Bit.PrincipalProduct, Bit.Price, Bit.Sales),
+                with = (Bit.Firm,)
             )
             for index in eachindex(principal_product.id)
                 firm_index += 1
@@ -53,8 +53,8 @@ import Ark
         import_index = 0
         for (_, principal_product, prices, sales) in Ark.Query(
                 world,
-                (Bit.Components.PrincipalProduct, Bit.Components.ImportPrice, Bit.Components.ImportSales),
-                with = (Bit.Components.ForeignSector,)
+                (Bit.PrincipalProduct, Bit.ImportPrice, Bit.ImportSales),
+                with = (Bit.ForeignSector,)
             )
             for index in eachindex(principal_product.id)
                 import_index += 1

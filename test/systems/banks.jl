@@ -39,10 +39,10 @@ include("old_actions/bank.jl")
         finance_insolvent_firms!(mock_model)
         Bit.finance_insolvent_firms!(world)
 
-        ecs_bank_equity = Bit.single(Ark.Query(world, (Bit.Components.Equity,), with = (Bit.Components.Bank,)))[2].amount
+        ecs_bank_equity = Bit.single(Ark.Query(world, (Bit.Equity,), with = (Bit.Bank,)))[2].amount
         @test isapprox(ecs_bank_equity, mock_model.bank.E_k, atol = 1.0e-7)
 
-        ecs_total_firm_equity = sum(sum(c.amount) for (_, c) in Ark.Query(world, (Bit.Components.Equity,), with = (Bit.Components.Output,)))
+        ecs_total_firm_equity = sum(sum(c.amount) for (_, c) in Ark.Query(world, (Bit.Equity,), with = (Bit.Output,)))
         @test isapprox(ecs_total_firm_equity, sum(mock_model.firms.E_i), atol = 1.0e-7)
     end
 
@@ -84,7 +84,7 @@ include("old_actions/bank.jl")
         set_bank_deposits!(mock_model)
         Bit.set_bank_deposits!(world)
 
-        ecs_residual = Bit.single(Ark.Query(world, (Bit.Components.ResidualItems,), with = (Bit.Components.Bank,)))[2].amount
+        ecs_residual = Bit.single(Ark.Query(world, (Bit.ResidualItems,), with = (Bit.Bank,)))[2].amount
         @test isapprox(ecs_residual, mock_model.bank.D_k, atol = 1.0e-7)
     end
 
@@ -115,7 +115,7 @@ include("old_actions/bank.jl")
         set_bank_expected_profits!(mock_model)
         Bit.set_bank_expected_profits!(world)
 
-        ecs_expected_profits = Bit.single(Ark.Query(world, (Bit.Components.ExpectedProfits,), with = (Bit.Components.Bank,)))[2].amount
+        ecs_expected_profits = Bit.single(Ark.Query(world, (Bit.ExpectedProfits,), with = (Bit.Bank,)))[2].amount
         @test isapprox(ecs_expected_profits, mock_model.bank.Pi_e_k, atol = 1.0e-7)
     end
 
@@ -128,7 +128,7 @@ include("old_actions/bank.jl")
         set_bank_rate!(mock_model)
         Bit.set_bank_rate!(world)
 
-        ecs_bank_rate = Bit.single(Ark.Query(world, (Bit.Components.LendingRate,), with = (Bit.Components.Bank,)))[2].rate
+        ecs_bank_rate = Bit.single(Ark.Query(world, (Bit.LendingRate,), with = (Bit.Bank,)))[2].rate
         @test isapprox(ecs_bank_rate, mock_model.bank.r, atol = 1.0e-7)
     end
 
@@ -151,7 +151,7 @@ include("old_actions/bank.jl")
         set_bank_equity!(mock_model)
         Bit.set_bank_equity!(world)
 
-        ecs_equity = Bit.single(Ark.Query(world, (Bit.Components.Equity,), with = (Bit.Components.Bank,)))[2].amount
+        ecs_equity = Bit.single(Ark.Query(world, (Bit.Equity,), with = (Bit.Bank,)))[2].amount
         @test isapprox(ecs_equity, mock_model.bank.E_k, atol = 1.0e-7)
     end
 
@@ -188,7 +188,7 @@ include("old_actions/bank.jl")
         set_bank_profits!(mock_model)
         Bit.set_bank_profits!(world)
 
-        ecs_profits = Bit.single(Ark.Query(world, (Bit.Components.Profits,), with = (Bit.Components.Bank,)))[2].amount
+        ecs_profits = Bit.single(Ark.Query(world, (Bit.Profits,), with = (Bit.Bank,)))[2].amount
         @test isapprox(ecs_profits, mock_model.bank.Pi_k, atol = 1.0e-7)
     end
 

@@ -53,16 +53,16 @@ end
     @test isapprox(gdp_and_expenditure_real, 0.0, atol = 1.0e-8)
 
     cb_balance =
-        single_component_amount(world, Bit.Components.Equity; with = (Bit.Components.CentralBank,)) +
-        Bit.single(Ark.Query(world, (Bit.Components.NetForeignPosition,)))[2].amount -
-        single_component_amount(world, Bit.Components.GovernmentDebt; with = (Bit.Components.Government,)) +
-        single_component_amount(world, Bit.Components.ResidualItems; with = (Bit.Components.Bank,))
+        single_component_amount(world, Bit.Equity; with = (Bit.CentralBank,)) +
+        Bit.single(Ark.Query(world, (Bit.NetForeignPosition,)))[2].amount -
+        single_component_amount(world, Bit.GovernmentDebt; with = (Bit.Government,)) +
+        single_component_amount(world, Bit.ResidualItems; with = (Bit.Bank,))
     @test isapprox(cb_balance, 0.0, atol = 1.0e-7)
 
     bank_balance =
-        sum_component_amount(world, Bit.Components.Deposits; with = ()) +
-        single_component_amount(world, Bit.Components.Equity; with = (Bit.Components.Bank,)) -
-        sum_component_amount(world, Bit.Components.LoansOutstanding; with = ()) -
-        single_component_amount(world, Bit.Components.ResidualItems; with = (Bit.Components.Bank,))
+        sum_component_amount(world, Bit.Deposits; with = ()) +
+        single_component_amount(world, Bit.Equity; with = (Bit.Bank,)) -
+        sum_component_amount(world, Bit.LoansOutstanding; with = ()) -
+        single_component_amount(world, Bit.ResidualItems; with = (Bit.Bank,))
     @test isapprox(bank_balance, 0.0, atol = 1.0e-7)
 end

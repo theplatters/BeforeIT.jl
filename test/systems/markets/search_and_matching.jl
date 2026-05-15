@@ -89,8 +89,8 @@ function collect_market_integration_metrics(world)
     household_investment = Float64[]
     for (_, realised_consumption, realised_investment) in Ark.Query(
             world,
-            (Bit.Components.RealisedConsumption, Bit.Components.RealisedInvestment),
-            with = (Bit.Components.Household,)
+            (Bit.RealisedConsumption, Bit.RealisedInvestment),
+            with = (Bit.Household,)
         )
         append!(household_consumption, realised_consumption.amount)
         append!(household_investment, realised_investment.amount)
@@ -106,13 +106,13 @@ function collect_market_integration_metrics(world)
     for (_, investment, materials, price_index, cf_price_index, goods_demand) in Ark.Query(
             world,
             (
-                Bit.Components.Investment,
-                Bit.Components.MaterialsStockChange,
-                Bit.Components.PriceIndex,
-                Bit.Components.CFPriceIndex,
-                Bit.Components.GoodsDemand,
+                Bit.Investment,
+                Bit.MaterialsStockChange,
+                Bit.PriceIndex,
+                Bit.CFPriceIndex,
+                Bit.GoodsDemand,
             ),
-            with = (Bit.Components.Firm,)
+            with = (Bit.Firm,)
         )
         append!(firm_investment, investment.amount)
         append!(firm_materials, materials.amount)
@@ -126,16 +126,16 @@ function collect_market_integration_metrics(world)
     metrics[:mean_P_CF_i] = mean(firm_cf_price_index)
     metrics[:mean_Q_d_i] = mean(firm_goods_demand)
 
-    for (_, realised_consumption) in Ark.Query(world, (Bit.Components.RealisedConsumption,), with = (Bit.Components.Government,))
+    for (_, realised_consumption) in Ark.Query(world, (Bit.RealisedConsumption,), with = (Bit.Government,))
         metrics[:gov_C_j] = sum(realised_consumption.amount)
     end
 
-    for (_, foreign_consumption) in Ark.Query(world, (Bit.Components.ForeignConsumption,))
+    for (_, foreign_consumption) in Ark.Query(world, (Bit.ForeignConsumption,))
         metrics[:rotw_C_l] = sum(foreign_consumption.amount)
     end
 
     import_demand = Float64[]
-    for (_, demand) in Ark.Query(world, (Bit.Components.ImportDemand,))
+    for (_, demand) in Ark.Query(world, (Bit.ImportDemand,))
         append!(import_demand, demand.amount)
     end
     metrics[:mean_Q_d_m] = mean(import_demand)
@@ -163,7 +163,7 @@ end
         Bit.search_and_matching!(world)
 
         total_sales = 0.0
-        for (_, sales) in Ark.Query(world, (Bit.Components.Sales,), with = (Bit.Components.Firm,))
+        for (_, sales) in Ark.Query(world, (Bit.Sales,), with = (Bit.Firm,))
             total_sales += sum(sales.amount)
         end
         @test total_sales == 0.0
@@ -186,7 +186,7 @@ end
         Bit.search_and_matching!(world)
 
         total_sales = 0.0
-        for (_, sales) in Ark.Query(world, (Bit.Components.Sales,), with = (Bit.Components.Firm,))
+        for (_, sales) in Ark.Query(world, (Bit.Sales,), with = (Bit.Firm,))
             total_sales += sum(sales.amount)
         end
         @test total_sales > 0.0
@@ -210,13 +210,13 @@ end
         Bit.search_and_matching!(world)
 
         total_sales = 0.0
-        for (_, sales) in Ark.Query(world, (Bit.Components.Sales,), with = (Bit.Components.Firm,))
+        for (_, sales) in Ark.Query(world, (Bit.Sales,), with = (Bit.Firm,))
             total_sales += sum(sales.amount)
         end
         @test total_sales == 5.0
 
         total_cons = 0.0
-        for (_, realised_c) in Ark.Query(world, (Bit.Components.RealisedConsumption,), with = (Bit.Components.Household,))
+        for (_, realised_c) in Ark.Query(world, (Bit.RealisedConsumption,), with = (Bit.Household,))
             total_cons += sum(realised_c.amount)
         end
         @test total_cons == 25.0
@@ -242,7 +242,7 @@ end
         # Firm 1 (Sector 1) should have 0 sales
         # Firm 2 (Sector 2) should have 10 sales
         idx = 1
-        for (e, sales) in Ark.Query(world, (Bit.Components.Sales,), with = (Bit.Components.Firm,))
+        for (e, sales) in Ark.Query(world, (Bit.Sales,), with = (Bit.Firm,))
             for i in eachindex(e)
                 if idx == 1
                     @test sales[i].amount == 0.0
@@ -265,10 +265,10 @@ end
             Ark.Query(
                 world,
                 (
-                    Bit.Components.Employment,
-                    Bit.Components.AverageWageRate,
+                    Bit.Employment,
+                    Bit.AverageWageRate,
                 ),
-                with = (Bit.Components.Firm,)
+                with = (Bit.Firm,)
             )
         )
         for i in eachindex(firm_e)
@@ -280,7 +280,7 @@ end
         firm_entity === nothing || break
     end
 
-    for (worker_e, employed) in collect(Ark.Query(world, (Bit.Components.Employed,), with = (Bit.Components.EmployedAt => firm_entity,)))
+    for (worker_e, employed) in collect(Ark.Query(world, (Bit.Employed,), with = (Bit.EmployedAt => firm_entity,)))
         worker_entity = worker_e[1]
         target_wage = employed[1].rate
         break
@@ -290,15 +290,15 @@ end
             Ark.Query(
                 world,
                 (
-                    Bit.Components.Employment,
-                    Bit.Components.DesiredEmployment,
+                    Bit.Employment,
+                    Bit.DesiredEmployment,
                 ),
-                with = (Bit.Components.Firm,)
+                with = (Bit.Firm,)
             )
         )
         for i in eachindex(firm_e)
             firm_e[i] == firm_entity || continue
-            desired_employment[i] = Bit.Components.DesiredEmployment(0)
+            desired_employment[i] = Bit.DesiredEmployment(0)
         end
     end
 
@@ -309,9 +309,9 @@ end
     Bit.calculate_initial_vacancies!(world)
     Bit.fire_employed_workers!(world)
 
-    @test !Ark.has_components(world, worker_entity, (Bit.Components.Employed, Bit.Components.EmployedAt))
-    @test Ark.has_components(world, worker_entity, (Bit.Components.Unemployed,))
-    (unemployed,) = Ark.get_components(world, worker_entity, (Bit.Components.Unemployed,))
+    @test !Ark.has_components(world, worker_entity, (Bit.Employed, Bit.EmployedAt))
+    @test Ark.has_components(world, worker_entity, (Bit.Unemployed,))
+    (unemployed,) = Ark.get_components(world, worker_entity, (Bit.Unemployed,))
     @test isapprox(unemployed.unemployment_benefits, target_wage; atol = 1.0e-9, rtol = 1.0e-9)
 end
 
@@ -392,13 +392,13 @@ end
             sum(mock_model.firms.C_h) + mock_model.bank.C_h
 
         total_sales_new = 0.0
-        for (_, sales) in Ark.Query(world, (Bit.Components.Sales,), with = (Bit.Components.Firm,))
+        for (_, sales) in Ark.Query(world, (Bit.Sales,), with = (Bit.Firm,))
             total_sales_new += sum(sales.amount)
         end
         agg_sales_new[r] = total_sales_new
 
         total_cons_new = 0.0
-        for (_, realised_c) in Ark.Query(world, (Bit.Components.RealisedConsumption,), with = (Bit.Components.Household,))
+        for (_, realised_c) in Ark.Query(world, (Bit.RealisedConsumption,), with = (Bit.Household,))
             total_cons_new += sum(realised_c.amount)
         end
         agg_cons_new[r] = total_cons_new

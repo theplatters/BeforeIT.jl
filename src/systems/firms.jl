@@ -194,26 +194,26 @@ end
 end
 
 const FIRM_EXPECTATION_COMPONENTS = (
-    Components.PrincipalProduct,
-    Components.Price,
-    Components.AverageWageRate,
-    Components.CapitalDeprecationRate,
-    Components.IntermediateProductivity,
-    Components.LaborProductivity,
-    Components.CapitalProductivity,
-    Components.GoodsDemand,
-    Components.CapitalStock,
-    Components.Profits,
-    Components.LoansOutstanding,
-    Components.Deposits,
-    Components.DesiredInvestment,
-    Components.DesiredMaterials,
-    Components.DesiredEmployment,
-    Components.ExpectedProfits,
-    Components.ExpectedCapital,
-    Components.ExpectedLoans,
-    Components.ExpectedSales,
-    Components.TargetLoans,
+    PrincipalProduct,
+    Price,
+    AverageWageRate,
+    CapitalDeprecationRate,
+    IntermediateProductivity,
+    LaborProductivity,
+    CapitalProductivity,
+    GoodsDemand,
+    CapitalStock,
+    Profits,
+    LoansOutstanding,
+    Deposits,
+    DesiredInvestment,
+    DesiredMaterials,
+    DesiredEmployment,
+    ExpectedProfits,
+    ExpectedCapital,
+    ExpectedLoans,
+    ExpectedSales,
+    TargetLoans,
 )
 
 function legacy_desired_investment_sales_by_entity(world::Ark.World, growth::Float64)
@@ -222,11 +222,11 @@ function legacy_desired_investment_sales_by_entity(world::Ark.World, growth::Flo
     for (e, goods_demand, capital_stock, capital_productivity) in Ark.Query(
             world,
             (
-                Components.GoodsDemand,
-                Components.CapitalStock,
-                Components.CapitalProductivity,
+                GoodsDemand,
+                CapitalStock,
+                CapitalProductivity,
             ),
-            with = (Components.Firm,),
+            with = (Firm,),
         )
         @inbounds for i in eachindex(e)
             push!(
@@ -366,15 +366,15 @@ function set_firms_expectations_and_decisions!(world::Ark.World)
                 legacy_desired_investment_sales[e[i]],
             )
 
-            desired_investment[i] = Components.DesiredInvestment(desired_investment_level)
-            desired_materials[i] = Components.DesiredMaterials(desired_materials_amount)
-            desired_employment[i] = Components.DesiredEmployment(desired_employment_amount)
-            expected_sales[i] = Components.ExpectedSales(expected_sales_amount)
-            expected_profits[i] = Components.ExpectedProfits(expected_profit_amount)
-            expected_capital[i] = Components.ExpectedCapital(expected_capital_amount)
-            expected_loans[i] = Components.ExpectedLoans(expected_loans_amount)
-            target_loans[i] = Components.TargetLoans(target_loans_amount)
-            prices[i] = Components.Price(price * (1 + cost_push_inflation) * (1 + inflation))
+            desired_investment[i] = DesiredInvestment(desired_investment_level)
+            desired_materials[i] = DesiredMaterials(desired_materials_amount)
+            desired_employment[i] = DesiredEmployment(desired_employment_amount)
+            expected_sales[i] = ExpectedSales(expected_sales_amount)
+            expected_profits[i] = ExpectedProfits(expected_profit_amount)
+            expected_capital[i] = ExpectedCapital(expected_capital_amount)
+            expected_loans[i] = ExpectedLoans(expected_loans_amount)
+            target_loans[i] = TargetLoans(target_loans_amount)
+            prices[i] = Price(price * (1 + cost_push_inflation) * (1 + inflation))
         end
     end
 
@@ -402,8 +402,8 @@ function firm_wage(
 end
 
 const FIRM_WAGE_COMPONENTS = (
-    Components.ExpectedSales, Components.WageBill, Components.CapitalStock, Components.Intermediates, Components.Employment,
-    Components.LaborProductivity, Components.CapitalProductivity, Components.IntermediateProductivity, Components.AverageWageRate,
+    ExpectedSales, WageBill, CapitalStock, Intermediates, Employment,
+    LaborProductivity, CapitalProductivity, IntermediateProductivity, AverageWageRate,
 )
 
 function set_firms_wages!(world::Ark.World)
@@ -479,14 +479,14 @@ end
 end
 
 const FIRM_PRODUCTION_COMPONENTS = (
-    Components.ExpectedSales,
-    Components.Output,
-    Components.Employment,
-    Components.LaborProductivity,
-    Components.CapitalStock,
-    Components.CapitalProductivity,
-    Components.Intermediates,
-    Components.IntermediateProductivity,
+    ExpectedSales,
+    Output,
+    Employment,
+    LaborProductivity,
+    CapitalStock,
+    CapitalProductivity,
+    Intermediates,
+    IntermediateProductivity,
 )
 
 function set_firms_production!(world::Ark.World)
@@ -561,29 +561,29 @@ end
 end
 
 const FIRM_PROFIT_COMPONENTS = (
-    Components.Profits,
-    Components.Price,
-    Components.Sales,
-    Components.Output,
-    Components.FinalGoodsStockChange,
-    Components.Deposits,
-    Components.WageBill,
-    Components.Employment,
-    Components.IntermediateProductivity,
-    Components.PriceIndex,
-    Components.CapitalDeprecationRate,
-    Components.CapitalProductivity,
-    Components.CFPriceIndex,
-    Components.TaxRates,
-    Components.LoansOutstanding,
+    Profits,
+    Price,
+    Sales,
+    Output,
+    FinalGoodsStockChange,
+    Deposits,
+    WageBill,
+    Employment,
+    IntermediateProductivity,
+    PriceIndex,
+    CapitalDeprecationRate,
+    CapitalProductivity,
+    CFPriceIndex,
+    TaxRates,
+    LoansOutstanding,
 )
 
 function set_firms_profits!(world::Ark.World)
     price_indices = Ark.get_resource(world, PriceIndices)
     properties = Ark.get_resource(world, Properties)
 
-    (_, r) = single(Ark.Query(world, (Components.LendingRate,)))
-    (_, r_bar) = single(Ark.Query(world, (Components.NominalInterestRate,)))
+    (_, r) = single(Ark.Query(world, (LendingRate,)))
+    (_, r_bar) = single(Ark.Query(world, (NominalInterestRate,)))
 
 
     for (
@@ -627,7 +627,7 @@ function set_firms_profits!(world::Ark.World)
                 loans.amount[i],
                 r.rate,
                 r_bar.rate,
-            ) |> Components.Profits
+            ) |> Profits
         end
 
     end
@@ -728,28 +728,28 @@ end
 
 
 const FIRM_DEPOSIT_COMPONENTS = (
-    Components.Deposits,
-    Components.Price,
-    Components.Sales,
-    Components.WageBill,
-    Components.Employment,
-    Components.MaterialsStockChange,
-    Components.PriceIndex,
-    Components.TaxRates,
-    Components.Output,
-    Components.CFPriceIndex,
-    Components.Profits,
-    Components.LoansOutstanding,
-    Components.Investment,
-    Components.LoanFlow,
+    Deposits,
+    Price,
+    Sales,
+    WageBill,
+    Employment,
+    MaterialsStockChange,
+    PriceIndex,
+    TaxRates,
+    Output,
+    CFPriceIndex,
+    Profits,
+    LoansOutstanding,
+    Investment,
+    LoanFlow,
 )
 
 function set_firms_deposits!(world::Ark.World)
     price_indices = Ark.get_resource(world, PriceIndices)
     properties = Ark.get_resource(world, Properties)
 
-    (_, r) = single(Ark.Query(world, (Components.LendingRate,)))
-    (_, r_bar) = single(Ark.Query(world, (Components.NominalInterestRate,)))
+    (_, r) = single(Ark.Query(world, (LendingRate,)))
+    (_, r_bar) = single(Ark.Query(world, (NominalInterestRate,)))
 
     employer_contribution = properties.social_insurance.employers_contribution
     corporate_tax_rate = properties.tax_rates.corporate
@@ -806,14 +806,14 @@ function set_firms_deposits!(world::Ark.World)
 end
 
 const FIRM_EQUITY_COMPONENTS = (
-    Components.Equity,
-    Components.Deposits,
-    Components.Intermediates,
-    Components.PrincipalProduct,
-    Components.Price,
-    Components.Inventories,
-    Components.CapitalStock,
-    Components.LoansOutstanding,
+    Equity,
+    Deposits,
+    Intermediates,
+    PrincipalProduct,
+    Price,
+    Inventories,
+    CapitalStock,
+    LoansOutstanding,
 )
 
 function set_firms_equity!(world::Ark.World)
@@ -843,7 +843,7 @@ function set_firms_equity!(world::Ark.World)
         ) in Ark.Query(world, FIRM_EQUITY_COMPONENTS)
 
         @inbounds for i in eachindex(e)
-            equity[i] = Components.Equity(
+            equity[i] = Equity(
                 firm_equity(
                     deposits[i].amount,
                     intermediates[i].amount,
@@ -862,8 +862,8 @@ function set_firms_equity!(world::Ark.World)
 end
 
 const FIRM_LOAN_COMPONENTS = (
-    Components.LoansOutstanding,
-    Components.LoanFlow,
+    LoansOutstanding,
+    LoanFlow,
 )
 
 function set_firms_loans!(world::Ark.World)
@@ -877,17 +877,17 @@ function set_firms_loans!(world::Ark.World)
 end
 
 const FIRM_STOCK_COMPONENTS = (
-    Components.CapitalStock,
-    Components.CapitalDeprecationRate,
-    Components.CapitalProductivity,
-    Components.Output,
-    Components.Investment,
-    Components.Intermediates,
-    Components.IntermediateProductivity,
-    Components.MaterialsStockChange,
-    Components.Sales,
-    Components.FinalGoodsStockChange,
-    Components.Inventories,
+    CapitalStock,
+    CapitalDeprecationRate,
+    CapitalProductivity,
+    Output,
+    Investment,
+    Intermediates,
+    IntermediateProductivity,
+    MaterialsStockChange,
+    Sales,
+    FinalGoodsStockChange,
+    Inventories,
 )
 
 function set_firms_stocks!(world::Ark.World)

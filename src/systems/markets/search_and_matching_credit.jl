@@ -1,17 +1,17 @@
 function search_and_matching_credit!(world::Ark.World)
     (; capital_requirement, loan_to_value_ratio) = BeforeIT.properties(world).banking_params
-    total_expected_loans = @sum_over (el.amount for el in Ark.Query(world, (Components.ExpectedLoans,)))
+    total_expected_loans = @sum_over (el.amount for el in Ark.Query(world, (ExpectedLoans,)))
     total_loans = 0.0
-    (_, E_k) = single(Ark.Query(world, (Components.Equity,), with = (Components.Bank,)))
+    (_, E_k) = single(Ark.Query(world, (Equity,), with = (Bank,)))
 
-    for (_, loan_flow) in Ark.Query(world, (Components.LoanFlow,), with = (Components.Firm,))
+    for (_, loan_flow) in Ark.Query(world, (LoanFlow,), with = (Firm,))
         loan_flow.amount .= 0.0
     end
 
     rows = NamedTuple[]
     for (e, loan_flow, target_loan, expected_loan, expected_capital) in Ark.Query(
             world,
-            (Components.LoanFlow, Components.TargetLoans, Components.ExpectedLoans, Components.ExpectedCapital),
+            (LoanFlow, TargetLoans, ExpectedLoans, ExpectedCapital),
         )
         for i in eachindex(e)
             push!(
@@ -39,7 +39,7 @@ function search_and_matching_credit!(world::Ark.World)
         expected_loan = row.expected_loan
         expected_capital = row.expected_capital
 
-        loan_flow[i] = Components.LoanFlow(
+        loan_flow[i] = LoanFlow(
             max(
                 0.0,
                 min(

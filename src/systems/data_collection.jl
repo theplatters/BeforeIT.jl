@@ -31,7 +31,7 @@ function collect_data!(world::Ark.World)
     # Aggregates
     tot_C_h = 0.0
     tot_I_h = 0.0
-    for (_, c, i) in Ark.Query(world, (Components.RealisedConsumption, Components.RealisedInvestment), with = (Components.Household,))
+    for (_, c, i) in Ark.Query(world, (RealisedConsumption, RealisedInvestment), with = (Household,))
         tot_C_h += sum(c.amount)
         tot_I_h += sum(i.amount)
     end
@@ -40,7 +40,7 @@ function collect_data!(world::Ark.World)
     gov_P_j = 0.0
     gov_C_j = 0.0
     gov_count = 0
-    for (_, p_j, c_j) in Ark.Query(world, (Components.PriceInflationGovernmentGoods, Components.RealisedConsumption), with = (Components.Government,))
+    for (_, p_j, c_j) in Ark.Query(world, (PriceInflationGovernmentGoods, RealisedConsumption), with = (Government,))
         gov_P_j += sum(p_j.value)
         gov_C_j += sum(c_j.amount)
         gov_count += length(p_j.value)
@@ -51,7 +51,7 @@ function collect_data!(world::Ark.World)
     rotw_C_l = 0.0
     rotw_P_l = 1.0
     rotw_pi_ea = 0.0
-    for (_, c, p_l, pi_ea) in Ark.Query(world, (Components.ForeignConsumption, Components.ExportPriceInflation, Components.EuroAreaInflation))
+    for (_, c, p_l, pi_ea) in Ark.Query(world, (ForeignConsumption, ExportPriceInflation, EuroAreaInflation))
         rotw_C_l += sum(c.amount)
         rotw_P_l = sum(p_l.value)
         rotw_pi_ea = sum(pi_ea.rate)
@@ -60,18 +60,18 @@ function collect_data!(world::Ark.World)
     # Firms
     nominal_output_tax = 0.0
     real_output_tax = 0.0
-    for (_, tau, y, p) in Ark.Query(world, (Components.TaxRates, Components.Output, Components.Price))
+    for (_, tau, y, p) in Ark.Query(world, (TaxRates, Output, Price))
         nominal_output_tax += sum(tau.output .* y.amount .* p.value)
         real_output_tax += sum(tau.output .* y.amount)
     end
 
     nominal_gva_at_basic_prices = 0.0
-    for (_, tau, p, y, beta, p_bar) in Ark.Query(world, (Components.TaxRates, Components.Price, Components.Output, Components.IntermediateProductivity, Components.PriceIndex))
+    for (_, tau, p, y, beta, p_bar) in Ark.Query(world, (TaxRates, Price, Output, IntermediateProductivity, PriceIndex))
         nominal_gva_at_basic_prices += sum((1.0 .- tau.output) .* p.value .* y.amount .- 1.0 ./ beta.value .* p_bar.value .* y.amount)
     end
 
     real_gva_at_basic_prices = 0.0
-    for (_, y, tau, beta) in Ark.Query(world, (Components.Output, Components.TaxRates, Components.IntermediateProductivity))
+    for (_, y, tau, beta) in Ark.Query(world, (Output, TaxRates, IntermediateProductivity))
         real_gva_at_basic_prices += sum(y.amount .* ((1.0 .- tau.output) .- 1.0 ./ beta.value))
     end
 
@@ -106,31 +106,31 @@ function collect_data!(world::Ark.World)
 
     # Capital Formation
     nominal_firm_inv = 0.0
-    for (_, p_cf, i) in Ark.Query(world, (Components.CFPriceIndex, Components.Investment))
+    for (_, p_cf, i) in Ark.Query(world, (CFPriceIndex, Investment))
         nominal_firm_inv += sum(p_cf.value .* i.amount)
     end
     real_firm_inv = 0.0
-    for (_, i) in Ark.Query(world, (Components.Investment,))
+    for (_, i) in Ark.Query(world, (Investment,))
         real_firm_inv += sum(i.amount)
     end
 
     nominal_stock_change = 0.0
-    for (_, ds, p) in Ark.Query(world, (Components.FinalGoodsStockChange, Components.Price))
+    for (_, ds, p) in Ark.Query(world, (FinalGoodsStockChange, Price))
         nominal_stock_change += sum(ds.amount .* p.value)
     end
     nominal_material_stock_adj = 0.0
-    for (_, dm, p_bar, beta, y) in Ark.Query(world, (Components.MaterialsStockChange, Components.PriceIndex, Components.IntermediateProductivity, Components.Output))
+    for (_, dm, p_bar, beta, y) in Ark.Query(world, (MaterialsStockChange, PriceIndex, IntermediateProductivity, Output))
         nominal_material_stock_adj += sum(dm.amount .* p_bar.value .- 1.0 ./ beta.value .* p_bar.value .* y.amount)
     end
 
     push!(history.nominal_capitalformation, nominal_firm_inv + (1.0 + τ_CF) * tot_I_h + nominal_stock_change + nominal_material_stock_adj)
 
     real_material_stock_adj = 0.0
-    for (_, dm, y, beta) in Ark.Query(world, (Components.MaterialsStockChange, Components.Output, Components.IntermediateProductivity))
+    for (_, dm, y, beta) in Ark.Query(world, (MaterialsStockChange, Output, IntermediateProductivity))
         real_material_stock_adj += sum(dm.amount .- y.amount ./ beta.value)
     end
     real_final_goods_stock_change = 0.0
-    for (_, ds) in Ark.Query(world, (Components.FinalGoodsStockChange,))
+    for (_, ds) in Ark.Query(world, (FinalGoodsStockChange,))
         real_final_goods_stock_change += sum(ds.amount)
     end
 
@@ -150,20 +150,20 @@ function collect_data!(world::Ark.World)
     push!(history.real_exports, (1.0 + τ_EXPORT) * rotw_C_l / BeforeIT.zero_to_one(rotw_P_l))
 
     nom_imp = 0.0
-    for (_, p_m, q_m) in Ark.Query(world, (Components.ImportPrice, Components.ImportSales))
+    for (_, p_m, q_m) in Ark.Query(world, (ImportPrice, ImportSales))
         nom_imp += sum(p_m.value .* q_m.amount)
     end
     push!(history.nominal_imports, nom_imp)
 
     real_imp = 0.0
-    for (_, q_m) in Ark.Query(world, (Components.ImportSales,))
+    for (_, q_m) in Ark.Query(world, (ImportSales,))
         real_imp += sum(q_m.amount)
     end
     push!(history.real_imports, real_imp)
 
     # OS / Wages / Taxes
     wages_val_acc = 0.0
-    for (_, wage_bill, n) in Ark.Query(world, (Components.WageBill, Components.Employment))
+    for (_, wage_bill, n) in Ark.Query(world, (WageBill, Employment))
         wages_val_acc += sum(wage_bill.amount .* n.amount)
     end
     wages_val = wages_val_acc * P_bar_h
@@ -171,13 +171,13 @@ function collect_data!(world::Ark.World)
     push!(history.compensation_employees, (1.0 + τ_SIF) * wages_val)
 
     taxes_prod = 0.0
-    for (_, tau, y, p) in Ark.Query(world, (Components.TaxRates, Components.Output, Components.Price))
+    for (_, tau, y, p) in Ark.Query(world, (TaxRates, Output, Price))
         taxes_prod += sum(tau.capital .* y.amount .* p.value)
     end
     push!(history.taxes_production, taxes_prod)
 
     op_surplus = 0.0
-    for (_, p, q, ds, wage_bill, n, beta, p_bar, tau, y) in Ark.Query(world, (Components.Price, Components.Sales, Components.FinalGoodsStockChange, Components.WageBill, Components.Employment, Components.IntermediateProductivity, Components.PriceIndex, Components.TaxRates, Components.Output))
+    for (_, p, q, ds, wage_bill, n, beta, p_bar, tau, y) in Ark.Query(world, (Price, Sales, FinalGoodsStockChange, WageBill, Employment, IntermediateProductivity, PriceIndex, TaxRates, Output))
         op_surplus += sum(
             p.value .* q.amount .+ p.value .* ds.amount .-
                 (1.0 + τ_SIF) .* wage_bill.amount .* n.amount .* P_bar_h .-
@@ -189,12 +189,12 @@ function collect_data!(world::Ark.World)
     push!(history.operating_surplus, op_surplus)
 
     # External
-    (_, cb_euribor) = single(Ark.Query(world, (Components.NominalInterestRate,)))
+    (_, cb_euribor) = single(Ark.Query(world, (NominalInterestRate,)))
     push!(history.euribor, cb_euribor.rate)
     push!(history.gdp_deflator_growth_ea, rotw_pi_ea)
 
     real_gdp_ea = 0.0
-    for (_, y_ea) in Ark.Query(world, (Components.EuroAreaGDP,))
+    for (_, y_ea) in Ark.Query(world, (EuroAreaGDP,))
         real_gdp_ea += sum(y_ea.value)
     end
     push!(history.real_gdp_ea, real_gdp_ea)
@@ -205,7 +205,7 @@ function collect_data!(world::Ark.World)
     for g in 1:props.dimensions.sectors
         nom_gva_g = 0.0
         real_gva_g = 0.0
-        for (_, pp, tau, p, y, beta, p_bar) in Ark.Query(world, (Components.PrincipalProduct, Components.TaxRates, Components.Price, Components.Output, Components.IntermediateProductivity, Components.PriceIndex))
+        for (_, pp, tau, p, y, beta, p_bar) in Ark.Query(world, (PrincipalProduct, TaxRates, Price, Output, IntermediateProductivity, PriceIndex))
             mask = pp.id .== g
             nom_gva_g += sum(mask .* ((1.0 .- tau.output) .* p.value .* y.amount .- 1.0 ./ beta.value .* p_bar.value .* y.amount))
             real_gva_g += sum(mask .* (y.amount .* ((1.0 .- tau.output) .- 1.0 ./ beta.value)))
@@ -229,7 +229,7 @@ function collect_data_init!(world::Ark.World, history::DataCollector, props::Pro
     ψ_H = props.household_params.housing_investment_share
 
     total_income = 0.0
-    for (_, income) in Ark.Query(world, (Components.NetDisposableIncome,), with = (Components.Household,))
+    for (_, income) in Ark.Query(world, (NetDisposableIncome,), with = (Household,))
         total_income += sum(income.amount)
     end
 
@@ -245,15 +245,15 @@ function collect_data_init!(world::Ark.World, history::DataCollector, props::Pro
     for (_, pp, tau, y, beta, delta, kappa, wage, employment, alpha) in Ark.Query(
             world,
             (
-                Components.PrincipalProduct,
-                Components.TaxRates,
-                Components.Output,
-                Components.IntermediateProductivity,
-                Components.CapitalDeprecationRate,
-                Components.CapitalProductivity,
-                Components.AverageWageRate,
-                Components.Employment,
-                Components.LaborProductivity,
+                PrincipalProduct,
+                TaxRates,
+                Output,
+                IntermediateProductivity,
+                CapitalDeprecationRate,
+                CapitalProductivity,
+                AverageWageRate,
+                Employment,
+                LaborProductivity,
             ),
         )
         real_gdp += sum(y.amount .* (1.0 .- 1.0 ./ beta.value))
@@ -274,7 +274,7 @@ function collect_data_init!(world::Ark.World, history::DataCollector, props::Pro
     end
 
     gov_consumption = 0.0
-    for (_, consumption) in Ark.Query(world, (Components.ConsumptionDemand,), with = (Components.Government,))
+    for (_, consumption) in Ark.Query(world, (ConsumptionDemand,), with = (Government,))
         gov_consumption += sum(consumption.amount)
     end
 
@@ -285,10 +285,10 @@ function collect_data_init!(world::Ark.World, history::DataCollector, props::Pro
     for (_, export_demand, import_supply, inflation, foreign_output) in Ark.Query(
             world,
             (
-                Components.TotalExportDemand,
-                Components.TotalImportSupply,
-                Components.EuroAreaInflation,
-                Components.EuroAreaGDP,
+                TotalExportDemand,
+                TotalImportSupply,
+                EuroAreaInflation,
+                EuroAreaGDP,
             ),
         )
         exports += sum(export_demand.amount)
@@ -334,7 +334,7 @@ function collect_data_init!(world::Ark.World, history::DataCollector, props::Pro
     push!(history.gdp_deflator_growth_ea, inflation_ea)
     push!(history.real_gdp_ea, gdp_ea)
 
-    for (_, rate) in Ark.Query(world, (Components.NominalInterestRate,))
+    for (_, rate) in Ark.Query(world, (NominalInterestRate,))
         push!(history.euribor, sum(rate.rate))
     end
 
