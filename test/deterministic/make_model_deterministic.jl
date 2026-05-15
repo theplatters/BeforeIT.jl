@@ -31,7 +31,5 @@ function shuffle!(v::AbstractVector)
 end
 
 function Bit.Ark.shuffle_entities!(::Bit.Ark.Filter)
-    return nothing
+    # do nothing
 end
-
-const BEFOREIT_DETERMINISTIC_LOADED = true

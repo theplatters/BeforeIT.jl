@@ -21,14 +21,14 @@ using Runic
         # include("shocks/shocks.jl")
     end
 
-    @testset "Model Init" begin
-        include("model_init/init_model.jl")
+    @testset "Invariants" begin
+        include("invariants/init_model.jl")
+        include("invariants/accounting_identities.jl")
     end
 
     @testset "Systems" begin
         include("systems/old_actions/mock_model.jl")
         include("systems/aggregates.jl")
-        include("systems/accounting_identities.jl")
         include("systems/banks.jl")
         include("systems/central_bank.jl")
         include("systems/epsilon.jl")

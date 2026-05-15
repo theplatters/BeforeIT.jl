@@ -1,7 +1,7 @@
 using MAT: matread
 
-@isdefined(BEFOREIT_DETERMINISTIC_LOADED) || include("make_model_deterministic.jl")
-@isdefined(_firm_reference_state) || include("ecs_reference_helpers.jl")
+include("make_model_deterministic.jl")
+include("ecs_reference_helpers.jl")
 
 @testset "initialize deterministic" begin
     dir = @__DIR__

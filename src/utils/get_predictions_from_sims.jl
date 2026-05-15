@@ -29,7 +29,7 @@ function prepare_quarterly_annual_level(data, sims, varname, quarter_num, year_n
 
     annual_full = [
         repeat(data[varname][data["years_num"] .== year_num], 1, number_seeds);
-        toannual(quarterly_forecast[(5 - q):(end - mod(q, 4)), :]')'
+        Bit.toannual(quarterly_forecast[(5 - q):(end - mod(q, 4)), :]')'
     ]
 
     return quarterly_full, annual_full
@@ -66,7 +66,7 @@ function prepare_quarterly_annual_level_growth_deflator(nominal, real, data, var
 
     deflator_annual = [
         repeat(data["$(varname)_deflator"][data["years_num"] .== year_num], 1, number_seeds);
-        toannual_mean(deflator_quarterly[(5 - q):(end - mod(q, 4)), :]')'
+        Bit.toannual_mean(deflator_quarterly[(5 - q):(end - mod(q, 4)), :]')'
     ]
 
     deflator_growth_annual = growth_rate(deflator_annual)
@@ -92,10 +92,10 @@ function get_predictions_from_sims(sims, real_data, start_date)
     predictions_dict = Dict{String, Any}()
 
     # unique quarter identifier
-    quarter_num = date2num(start_date)
+    quarter_num = Bit.date2num(start_date)
 
     # unique year identifier (always computed the last day of the year)
-    year_num = date2num(DateTime(year(start_date) + 1, 1, 1) - Day(1))
+    year_num = Bit.date2num(DateTime(year(start_date) + 1, 1, 1) - Day(1))
 
     number_seeds = size(sims.real_gdp, 2)
     horizon = size(sims.real_gdp, 1) - 1
@@ -157,11 +157,11 @@ function get_predictions_from_sims(sims, real_data, start_date)
 
     # Prepare quarters_num and years_num
     predictions_dict["quarters_num"] = [
-        date2num(DateTime(year(start_date), month(start_date), 1) + Month(m + 1) - Day(1))
+        Bit.date2num(DateTime(year(start_date), month(start_date), 1) + Month(m + 1) - Day(1))
             for m in 0:3:(3 * horizon)
     ]
     predictions_dict["years_num"] = [
-        date2num(DateTime(year(start_date) + 1, 1, 1) + Month(month - 1) - Day(1))
+        Bit.date2num(DateTime(year(start_date) + 1, 1, 1) + Month(month - 1) - Day(1))
             for month in 1:12:(horizon / 4 * 12 + floor(q / 4))
     ]
 
