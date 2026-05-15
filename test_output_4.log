@@ -1,0 +1,87 @@
+   Resolving package versions...
+     Project No packages added to or removed from `~/.julia/dev/BeforeIT/Project.toml`
+    Manifest No packages added to or removed from `~/.julia/dev/BeforeIT/Manifest.toml`
+┌ Warning: type Main.CalibrationData does not exist in workspace; reconstructing
+└ @ JLD2 ~/.julia/packages/JLD2/qcxKY/src/data/reconstructing_datatypes.jl:588
+┌ Warning: type Main.CalibrationData does not exist in workspace; reconstructing
+└ @ JLD2 ~/.julia/packages/JLD2/qcxKY/src/data/reconstructing_datatypes.jl:588
+┌ Warning: type Main.CalibrationData does not exist in workspace; reconstructing
+└ @ JLD2 ~/.julia/packages/JLD2/qcxKY/src/data/reconstructing_datatypes.jl:588
+┌ Warning: type Main.CalibrationData does not exist in workspace; reconstructing
+└ @ JLD2 ~/.julia/packages/JLD2/qcxKY/src/data/reconstructing_datatypes.jl:588
+┌ Warning: type Main.CalibrationData does not exist in workspace; reconstructing
+└ @ JLD2 ~/.julia/packages/JLD2/qcxKY/src/data/reconstructing_datatypes.jl:588
+┌ Warning: Making the model deterministic, all subsequent calls to the model will be deterministic.
+└ @ Main ~/.julia/dev/BeforeIT/test/deterministic/runtests_deterministic.jl:1
+┌ Warning: Using annual 'firm_interest' - will apply timescale conversion
+└ @ BeforeIT ~/.julia/dev/BeforeIT/src/utils/calibration.jl:188
+┌ Warning: Using annual 'interest_government_debt' - will apply timescale conversion
+└ @ BeforeIT ~/.julia/dev/BeforeIT/src/utils/calibration.jl:198
+┌ Warning: wages_by_sector not available, estimating from aggregate wages
+└ @ BeforeIT ~/.julia/dev/BeforeIT/src/utils/calibration.jl:216
+┌ Warning: Formatting failed: use `import BeforeIT as Bit; using Runic; Bit.format_package()` to run the formatter
+└ @ Main ~/.julia/dev/BeforeIT/test/runtests.jl:54
+ERROR: LoadError: Some tests did not pass: 145213 passed, 1 failed, 1 errored, 0 broken.
+in expression starting at /home/bob/.julia/dev/BeforeIT/test/runtests.jl:13
+Quality (Aqua.jl): Error During Test at /home/bob/.julia/dev/BeforeIT/test/runtests.jl:42
+  Got exception outside of a @test
+  LoadError: ArgumentError: Package Aqua not found in current path.
+  - Run `import Pkg; Pkg.add("Aqua")` to install the Aqua package.
+  Stacktrace:
+    [1] macro expansion
+      @ ./loading.jl:2405 [inlined]
+    [2] macro expansion
+      @ ./lock.jl:376 [inlined]
+    [3] __require(into::Module, mod::Symbol)
+      @ Base ./loading.jl:2388
+    [4] require(into::Module, mod::Symbol)
+      @ Base ./loading.jl:2364
+    [5] include(mapexpr::Function, mod::Module, _path::String)
+      @ Base ./Base.jl:307
+    [6] top-level scope
+      @ ~/.julia/dev/BeforeIT/test/runtests.jl:14
+    [7] macro expansion
+      @ ~/.julia/juliaup/julia-1.12.6+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+    [8] macro expansion
+      @ ~/.julia/dev/BeforeIT/test/runtests.jl:43 [inlined]
+    [9] macro expansion
+      @ ~/.julia/juliaup/julia-1.12.6+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+   [10] macro expansion
+      @ ~/.julia/dev/BeforeIT/test/runtests.jl:43 [inlined]
+   [11] include(mod::Module, _path::String)
+      @ Base ./Base.jl:306
+   [12] exec_options(opts::Base.JLOptions)
+      @ Base ./client.jl:317
+   [13] _start()
+      @ Base ./client.jl:550
+  in expression starting at /home/bob/.julia/dev/BeforeIT/test/package_sanity_tests.jl:1
+Format (Runic.jl): Test Failed at /home/bob/.julia/dev/BeforeIT/test/runtests.jl:52
+  Expression: isformat == true
+   Evaluated: false == true
+
+Stacktrace:
+ [1] top-level scope
+   @ ~/.julia/dev/BeforeIT/test/runtests.jl:14
+ [2] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.6+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+ [3] macro expansion
+   @ ~/.julia/dev/BeforeIT/test/runtests.jl:51 [inlined]
+ [4] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.6+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:1777 [inlined]
+ [5] macro expansion
+   @ ~/.julia/dev/BeforeIT/test/runtests.jl:52 [inlined]
+ [6] macro expansion
+   @ ~/.julia/juliaup/julia-1.12.6+0.x64.linux.gnu/share/julia/stdlib/v1.12/Test/src/Test.jl:680 [inlined]
+Test Summary:                       |   Pass  Fail  Error   Total     Time
+BeforeIT.jl Tests                   | 145213     1      1  145215  2m13.6s
+  Utils                             |     64                   64    18.6s
+  Invariants                        |  56030                56030     8.4s
+  Systems                           |  88694                88694  1m05.0s
+  Quality (Aqua.jl)                 |                   1       1     0.8s
+  initialize deterministic          |     32                   32    10.8s
+  one epoch deterministic           |     65                   65    10.4s
+  run deterministic                 |     56                   56     2.3s
+  time 1 and 5 deterministic        |     54                   54     1.6s
+  prediction pipeline deterministic |    215                  215    13.2s
+  Format (Runic.jl)                 |            1              1     1.8s
+RNG of the outermost testset: Xoshiro(0x69f48e3dfbb1bddb, 0xfe124f9126d689ad, 0x3a49812f4b60cc6a, 0x46d2f521e04ca882, 0x775fb6cb0b31f482)

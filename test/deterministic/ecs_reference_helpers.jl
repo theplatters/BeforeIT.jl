@@ -1,4 +1,3 @@
-
 function _query_rows(world, component_types; with = (), without = ())
     rows = NamedTuple[]
     for result in collect(Bit.Ark.Query(world, component_types, with = with, without = without))
@@ -62,10 +61,10 @@ function _active_household_reference_state(model)
     end
 
     for row in _query_rows(
-        world, 
-        (Employed, NetDisposableIncome, Deposits, CapitalStock);
-        with = (Household,),
-    )
+            world,
+            (Employed, NetDisposableIncome, Deposits, CapitalStock);
+            with = (Household,),
+        )
         employed, income, deposits, capital = row.components
         push!(
             rows, (
@@ -80,10 +79,10 @@ function _active_household_reference_state(model)
     end
 
     for row in _query_rows(
-        world,
-        (Unemployed, NetDisposableIncome, Deposits, CapitalStock);
-        with = (Bit.Household,),
-    )
+            world,
+            (Unemployed, NetDisposableIncome, Deposits, CapitalStock);
+            with = (Bit.Household,),
+        )
         unemployed, income, deposits, capital = row.components
         push!(rows, (entity = row.entity, w_h = unemployed.unemployment_benefits, O_h = 0.0, Y_h = income.amount, D_h = deposits.amount, K_h = capital.amount))
     end
@@ -145,11 +144,13 @@ function _firm_reference_state(model)
     world = model.world
     rows = _query_rows(
         world,
-        (PrincipalProduct, LaborProductivity, IntermediateProductivity,
-         CapitalDeprecationRate, CapitalProductivity, OperatingMargins,
-         TaxRates, AverageWageRate, Employment, Output, Price, GoodsDemand,
-         Inventories, CapitalStock, Intermediates, LoansOutstanding, Deposits,
-         Profits, Vacancies);
+        (
+            PrincipalProduct, LaborProductivity, IntermediateProductivity,
+            CapitalDeprecationRate, CapitalProductivity, OperatingMargins,
+            TaxRates, AverageWageRate, Employment, Output, Price, GoodsDemand,
+            Inventories, CapitalStock, Intermediates, LoansOutstanding, Deposits,
+            Profits, Vacancies,
+        );
         with = (Firm,),
     )
     owners = _firm_owner_reference_state(model)

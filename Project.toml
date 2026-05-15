@@ -4,6 +4,7 @@ authors = ["Aldo Glielmo <aldo.glielmo@bancaditalia.it>", "Mitja Devetak <m888it
 version = "0.5.0"
 
 [deps]
+Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 Ark = "56664e29-41e4-4ea5-ab0e-825499acc647"
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 CommonSolve = "38540f10-b2f7-11e9-35d8-d573e4eb0ff2"
@@ -33,6 +34,7 @@ BeforeITFormat = "Runic"
 BeforeITPlots = ["Plots", "StatsPlots"]
 
 [compat]
+Aqua = "0.8"
 Ark = "0.4.0"
 BenchmarkTools = "1.7.0"
 CommonSolve = "0.2"

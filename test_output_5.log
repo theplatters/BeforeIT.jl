@@ -1,0 +1,25 @@
+   Resolving package versions...
+    Updating `~/.julia/dev/BeforeIT/Project.toml`
+  [4c88cf16] + Aqua v0.8.14
+    Updating `~/.julia/dev/BeforeIT/Manifest.toml`
+  [4c88cf16] + Aqua v0.8.14
+┌ Warning: type Main.CalibrationData does not exist in workspace; reconstructing
+└ @ JLD2 ~/.julia/packages/JLD2/qcxKY/src/data/reconstructing_datatypes.jl:588
+┌ Warning: type Main.CalibrationData does not exist in workspace; reconstructing
+└ @ JLD2 ~/.julia/packages/JLD2/qcxKY/src/data/reconstructing_datatypes.jl:588
+┌ Warning: type Main.CalibrationData does not exist in workspace; reconstructing
+└ @ JLD2 ~/.julia/packages/JLD2/qcxKY/src/data/reconstructing_datatypes.jl:588
+┌ Warning: type Main.CalibrationData does not exist in workspace; reconstructing
+└ @ JLD2 ~/.julia/packages/JLD2/qcxKY/src/data/reconstructing_datatypes.jl:588
+┌ Warning: type Main.CalibrationData does not exist in workspace; reconstructing
+└ @ JLD2 ~/.julia/packages/JLD2/qcxKY/src/data/reconstructing_datatypes.jl:588
+┌ Warning: Making the model deterministic, all subsequent calls to the model will be deterministic.
+└ @ Main ~/.julia/dev/BeforeIT/test/deterministic/runtests_deterministic.jl:1
+┌ Warning: Using annual 'firm_interest' - will apply timescale conversion
+└ @ BeforeIT ~/.julia/dev/BeforeIT/src/utils/calibration.jl:188
+┌ Warning: Using annual 'interest_government_debt' - will apply timescale conversion
+└ @ BeforeIT ~/.julia/dev/BeforeIT/src/utils/calibration.jl:198
+┌ Warning: wages_by_sector not available, estimating from aggregate wages
+└ @ BeforeIT ~/.julia/dev/BeforeIT/src/utils/calibration.jl:216
+Test Summary:     |   Pass   Total     Time
+BeforeIT.jl Tests | 145223  145223  2m25.3s
