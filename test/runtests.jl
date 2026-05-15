@@ -12,6 +12,7 @@ include("include_internals.jl")
 
 @testset "BeforeIT.jl Tests" begin
     @testset "Utils" begin
+        include("utils/toannual.jl")
         include("utils/positive.jl")
         include("utils/randpl.jl")
         include("utils/nfvar3_and_estimate.jl")
