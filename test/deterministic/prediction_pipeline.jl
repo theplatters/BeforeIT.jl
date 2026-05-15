@@ -1,10 +1,6 @@
 import BeforeIT as Bit
 using JLD2, Dates
 
-if !(@isdefined(BEFOREIT_DETERMINISTIC_LOADED) && BEFOREIT_DETERMINISTIC_LOADED)
-    include("make_model_deterministic.jl")
-end
-
 @testset "prediction pipeline deterministic" begin
     reference_file = joinpath(@__DIR__, "2010Q1.jld2")
     reference_predictions = load(reference_file)["model_dict"]

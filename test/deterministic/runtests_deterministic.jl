@@ -1,4 +1,6 @@
-@warn "making the model deterministic all subsequent calls to the model will be deterministic."
+
+@warn "Making the model deterministic, all subsequent calls to the model will be deterministic."
+
 include("epsilon.jl")
 include("make_model_deterministic.jl")
 include("ecs_snapshot_helpers.jl")

@@ -1,6 +1,5 @@
 using MAT: matread
 
-include("make_model_deterministic.jl")
 include("ecs_reference_helpers.jl")
 
 @testset "initialize deterministic" begin
