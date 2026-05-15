@@ -39,7 +39,6 @@ include("include_internals.jl")
         include("systems/rotw.jl")
     end
 
-
     @testset "Quality (Aqua.jl)" begin
         include("package_sanity_tests.jl")
     end
