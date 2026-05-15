@@ -229,12 +229,14 @@ function legacy_desired_investment_sales_by_entity(world::Ark.World, growth::Flo
             with = (Components.Firm,),
         )
         @inbounds for i in eachindex(e)
-            push!(rows, (
-                entity_creation_order(e[i]),
-                e[i],
-                expected_sales_amount(goods_demand[i].amount, growth),
-                capital_stock[i].amount * capital_productivity[i].value,
-            ))
+            push!(
+                rows, (
+                    entity_creation_order(e[i]),
+                    e[i],
+                    expected_sales_amount(goods_demand[i].amount, growth),
+                    capital_stock[i].amount * capital_productivity[i].value,
+                )
+            )
         end
     end
 

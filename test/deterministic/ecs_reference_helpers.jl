@@ -71,14 +71,16 @@ function _active_household_reference_state(model)
             with = (Bit.Components.Household,),
         )
         employed, income, deposits, capital = row.components
-        push!(rows, (
-            entity = row.entity,
-            w_h = employed.rate,
-            O_h = worker_firm_index[row.entity],
-            Y_h = income.amount,
-            D_h = deposits.amount,
-            K_h = capital.amount,
-        ))
+        push!(
+            rows, (
+                entity = row.entity,
+                w_h = employed.rate,
+                O_h = worker_firm_index[row.entity],
+                Y_h = income.amount,
+                D_h = deposits.amount,
+                K_h = capital.amount,
+            )
+        )
     end
 
     for row in _query_rows(

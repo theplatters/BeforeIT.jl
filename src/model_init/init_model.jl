@@ -52,9 +52,9 @@ function seed_initial_employment!(world::Ark.World, properties::Properties)
 
     for (firm_e, employment, wage_rate) in firm_rows
         for _ in 1:employment
-                worker_index > length(unemployed_workers) && return nothing
-                push!(initial_assignments, (unemployed_workers[worker_index], firm_e, wage_rate))
-                worker_index += 1
+            worker_index > length(unemployed_workers) && return nothing
+            push!(initial_assignments, (unemployed_workers[worker_index], firm_e, wage_rate))
+            worker_index += 1
         end
     end
 

@@ -117,12 +117,14 @@ function append_household_consumption_demand!(
             without = without,
         )
         for i in eachindex(e)
-            push!(rows, (
-                entity_order_key(e[i]),
-                e[i],
-                consumption_budget[i].amount,
-                investment_budget[i].amount,
-            ))
+            push!(
+                rows, (
+                    entity_order_key(e[i]),
+                    e[i],
+                    consumption_budget[i].amount,
+                    investment_budget[i].amount,
+                )
+            )
         end
     end
 
@@ -643,7 +645,7 @@ function update_household_realised_consumption_and_prices!(
         world::Ark.World,
         sector::Int64,
         demand_cache,
-    first_pass_vals,
+        first_pass_vals,
         household_consumption,
         household_investment,
     )

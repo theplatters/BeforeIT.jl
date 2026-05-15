@@ -14,14 +14,16 @@ function search_and_matching_credit!(world::Ark.World)
             (Components.LoanFlow, Components.TargetLoans, Components.ExpectedLoans, Components.ExpectedCapital),
         )
         for i in eachindex(e)
-            push!(rows, (
-                entity = e[i],
-                loan_flow = loan_flow,
-                target_loan = target_loan,
-                expected_loan = expected_loan,
-                expected_capital = expected_capital,
-                index = i,
-            ))
+            push!(
+                rows, (
+                    entity = e[i],
+                    loan_flow = loan_flow,
+                    target_loan = target_loan,
+                    expected_loan = expected_loan,
+                    expected_capital = expected_capital,
+                    index = i,
+                )
+            )
         end
     end
 

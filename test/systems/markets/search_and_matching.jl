@@ -261,14 +261,16 @@ end
     firm_entity = nothing
     worker_entity = nothing
     target_wage = nothing
-    for (firm_e, employment, average_wage) in collect(Ark.Query(
-            world,
-            (
-                Bit.Components.Employment,
-                Bit.Components.AverageWageRate,
-            ),
-            with = (Bit.Components.Firm,)
-        ))
+    for (firm_e, employment, average_wage) in collect(
+            Ark.Query(
+                world,
+                (
+                    Bit.Components.Employment,
+                    Bit.Components.AverageWageRate,
+                ),
+                with = (Bit.Components.Firm,)
+            )
+        )
         for i in eachindex(firm_e)
             employment[i].amount > 0 || continue
             firm_entity = firm_e[i]
@@ -284,14 +286,16 @@ end
         break
     end
 
-    for (firm_e, employment, desired_employment) in collect(Ark.Query(
-            world,
-            (
-                Bit.Components.Employment,
-                Bit.Components.DesiredEmployment,
-            ),
-            with = (Bit.Components.Firm,)
-        ))
+    for (firm_e, employment, desired_employment) in collect(
+            Ark.Query(
+                world,
+                (
+                    Bit.Components.Employment,
+                    Bit.Components.DesiredEmployment,
+                ),
+                with = (Bit.Components.Firm,)
+            )
+        )
         for i in eachindex(firm_e)
             firm_e[i] == firm_entity || continue
             desired_employment[i] = Bit.Components.DesiredEmployment(0)
