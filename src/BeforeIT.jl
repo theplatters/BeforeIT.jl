@@ -66,7 +66,8 @@ include("systems/markets/search_and_matching_credit.jl")
 include("systems/markets/search_and_matching_labor.jl")
 
 include("schedule/one_step.jl")
-include("one_simulation.jl")
+include("schedule/one_simulation.jl")
 
+include("precompile.jl")
 
 end
