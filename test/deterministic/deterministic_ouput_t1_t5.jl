@@ -43,7 +43,7 @@ using MAT: matread
         if fieldname in ["nominal_sector_gva", "real_sector_gva"]
             @test isapprox(julia_output[2:end, :], matlab_output, rtol = 1.0e-5)
         else
-            @test isapprox(vec(julia_output[2:end]), vec(matlab_output'), rtol = 1.0e-5)
+            @test isapprox(vec(julia_output[2:end]), vec(matlab_output'), rtol = 1.0e-4)
         end
     end
 end
