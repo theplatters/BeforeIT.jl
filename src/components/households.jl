@@ -1,33 +1,33 @@
-struct NetDisposableIncome <: AbstractComponent
+@register struct NetDisposableIncome <: AbstractComponent
     amount::FloatType
 end
 
-struct ExpectedIncome <: AbstractComponent
+@register struct ExpectedIncome <: AbstractComponent
     amount::FloatType
 end
 
-struct Deposits <: AbstractComponent
+@register struct Deposits <: AbstractComponent
     amount::FloatType
 end
 
-struct CapitalStock <: AbstractComponent
+@register struct CapitalStock <: AbstractComponent
     amount::FloatType
 end
 
-struct ConsumptionBudget <: AbstractComponent
+@register struct ConsumptionBudget <: AbstractComponent
     amount::FloatType
 end
 
-struct InvestmentBudget <: AbstractComponent
+@register struct InvestmentBudget <: AbstractComponent
     amount::FloatType
 end
 
-struct RealisedConsumption <: AbstractComponent
+@register struct RealisedConsumption <: AbstractComponent
     amount::FloatType
 end
 
-struct RealisedInvestment <: AbstractComponent
+@register struct RealisedInvestment <: AbstractComponent
     amount::FloatType
 end
 
-struct Household <: AbstractComponent end
+@register struct Household <: AbstractComponent end

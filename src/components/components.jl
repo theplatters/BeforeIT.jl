@@ -1,4 +1,29 @@
+
 abstract type AbstractComponent end
+
+module Components
+
+import Ark
+import BeforeIT: AbstractComponent, FloatType, IntType
+
+const _BIT_COMPONENTS = DataType[]
+
+macro register(def)
+    def isa Expr && def.head == :struct || error("expected a struct definition")
+
+    name = def.args[2]
+
+    if name isa Expr && name.head == :<:
+        name = name.args[1]
+    end
+
+    name isa Symbol || error("parametric structs are not supported")
+
+    return quote
+        $def
+        push!(_BIT_COMPONENTS, $name)
+    end
+end
 
 include("bank.jl")
 include("central_bank.jl")
@@ -10,26 +35,10 @@ include("profits.jl")
 include("rest_of_world.jl")
 include("workers.jl")
 
-const COMPONENTS_VEC = [
-    ResidualItems, LendingRate, Banker, Bank, NominalInterestRate,
-    GovernmentBondInterestRate, GradualAdjustmentRate, EquilibriumInterestRate, InflationTargetingWeight,
-    EconomicWeight, CentralBank, PrincipalProduct, LaborProductivity, IntermediateProductivity,
-    CapitalProductivity, FirmProperties, CapitalDeprecationRate, OperatingMargins, WageBill,
-    AverageWageRate, TaxRates, Price, PriceIndex, CFPriceIndex, Employment,
-    Vacancies, DesiredEmployment, Output, Sales, GoodsDemand,
-    Inventories, Intermediates, Investment, Equity, FinalGoodsStockChange,
-    MaterialsStockChange, TargetLoans, ExpectedCapital, ExpectedLoans, ExpectedSales,
-    DesiredInvestment, DesiredMaterials, Owner, Capitalist, Firm,
-    GovernmentRevenues, SocialBenefitsInactive, SocialBenefitsOther, PriceInflationGovernmentGoods,
-    GovernmentDebt, ConsumptionDemand, LocalGovernment, Government, NetDisposableIncome, ExpectedIncome,
-    Deposits, CapitalStock, ConsumptionBudget, InvestmentBudget, RealisedConsumption,
-    RealisedInvestment, Household, LoansOutstanding, LoanFlow, Profits,
-    ExpectedProfits, EuroAreaGDP, EuroAreaGrowth, EuroAreaInflation, NetForeignPosition,
-    ImportSupply, TotalExportDemand, TotalImportSupply, ExportDemand, ImportSales,
-    ImportDemand, ImportPrice, ExportPriceInflation, ForeignSector, ForeignConsumptionDemand,
-    ForeignConsumption, RestOfWorldEntity, RestOfWorld, Employed, EmployedAt,
-    Inactive, Unemployed,
-]
+end
 
-# Convert to Tuple for Ark
-const COMPONENTS = Tuple(COMPONENTS_VEC)
+const BIT_COMPONENTS = Tuple(Components._BIT_COMPONENTS)
+
+for C in BIT_COMPONENTS
+    @eval using .Components: $(nameof(C))
+end

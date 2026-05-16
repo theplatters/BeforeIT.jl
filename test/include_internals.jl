@@ -1,3 +1,4 @@
-for C in Bit.COMPONENTS_VEC
+
+for C in Bit.BIT_COMPONENTS
     @eval using BeforeIT: $(nameof(C))
 end

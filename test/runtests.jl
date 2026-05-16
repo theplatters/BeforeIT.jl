@@ -45,7 +45,9 @@ include("include_internals.jl")
 
     # WARNING: this should be the last include among behavior tests because it
     # overrides randomness to make subsequent model runs deterministic.
-    include("deterministic/runtests_deterministic.jl")
+    @testset "Deterministic Verification" begin
+        include("deterministic/runtests_deterministic.jl")
+    end
 
     @testset "Format (Runic.jl)" begin
         isformat = Bit.format_package(check = true)

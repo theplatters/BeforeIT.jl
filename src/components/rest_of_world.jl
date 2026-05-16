@@ -1,63 +1,63 @@
-struct EuroAreaGDP <: AbstractComponent
+@register struct EuroAreaGDP <: AbstractComponent
     value::FloatType
 end
 
-struct EuroAreaGrowth <: AbstractComponent
+@register struct EuroAreaGrowth <: AbstractComponent
     rate::FloatType
 end
 
-struct EuroAreaInflation <: AbstractComponent
+@register struct EuroAreaInflation <: AbstractComponent
     rate::FloatType
 end
 
-struct NetForeignPosition <: AbstractComponent
+@register struct NetForeignPosition <: AbstractComponent
     amount::FloatType
 end
 
-struct ImportSupply <: AbstractComponent
+@register struct ImportSupply <: AbstractComponent
     amount::FloatType
 end
 
-struct TotalExportDemand <: AbstractComponent
+@register struct TotalExportDemand <: AbstractComponent
     amount::FloatType
 end
 
-struct TotalImportSupply <: AbstractComponent
+@register struct TotalImportSupply <: AbstractComponent
     amount::FloatType
 end
 
-struct ExportDemand <: AbstractComponent
+@register struct ExportDemand <: AbstractComponent
     amount::FloatType
 end
 
-struct ImportSales <: AbstractComponent
+@register struct ImportSales <: AbstractComponent
     amount::FloatType
 end
 
-struct ImportDemand <: AbstractComponent
+@register struct ImportDemand <: AbstractComponent
     amount::FloatType
 end
 
-struct ImportPrice <: AbstractComponent
+@register struct ImportPrice <: AbstractComponent
     value::FloatType
 end
 
-struct ExportPriceInflation <: AbstractComponent
+@register struct ExportPriceInflation <: AbstractComponent
     value::FloatType
 end
 
-struct ForeignSector <: AbstractComponent end
+@register struct ForeignSector <: AbstractComponent end
 
-struct ForeignConsumptionDemand <: AbstractComponent
+@register struct ForeignConsumptionDemand <: AbstractComponent
     amount::FloatType
 end
 
-struct ForeignConsumption <: AbstractComponent
+@register struct ForeignConsumption <: AbstractComponent
     amount::FloatType
 end
 
-struct RestOfWorldEntity <: AbstractComponent
+@register struct RestOfWorldEntity <: AbstractComponent
     entity::Ark.Entity
 end
 
-struct RestOfWorld <: AbstractComponent end
+@register struct RestOfWorld <: AbstractComponent end

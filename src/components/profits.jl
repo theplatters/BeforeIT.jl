@@ -1,7 +1,7 @@
-struct Profits <: AbstractComponent
+@register struct Profits <: AbstractComponent
     amount::FloatType
 end
 
-struct ExpectedProfits <: AbstractComponent
+@register struct ExpectedProfits <: AbstractComponent
     amount::FloatType
 end

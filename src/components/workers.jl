@@ -1,11 +1,11 @@
-struct Employed <: AbstractComponent
+@register struct Employed <: AbstractComponent
     rate::FloatType
 end
 
-struct EmployedAt <: Ark.Relationship end
+@register struct EmployedAt <: Ark.Relationship end
 
-struct Inactive <: AbstractComponent end
+@register struct Inactive <: AbstractComponent end
 
-struct Unemployed <: AbstractComponent
+@register struct Unemployed <: AbstractComponent
     unemployment_benefits::FloatType
 end
