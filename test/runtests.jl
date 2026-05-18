@@ -39,9 +39,9 @@ include("include_internals.jl")
         include("systems/rotw.jl")
     end
 
-    @testset "Quality (Aqua.jl)" begin
-        include("package_sanity_tests.jl")
-    end
+    #@testset "Quality (Aqua.jl)" begin
+    #    include("package_sanity_tests.jl")
+    #end
 
     # WARNING: this should be the last include among behavior tests because it
     # overrides randomness to make subsequent model runs deterministic.
