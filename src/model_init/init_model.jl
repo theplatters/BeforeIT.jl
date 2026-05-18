@@ -3,12 +3,18 @@ struct ECSModel{CS <: Tuple, CT <: Tuple, ST <: Tuple, N, M} <: AbstractModel
     world::Ark.World{CS, CT, ST, N, M}
 end
 
+const Model = ECSModel
+
 function ECSModel(parameters::Dict{String, Any}, init_conditions::Dict{String, Any})
     return ECSModel(Properties(parameters, init_conditions))
 end
 
+function ECSModel(parameters::Dict{String, Any}, init_conditions::InitialConditions)
+    return ECSModel(parameters, initial_conditions_dict(init_conditions))
+end
+
 function ECSModel(properties::Properties)
-    world = Ark.World(Components.COMPONENTS...)
+    world = Ark.World(BIT_COMPONENTS...)
 
     setup_firms!(world, properties)
     setup_workers!(world, properties)
@@ -18,17 +24,78 @@ function ECSModel(properties::Properties)
     setup_rotw!(world, properties)
     setup_aggregates!(world, properties)
 
+    seed_initial_employment!(world, properties)
+    initialize_household_incomes_and_balance_sheets!(world, properties)
     normalize_deposits_and_capital_stocks!(world)
     add_deposits_to_bank!(world)
+    collect_data!(world)
 
     return ECSModel(world)
 end
 
+function seed_initial_employment!(world::Ark.World, properties::Properties)
+    unemployed_workers = Ark.Entity[]
+    for (worker_e, _) in Ark.Query(world, (Unemployed,))
+        append!(unemployed_workers, worker_e)
+    end
+    sort!(unemployed_workers)
+
+    initial_assignments = Tuple{Ark.Entity, Ark.Entity, Float64}[]
+    worker_index = 1
+    firm_rows = Tuple{Ark.Entity, Int, Float64}[]
+    for (firm_e, employment, average_wages) in Ark.Query(world, (Employment, AverageWageRate))
+        for i in eachindex(firm_e)
+            push!(firm_rows, (firm_e[i], employment[i].amount, average_wages[i].rate))
+        end
+    end
+    sort!(firm_rows; by = first)
+
+    for (firm_e, employment, wage_rate) in firm_rows
+        for _ in 1:employment
+            worker_index > length(unemployed_workers) && return nothing
+            push!(initial_assignments, (unemployed_workers[worker_index], firm_e, wage_rate))
+            worker_index += 1
+        end
+    end
+
+    for (worker_e, firm_e, wage_rate) in initial_assignments
+        Ark.exchange_components!(
+            world,
+            worker_e,
+            remove = (Unemployed,),
+            add = (Employed(wage_rate), EmployedAt() => firm_e),
+        )
+    end
+
+    return nothing
+end
+
+function initialize_household_incomes_and_balance_sheets!(world::Ark.World, properties::Properties)
+    set_households_income!(world)
+
+    household_debt_ratio = properties.initial_conditions.households.debt
+    household_capital_ratio = properties.initial_conditions.households.capital
+    for (_, income, deposits, capital) in Ark.Query(
+            world,
+            (
+                NetDisposableIncome,
+                Deposits,
+                CapitalStock,
+            ),
+            with = (Household,),
+        )
+        deposits.amount .= household_debt_ratio .* income.amount
+        capital.amount .= household_capital_ratio .* income.amount
+    end
+
+    return nothing
+end
+
 function normalize_deposits_and_capital_stocks!(world)
-    total_disposable_income = @sum_over (income.amount for income in Ark.Query(world, (Components.NetDisposableIncome,)))
+    total_disposable_income = @sum_over (income.amount for income in Ark.Query(world, (NetDisposableIncome,)))
 
 
-    for (_, capital, deposits) in Ark.Query(world, (Components.CapitalStock, Components.Deposits), with = (Components.Household,))
+    for (_, capital, deposits) in Ark.Query(world, (CapitalStock, Deposits), with = (Household,))
         capital.amount .= capital.amount ./ total_disposable_income
         deposits.amount .= deposits.amount ./ total_disposable_income
     end
@@ -37,10 +104,11 @@ function normalize_deposits_and_capital_stocks!(world)
 end
 
 function add_deposits_to_bank!(world)
-    total_deposits = @sum_over (deposits.amount for deposits in Ark.Query(world, (Components.Deposits,)))
+    total_deposits = @sum_over (deposits.amount for deposits in Ark.Query(world, (Deposits,)))
+    total_loans = @sum_over (loans.amount for loans in Ark.Query(world, (LoansOutstanding,)))
 
-    for (e, b) in Ark.Query(world, (Components.ResidualItems,))
-        b.amount .+= total_deposits
+    for (_, equity, residual_items) in Ark.Query(world, (Equity, ResidualItems), with = (Bank,))
+        residual_items.amount .= equity.amount .- total_loans .+ total_deposits
     end
 
     return

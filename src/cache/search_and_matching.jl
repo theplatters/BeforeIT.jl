@@ -75,7 +75,7 @@ end
 
 function finalize_stock_cache!(cache::StockCache)
 
-    p = sortperm(cache.sector)
+    p = sortperm(eachindex(cache.sector); by = i -> (cache.sector[i], i))
 
     permute!(cache.available_stocks, p)
     permute!(cache.stock_capacity, p)

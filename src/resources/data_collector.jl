@@ -31,7 +31,7 @@ mutable struct DataCollector
     real_sector_gva::Vector{Vector{Float64}}
 
     function DataCollector(props::Properties)
-        new(
+        return new(
             Int64[], # collection_time
             Float64[], # nominal_gdp
             Float64[], # real_gdp
@@ -63,3 +63,22 @@ mutable struct DataCollector
         )
     end
 end
+
+struct DataVector{D <: DataCollector}
+    vector::Vector{D}
+end
+
+DataVector(model) = DataVector([getproperty(model, :data)])
+DataVector(model_vec::Vector) = DataVector([getproperty(model, :data) for model in model_vec])
+
+function Base.getproperty(dv::DataVector, name::Symbol)
+    if name in fieldnames(DataCollector)
+        return hcat([getproperty(d, name) for d in dv.vector]...)
+    end
+    return getfield(dv, name)
+end
+
+Base.getindex(dv::DataVector, i::Int) = getindex(getfield(dv, :vector), i)
+Base.length(dv::DataVector) = length(getfield(dv, :vector))
+Base.iterate(dv::DataVector) = iterate(getfield(dv, :vector))
+Base.iterate(dv::DataVector, state) = iterate(getfield(dv, :vector), state)

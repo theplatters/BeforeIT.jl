@@ -329,7 +329,7 @@ function build_mock_model(prop::Bit.Properties; overrides...)
 
     model = MockModel(
         prop = mock_prop, cb = cb, bank = bank,
-        firms = firms, w_act = w_act, w_inact = w_inact, 
+        firms = firms, w_act = w_act, w_inact = w_inact,
         agg = agg, rotw = rotw, gov = gov
     )
 
@@ -368,67 +368,67 @@ Scalars (like `bank_E_k`) are applied to the single bank entity.
 function set_mock_components!(world::Ark.World; overrides...)
     # Group mappings by the entity tag they apply to
     firm_mappings = Dict(
-        :firms_L_i => Bit.Components.LoansOutstanding,
-        :firms_DL_i => Bit.Components.LoanFlow,
-        :firms_D_i => Bit.Components.Deposits,
-        :firms_E_i => Bit.Components.Equity,
-        :firms_K_i => Bit.Components.CapitalStock,
-        :firms_Y_i => Bit.Components.Output,
-        :firms_G_i => Bit.Components.PrincipalProduct,
-        :firms_I_d_i => Bit.Components.DesiredInvestment,
-        :firms_DM_d_i => Bit.Components.DesiredMaterials,
-        :firms_S_i => Bit.Components.Inventories,
-        :firms_P_i => Bit.Components.Price,
-        :firms_alpha_bar_i => Bit.Components.LaborProductivity,
-        :firms_beta_i => Bit.Components.IntermediateProductivity,
-        :firms_kappa_i => Bit.Components.CapitalProductivity,
-        :firms_delta_i => Bit.Components.CapitalDeprecationRate
+        :firms_L_i => Bit.LoansOutstanding,
+        :firms_DL_i => Bit.LoanFlow,
+        :firms_D_i => Bit.Deposits,
+        :firms_E_i => Bit.Equity,
+        :firms_K_i => Bit.CapitalStock,
+        :firms_Y_i => Bit.Output,
+        :firms_G_i => Bit.PrincipalProduct,
+        :firms_I_d_i => Bit.DesiredInvestment,
+        :firms_DM_d_i => Bit.DesiredMaterials,
+        :firms_S_i => Bit.Inventories,
+        :firms_P_i => Bit.Price,
+        :firms_alpha_bar_i => Bit.LaborProductivity,
+        :firms_beta_i => Bit.IntermediateProductivity,
+        :firms_kappa_i => Bit.CapitalProductivity,
+        :firms_delta_i => Bit.CapitalDeprecationRate
     )
 
     bank_mappings = Dict(
-        :bank_E_k => Bit.Components.Equity,
-        :bank_r => Bit.Components.LendingRate,
-        :bank_Pi_k => Bit.Components.Profits,
-        :bank_Pi_e_k => Bit.Components.ExpectedProfits,
-        :bank_D_k => Bit.Components.ResidualItems,
-        :bank_C_d_h => Bit.Components.ConsumptionBudget,
-        :bank_I_d_h => Bit.Components.InvestmentBudget
+        :bank_E_k => Bit.Equity,
+        :bank_r => Bit.LendingRate,
+        :bank_Pi_k => Bit.Profits,
+        :bank_Pi_e_k => Bit.ExpectedProfits,
+        :bank_D_k => Bit.ResidualItems,
+        :bank_C_d_h => Bit.ConsumptionBudget,
+        :bank_I_d_h => Bit.InvestmentBudget
     )
 
     # Household mappings (split by their specific roles in the ECS)
     w_act_mappings = Dict(
-        :w_act_D_h => Bit.Components.Deposits,
-        :w_act_C_d_h => Bit.Components.ConsumptionBudget,
-        :w_act_I_d_h => Bit.Components.InvestmentBudget
+        :w_act_D_h => Bit.Deposits,
+        :w_act_C_d_h => Bit.ConsumptionBudget,
+        :w_act_I_d_h => Bit.InvestmentBudget
     )
     w_inact_mappings = Dict(
-        :w_inact_D_h => Bit.Components.Deposits,
-        :w_inact_C_d_h => Bit.Components.ConsumptionBudget,
-        :w_inact_I_d_h => Bit.Components.InvestmentBudget
+        :w_inact_D_h => Bit.Deposits,
+        :w_inact_C_d_h => Bit.ConsumptionBudget,
+        :w_inact_I_d_h => Bit.InvestmentBudget
     )
     capitalist_mappings = Dict(
-        :firms_D_h => Bit.Components.Deposits,
-        :firms_C_d_h => Bit.Components.ConsumptionBudget,
-        :firms_I_d_h => Bit.Components.InvestmentBudget
+        :firms_D_h => Bit.Deposits,
+        :firms_C_d_h => Bit.ConsumptionBudget,
+        :firms_I_d_h => Bit.InvestmentBudget
     )
     banker_mappings = Dict(
-        :bank_D_h => Bit.Components.Deposits,
-        :bank_C_d_h => Bit.Components.ConsumptionBudget,
-        :bank_I_d_h => Bit.Components.InvestmentBudget
+        :bank_D_h => Bit.Deposits,
+        :bank_C_d_h => Bit.ConsumptionBudget,
+        :bank_I_d_h => Bit.InvestmentBudget
     )
 
     rotw_mappings = Dict(
-        :rotw_C_d_l => Bit.Components.ForeignConsumptionDemand,
-        :rotw_Y_m => Bit.Components.ImportSupply,
-        :rotw_P_m => Bit.Components.ImportPrice
+        :rotw_C_d_l => Bit.ForeignConsumptionDemand,
+        :rotw_Y_m => Bit.ImportSupply,
+        :rotw_P_m => Bit.ImportPrice
     )
-    gov_mappings = Dict(:gov_C_d_j => Bit.Components.ConsumptionDemand)
+    gov_mappings = Dict(:gov_C_d_j => Bit.ConsumptionDemand)
 
     for (k, v) in overrides
         if haskey(firm_mappings, k)
             CompType = firm_mappings[k]
             idx = 1
-            for (e, comp) in Ark.Query(world, (CompType,), with = (Bit.Components.Firm,))
+            for (e, comp) in Ark.Query(world, (CompType,), with = (Bit.Firm,))
                 for i in eachindex(e)
                     comp[i] = CompType(v[idx])
                     idx += 1
@@ -438,8 +438,12 @@ function set_mock_components!(world::Ark.World; overrides...)
         elseif haskey(w_act_mappings, k)
             CompType = w_act_mappings[k]
             idx = 1
-            # Active workers start as Unemployed in the ECS
-            for (e, comp) in Ark.Query(world, (CompType,), with = (Bit.Components.Unemployed,))
+            for (e, comp) in Ark.Query(
+                    world,
+                    (CompType,),
+                    with = (Bit.Household,),
+                    without = (Bit.Inactive, Bit.Capitalist, Bit.Banker)
+                )
                 for i in eachindex(e)
                     comp[i] = CompType(v[idx])
                     idx += 1
@@ -449,7 +453,7 @@ function set_mock_components!(world::Ark.World; overrides...)
         elseif haskey(w_inact_mappings, k)
             CompType = w_inact_mappings[k]
             idx = 1
-            for (e, comp) in Ark.Query(world, (CompType,), with = (Bit.Components.Inactive,))
+            for (e, comp) in Ark.Query(world, (CompType,), with = (Bit.Inactive,))
                 for i in eachindex(e)
                     comp[i] = CompType(v[idx])
                     idx += 1
@@ -459,7 +463,7 @@ function set_mock_components!(world::Ark.World; overrides...)
         elseif haskey(capitalist_mappings, k)
             CompType = capitalist_mappings[k]
             idx = 1
-            for (e, comp) in Ark.Query(world, (CompType,), with = (Bit.Components.Capitalist,))
+            for (e, comp) in Ark.Query(world, (CompType,), with = (Bit.Capitalist,))
                 for i in eachindex(e)
                     comp[i] = CompType(v[idx])
                     idx += 1
@@ -468,20 +472,20 @@ function set_mock_components!(world::Ark.World; overrides...)
 
         elseif haskey(banker_mappings, k)
             CompType = banker_mappings[k]
-            for (e, comp) in Ark.Query(world, (CompType,), with = (Bit.Components.Banker,))
+            for (e, comp) in Ark.Query(world, (CompType,), with = (Bit.Banker,))
                 comp[1] = CompType(v)
             end
 
         elseif haskey(bank_mappings, k)
             CompType = bank_mappings[k]
-            for (e, comp) in Ark.Query(world, (CompType,), with = (Bit.Components.Bank,))
+            for (e, comp) in Ark.Query(world, (CompType,), with = (Bit.Bank,))
                 comp[1] = CompType(v)
             end
 
         elseif k == :rotw_C_d_l
-            CompType = Bit.Components.ForeignConsumptionDemand
+            CompType = Bit.ForeignConsumptionDemand
             idx = 1
-            for (e, comp) in Ark.Query(world, (CompType,), with = (Bit.Components.RestOfWorldEntity,))
+            for (e, comp) in Ark.Query(world, (CompType,), with = (Bit.RestOfWorldEntity,))
                 for i in eachindex(e)
                     comp[i] = CompType(v[idx])
                     idx += 1
@@ -491,7 +495,7 @@ function set_mock_components!(world::Ark.World; overrides...)
         elseif k == :rotw_Y_m || k == :rotw_P_m
             CompType = rotw_mappings[k]
             idx = 1
-            for (e, comp) in Ark.Query(world, (CompType,), with = (Bit.Components.ForeignSector,))
+            for (e, comp) in Ark.Query(world, (CompType,), with = (Bit.ForeignSector,))
                 for i in eachindex(e)
                     comp[i] = CompType(v[idx])
                     idx += 1
@@ -501,7 +505,7 @@ function set_mock_components!(world::Ark.World; overrides...)
         elseif haskey(gov_mappings, k)
             CompType = gov_mappings[k]
             idx = 1
-            for (e, comp) in Ark.Query(world, (CompType,), with = (Bit.Components.LocalGovernment,))
+            for (e, comp) in Ark.Query(world, (CompType,), with = (Bit.LocalGovernment,))
                 for i in eachindex(e)
                     comp[i] = CompType(v[idx])
                     idx += 1

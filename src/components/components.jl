@@ -1,43 +1,30 @@
+
+abstract type AbstractComponent end
+
 module Components
 
 import Ark
-using ..BeforeIT: FloatType, IntType
+import BeforeIT: AbstractComponent, FloatType, IntType
 
-# Registry
-const ALL = Type[]
-macro component(ex)
-    # Handle both @component struct Name ... end and @component Name begin ... end
-    return if ex isa Expr && ex.head == :struct
-        # Extract type name from struct definition
-        type_expr = ex.args[2]
+const _BIT_COMPONENTS = DataType[]
 
-        name = if type_expr isa Symbol
-            type_expr
-        elseif type_expr.head == :(<:)
-            # struct Name <: Super
-            name_part = type_expr.args[1]
-            if name_part isa Expr && name_part.head == :curly
-                name_part.args[1]  # Name{T} -> Name
-            else
-                name_part
-            end
-        elseif type_expr.head == :curly
-            # struct Name{T}
-            type_expr.args[1]
-        else
-            error("Cannot extract name from: $type_expr")
-        end
+macro register(def)
+    def isa Expr && def.head == :struct || error("expected a struct definition")
 
-        quote
-            $(esc(ex))  # Define the struct in caller's scope
-            push!($(esc(ALL)), $(esc(name)))  # Register the type
-            $(esc(name))  # Return the type
-        end
-    else
-        error("@component expects a struct definition")
+    name = def.args[2]
+
+    if name isa Expr && name.head == :<:
+        name = name.args[1]
+    end
+
+    name isa Symbol || error("parametric structs are not supported")
+
+    return quote
+        $def
+        push!(_BIT_COMPONENTS, $name)
     end
 end
-abstract type AbstractComponent end
+
 include("bank.jl")
 include("central_bank.jl")
 include("firms.jl")
@@ -48,8 +35,10 @@ include("profits.jl")
 include("rest_of_world.jl")
 include("workers.jl")
 
+end
 
-# Convert to Tuple for Ark
-const COMPONENTS = Tuple(ALL)
+const BIT_COMPONENTS = Tuple(Components._BIT_COMPONENTS)
 
+for C in BIT_COMPONENTS
+    @eval using .Components: $(nameof(C))
 end

@@ -1,62 +1,63 @@
-@component struct EuroAreaGDP <: AbstractComponent
+@register struct EuroAreaGDP <: AbstractComponent
     value::FloatType
 end
 
-@component struct EuroAreaGrowth <: AbstractComponent
+@register struct EuroAreaGrowth <: AbstractComponent
     rate::FloatType
 end
 
-@component struct EuroAreaInflation <: AbstractComponent
+@register struct EuroAreaInflation <: AbstractComponent
     rate::FloatType
 end
 
-@component struct NetForeignPosition <: AbstractComponent
+@register struct NetForeignPosition <: AbstractComponent
     amount::FloatType
 end
 
-@component struct ImportSupply <: AbstractComponent
+@register struct ImportSupply <: AbstractComponent
     amount::FloatType
 end
 
-@component struct TotalExportDemand <: AbstractComponent
+@register struct TotalExportDemand <: AbstractComponent
     amount::FloatType
 end
 
-@component struct TotalImportSupply <: AbstractComponent
+@register struct TotalImportSupply <: AbstractComponent
     amount::FloatType
 end
 
-@component struct ExportDemand <: AbstractComponent
+@register struct ExportDemand <: AbstractComponent
     amount::FloatType
 end
 
-@component struct ImportSales <: AbstractComponent
+@register struct ImportSales <: AbstractComponent
     amount::FloatType
 end
 
-@component struct ImportDemand <: AbstractComponent
+@register struct ImportDemand <: AbstractComponent
     amount::FloatType
 end
-@component struct ImportPrice <: AbstractComponent
+
+@register struct ImportPrice <: AbstractComponent
     value::FloatType
 end
 
-@component struct ExportPriceInflation <: AbstractComponent
+@register struct ExportPriceInflation <: AbstractComponent
     value::FloatType
 end
 
-@component struct ForeignSector <: AbstractComponent end
+@register struct ForeignSector <: AbstractComponent end
 
-@component struct ForeignConsumptionDemand <: AbstractComponent
+@register struct ForeignConsumptionDemand <: AbstractComponent
     amount::FloatType
 end
 
-@component struct ForeignConsumption <: AbstractComponent
+@register struct ForeignConsumption <: AbstractComponent
     amount::FloatType
 end
 
-@component struct RestOfWorldEntity <: AbstractComponent
+@register struct RestOfWorldEntity <: AbstractComponent
     entity::Ark.Entity
 end
 
-@component struct RestOfWorld <: AbstractComponent end
+@register struct RestOfWorld <: AbstractComponent end

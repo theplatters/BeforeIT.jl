@@ -1,11 +1,12 @@
-@component struct ResidualItems <: AbstractComponent
+
+@register struct ResidualItems <: AbstractComponent
     amount::FloatType
 end
 
-@component struct LendingRate <: AbstractComponent
+@register struct LendingRate <: AbstractComponent
     rate::FloatType
 end
 
-@component struct Banker <: AbstractComponent end
+@register struct Banker <: AbstractComponent end
 
-@component struct Bank <: AbstractComponent end
+@register struct Bank <: AbstractComponent end

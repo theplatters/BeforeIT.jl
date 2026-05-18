@@ -1,4 +1,4 @@
-function step!(model)
+function _step_impl!(model; parallel = false, shock! = nothing)
     world = model.world
 
     BeforeIT.finance_insolvent_firms!(world)
@@ -15,8 +15,8 @@ function step!(model)
     # set central bank rate via the Taylor rule
     BeforeIT.set_central_bank_rate!(world)
 
-    # apply an eventual shock to the world, the default does nothing
-    #shock!(world)
+    # apply an eventual shock to the model, the default does nothing
+    shock! !== nothing && shock!(model)
 
     # update rate on loans and morgages
     BeforeIT.set_bank_rate!(world)
@@ -63,7 +63,7 @@ function step!(model)
     BeforeIT.set_rotw_import_export!(world)
 
     ####### GENERAL SEARCH AND MATCHING FOR ALL GOODS #######
-    BeforeIT.search_and_matching!(world)
+    BeforeIT.search_and_matching!(world; parallel)
 
     ####### FINAL GENERAL ACCOUNTING #######
 
@@ -118,11 +118,12 @@ function step!(model)
     # update GDP with the results of the time step
     BeforeIT.set_gross_domestic_product!(world)
 
-    # collect data
-    BeforeIT.collect_data!(world)
-
     # update time step
     BeforeIT.set_time!(world)
 
-    return nothing
+    return model
+end
+
+function step!(model; parallel = false, shock! = nothing)
+    return _step_impl!(model; parallel, shock!)
 end

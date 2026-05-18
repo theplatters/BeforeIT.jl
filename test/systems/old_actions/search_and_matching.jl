@@ -1,3 +1,4 @@
+
 """
     search_and_matching!(model; parallel::Bool = false)
 
@@ -95,27 +96,18 @@ function update_aggregate_variables!(
     gov.P_j = gov.C_j / gov.P_j
     rotw.P_l = rotw.C_l / rotw.P_l
 
-    println("Sizes check in update_aggregate_variables!:")
-    println("  w_act.C_h: ", size(w_act.C_h), " vs view: ", size(@view(C_h[1:H_W])))
     w_act.C_h .= @view(C_h[1:H_W])
-    println("  w_inact.C_h: ", size(w_inact.C_h), " vs view: ", size(@view(C_h[(H_W + 1):(H_W + H_inact)])))
     w_inact.C_h .= @view(C_h[(H_W + 1):(H_W + H_inact)])
-    println("  firms.C_h: ", size(firms.C_h), " vs view: ", size(@view(C_h[(H_W + H_inact + 1):(H_W + H_inact + I)])))
     firms.C_h .= @view(C_h[(H_W + H_inact + 1):(H_W + H_inact + I)])
     bank.C_h = C_h[H]
 
-    println("  w_act.I_h: ", size(w_act.I_h), " vs view: ", size(@view(I_h[1:H_W])))
     w_act.I_h .= @view(I_h[1:H_W])
-    println("  w_inact.I_h: ", size(w_inact.I_h), " vs view: ", size(@view(I_h[(H_W + 1):(H_W + H_inact)])))
     w_inact.I_h .= @view(I_h[(H_W + 1):(H_W + H_inact)])
-    println("  firms.I_h: ", size(firms.I_h), " vs view: ", size(@view(I_h[(H_W + H_inact + 1):(H_W + H_inact + I)])))
     firms.I_h .= @view(I_h[(H_W + H_inact + 1):(H_W + H_inact + I)])
     bank.I_h = I_h[H]
 
-    println("  rotw.Q_d_m: ", size(rotw.Q_d_m), " vs Q_d_m: ", size(Q_d_m))
     rotw.Q_d_m .= Q_d_m
 
-    println("  firms.I_i: ", size(firms.I_i), " vs I_i: ", size(I_i))
     firms.I_i .= I_i
     firms.Q_d_i .= Q_d_i
     firms.P_bar_i .= P_bar_i

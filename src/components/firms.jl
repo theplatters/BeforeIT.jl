@@ -1,134 +1,136 @@
 abstract type FirmComponent <: AbstractComponent end
-@component struct PrincipalProduct <: FirmComponent #G_i
+
+@register struct PrincipalProduct <: FirmComponent #G_i
     id::IntType
 end
 
-@component struct LaborProductivity <: FirmComponent #alpha_bar_i
+@register struct LaborProductivity <: FirmComponent #alpha_bar_i
     value::FloatType
 end
 
-@component struct IntermediateProductivity <: FirmComponent #beta_i
+@register struct IntermediateProductivity <: FirmComponent #beta_i
     value::FloatType
 end
 
-@component struct CapitalProductivity <: FirmComponent #kappa_i
+@register struct CapitalProductivity <: FirmComponent #kappa_i
     value::FloatType
 end
 
-@component struct FirmProperties
+@register struct FirmProperties
     intermediate_productivity::FloatType
     capital_productivity::FloatType
     labor_productivity::FloatType
     capital_deprecation_rate::FloatType
 end
 
-@component struct CapitalDeprecationRate <: FirmComponent #delta_i
+@register struct CapitalDeprecationRate <: FirmComponent #delta_i
     rate::FloatType
 end
 
-@component struct OperatingMargins <: FirmComponent  #pi_bar_i
+@register struct OperatingMargins <: FirmComponent  #pi_bar_i
     rate::FloatType
 end
 
-@component struct WageBill <: FirmComponent #w_i
+@register struct WageBill <: FirmComponent #w_i
     amount::FloatType
 end
 
-@component struct AverageWageRate <: FirmComponent #w_bar_i
+@register struct AverageWageRate <: FirmComponent #w_bar_i
     rate::FloatType
 end
 
-@component struct TaxRates <: FirmComponent #tau_Y
+@register struct TaxRates <: FirmComponent #tau_Y
     output::FloatType
     capital::FloatType
 end
 
-@component struct Price <: FirmComponent #P_i
+@register struct Price <: FirmComponent #P_i
     value::FloatType
 end
 
-@component struct PriceIndex <: FirmComponent #P_bar_i
+@register struct PriceIndex <: FirmComponent #P_bar_i
     value::FloatType
 end
 
-@component struct CFPriceIndex <: FirmComponent #P_CF_i
+@register struct CFPriceIndex <: FirmComponent #P_CF_i
     value::FloatType
 end
 
-@component struct Employment <: FirmComponent #N_i
+@register struct Employment <: FirmComponent #N_i
     amount::IntType
 end
 
-@component struct Vacancies <: FirmComponent #V_i
+@register struct Vacancies <: FirmComponent #V_i
     amount::IntType
 end
 
-@component struct DesiredEmployment <: FirmComponent #N_d_i
+@register struct DesiredEmployment <: FirmComponent #N_d_i
     amount::IntType
 end
 
-@component struct Output <: FirmComponent #Y_i
+@register struct Output <: FirmComponent #Y_i
     amount::FloatType
 end
 
-@component struct Sales <: FirmComponent #Q_i
+@register struct Sales <: FirmComponent #Q_i
     amount::FloatType
 end
 
-@component struct GoodsDemand <: FirmComponent #Q_d_i
+@register struct GoodsDemand <: FirmComponent #Q_d_i
     amount::FloatType
 end
 
-@component struct Inventories <: FirmComponent #S_i
+@register struct Inventories <: FirmComponent #S_i
     amount::FloatType
 end
 
-@component struct Intermediates <: FirmComponent #M_i
+@register struct Intermediates <: FirmComponent #M_i
     amount::FloatType
 end
 
-@component struct Investment <: FirmComponent  #I_i
+@register struct Investment <: FirmComponent  #I_i
     amount::FloatType
 end
 
-@component struct Equity <: FirmComponent #E_i
+@register struct Equity <: FirmComponent #E_i
     amount::FloatType
 end
 
-@component struct FinalGoodsStockChange <: FirmComponent #DS_i
+@register struct FinalGoodsStockChange <: FirmComponent #DS_i
     amount::FloatType
 end
 
-@component struct MaterialsStockChange <: FirmComponent #DM_i
+@register struct MaterialsStockChange <: FirmComponent #DM_i
     amount::FloatType
 end
 
-@component struct TargetLoans <: FirmComponent #DL_d_i
+@register struct TargetLoans <: FirmComponent #DL_d_i
     amount::FloatType
 end
 
-@component struct ExpectedCapital <: FirmComponent #K_e_i
+@register struct ExpectedCapital <: FirmComponent #K_e_i
     amount::FloatType
 end
 
-@component struct ExpectedLoans <: FirmComponent #L_e_i
+@register struct ExpectedLoans <: FirmComponent #L_e_i
     amount::FloatType
 end
 
-@component struct ExpectedSales <: FirmComponent #Q_s_i
+@register struct ExpectedSales <: FirmComponent #Q_s_i
     amount::FloatType
 end
 
-@component struct DesiredInvestment <: FirmComponent #I_d_i
+@register struct DesiredInvestment <: FirmComponent #I_d_i
     amount::FloatType
 end
 
-@component struct DesiredMaterials <: FirmComponent #DM_d_i
+@register struct DesiredMaterials <: FirmComponent #DM_d_i
     amount::FloatType
 end
 
-@component struct Owner <: Ark.Relationship
+@register struct Owner <: Ark.Relationship
 end
 
-@component struct Capitalist <: FirmComponent end
-@component struct Firm <: FirmComponent end
+@register struct Capitalist <: FirmComponent end
+
+@register struct Firm <: FirmComponent end
