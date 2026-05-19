@@ -128,8 +128,7 @@ end
     amount::FloatType
 end
 
-@register struct Owner <: Ark.Relationship
-end
+@register :relation struct Owner end
 
 @register struct Capitalist <: FirmComponent end
 

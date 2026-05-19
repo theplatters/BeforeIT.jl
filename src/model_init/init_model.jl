@@ -14,7 +14,7 @@ function ECSModel(parameters::Dict{String, Any}, init_conditions::InitialConditi
 end
 
 function ECSModel(properties::Properties)
-    world = Ark.World(BIT_COMPONENTS...)
+    world = Ark.World(Tuple(BIT_COMPONENTS)...)
 
     setup_firms!(world, properties)
     setup_workers!(world, properties)

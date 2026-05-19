@@ -24,6 +24,6 @@ end
     amount::FloatType
 end
 
-@register struct LocalGovernment <: Ark.Relationship end
+@register :relation struct LocalGovernment end
 
 @register struct Government <: GovernmentComponent end

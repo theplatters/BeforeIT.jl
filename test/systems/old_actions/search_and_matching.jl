@@ -1,4 +1,3 @@
-
 """
     search_and_matching!(model; parallel::Bool = false)
 
