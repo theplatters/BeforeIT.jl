@@ -323,8 +323,9 @@ function allocate_intermediate_from_available_stocks!(
             demand_cache.vals[buyer, sector] = max(demand_cache.vals[buyer, sector] - sold_amount, 0.0)
             remaining_supply = max(0.0, remaining_supply - sold_amount)
 
-            weights[firm_index - stock_cache.sector_offset[sector] + 1] *=
-                (stock_cache.available_stocks[firm_index] > 0.0)
+            if (stock_cache.available_stocks[firm_index] <= 0.0)
+                weights[firm_index - stock_cache.sector_offset[sector] + 1] = 0.0
+            end
         end
 
         nactive = rebuild_active_buyers!(active, demand_cache.vals, sector)
@@ -358,8 +359,10 @@ function allocate_intermediate_from_stock_capacity!(
             demand_cache.vals[buyer, sector] = max(demand_cache.vals[buyer, sector] - sold_amount, 0.0)
             remaining_supply = max(0.0, remaining_supply - sold_amount)
 
-            weights[firm_index - stock_cache.sector_offset[sector] + 1] *=
-                (stock_cache.stock_capacity[firm_index] > 0.0)
+            if (stock_cache.stock_capacity[firm_index] <= 0.0)
+                weights[firm_index - stock_cache.sector_offset[sector] + 1] = 0.0
+            end
+
         end
 
         nactive = rebuild_active_buyers!(active, demand_cache.vals, sector)
@@ -518,8 +521,10 @@ function allocate_retail_from_available_stocks!(
             stock_cache.available_stocks[firm_index] -= sold_amount
             demand_cache.nominal[buyer, sector] += sold_amount
             demand_cache.vals[buyer, sector] = max(demand_cache.vals[buyer, sector] - sold_amount * price, 0.0)
-            weights[firm_index - stock_cache.sector_offset[sector] + 1] *=
-                (stock_cache.available_stocks[firm_index] > 0.0)
+            if (stock_cache.available_stocks[firm_index] <= 0.0)
+                weights[firm_index - stock_cache.sector_offset[sector] + 1] = 0.0
+            end
+
             remaining_stocks = max(0.0, remaining_stocks - sold_amount)
         end
 
@@ -559,9 +564,11 @@ function allocate_retail_from_stock_capacity!(
             stock_cache.available_stocks[firm_index] -= sold_amount
             stock_cache.stock_capacity[firm_index] = max(0.0, stock_cache.stock_capacity[firm_index] - sold_amount)
             demand_cache.vals[buyer, sector] = max(demand_cache.vals[buyer, sector] - sold_amount * price, 0.0)
-            weights[firm_index - stock_cache.sector_offset[sector] + 1] *=
-                (stock_cache.stock_capacity[firm_index] > 0.0)
+            if (stock_cache.stock_capacity[firm_index] <= 0.0)
+                weights[firm_index - stock_cache.sector_offset[sector] + 1] = 0.0
+            end
         end
+
 
         nactive = rebuild_active_buyers!(active, demand_cache.vals, sector)
     end
