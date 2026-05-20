@@ -36,7 +36,7 @@ jobs:
         project-file: 'benchmark/Project.toml'
         key-suffix: ${{ matrix.repetition }}
     - name: Install dependencies
-      run: julia --project=benchmark -e 'using Pkg; Pkg.develop(path="."); Pkg.instantiate()'
+      run: julia --project=benchmark -e 'using Pkg; Pkg.develop("Ark"); Pkg.develop(path="."); Pkg.instantiate()'
     - name: Run benchmarks for current
       run: julia --project=benchmark benchmark/run_benchmarks.jl
     - name: Rename file
