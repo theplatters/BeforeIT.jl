@@ -75,13 +75,12 @@ end
 
 function finalize_stock_cache!(cache::StockCache)
 
-    p = sortperm(eachindex(cache.sector); by = i -> (cache.sector[i], i))
+    p = sortperm(cache.sector)
 
     permute!(cache.available_stocks, p)
     permute!(cache.stock_capacity, p)
     permute!(cache.sector, p)
     permute!(cache.prices, p)
-
 
     invp = invperm(p)
     cache.indices = Dict{Ark.Entity, Int64}(e => invp[i] for (e, i) in cache.indices)

@@ -217,36 +217,25 @@ const FIRM_EXPECTATION_COMPONENTS = (
 )
 
 function legacy_desired_investment_sales_by_entity(world::Ark.World, growth::Float64)
-    rows = Tuple{Int, Ark.Entity, Float64, Float64}[]
+    entities = Ark.Entity[]
+    expected_sales = Float64[]
+    capacity_sales = Float64[]
 
     for (e, goods_demand, capital_stock, capital_productivity) in Ark.Query(
             world,
-            (
-                GoodsDemand,
-                CapitalStock,
-                CapitalProductivity,
-            ),
+            (GoodsDemand, CapitalStock, CapitalProductivity),
             with = (Firm,),
         )
         @inbounds for i in eachindex(e)
-            push!(
-                rows, (
-                    entity_creation_order(e[i]),
-                    e[i],
-                    expected_sales_amount(goods_demand[i].amount, growth),
-                    capital_stock[i].amount * capital_productivity[i].value,
-                )
-            )
+            push!(entities, e[i])
+            push!(expected_sales, expected_sales_amount(goods_demand[i].amount, growth))
+            push!(capacity_sales, capital_stock[i].amount * capital_productivity[i].value)
         end
     end
 
-    sort!(rows; by = first)
-
-    expected_sales = [row[3] for row in rows]
-    capacity_sales = [row[4] for row in rows]
     selected_sales = min(expected_sales, capacity_sales)
 
-    return Dict(row[2] => selected_sales[i] for (i, row) in enumerate(rows))
+    return Dict(entity => selected_sales[i] for (i, entity) in enumerate(entities))
 end
 
 function set_firms_expectations_and_decisions!(world::Ark.World)
