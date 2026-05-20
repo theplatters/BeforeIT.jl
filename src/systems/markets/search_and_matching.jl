@@ -64,38 +64,23 @@ end
 function build_household_consumption_demand_cache!(world::Ark.World, demand_cache, coeffs)
     (; household_consumption, household_investment) = coeffs
 
-    append_household_consumption_demand!(
-        world,
-        demand_cache,
-        household_consumption,
-        household_investment;
-        with = (),
-        without = (Inactive, Capitalist, Banker),
+    household_groups = (
+        (; with = (), without = (Inactive, Capitalist, Banker)),
+        (; with = (Inactive,), without = ()),
+        (; with = (Capitalist,), without = ()),
+        (; with = (Banker,), without = ()),
     )
-    append_household_consumption_demand!(
-        world,
-        demand_cache,
-        household_consumption,
-        household_investment;
-        with = (Inactive,),
-        without = (),
-    )
-    append_household_consumption_demand!(
-        world,
-        demand_cache,
-        household_consumption,
-        household_investment;
-        with = (Capitalist,),
-        without = (),
-    )
-    append_household_consumption_demand!(
-        world,
-        demand_cache,
-        household_consumption,
-        household_investment;
-        with = (Banker,),
-        without = (),
-    )
+
+    for group in household_groups
+        append_household_consumption_demand!(
+            world,
+            demand_cache,
+            household_consumption,
+            household_investment;
+            group.with,
+            group.without,
+        )
+    end
 
     return nothing
 end
