@@ -93,7 +93,7 @@ function append_household_consumption_demand!(
         with,
         without,
     )
-    rows = Tuple{Int, Ark.Entity, Float64, Float64}[]
+    rows = Tuple{Ark.Entity, Float64, Float64}[]
     for (e, consumption_budget, investment_budget) in
         Ark.Query(
             world,
@@ -104,7 +104,6 @@ function append_household_consumption_demand!(
         for i in eachindex(e)
             push!(
                 rows, (
-                    entity_order_key(e[i]),
                     e[i],
                     consumption_budget[i].amount,
                     investment_budget[i].amount,
@@ -114,7 +113,7 @@ function append_household_consumption_demand!(
     end
 
     sort!(rows; by = first)
-    for (_, entity, consumption_amount, investment_amount) in rows
+    for (entity, consumption_amount, investment_amount) in rows
         demand =
             household_consumption .* consumption_amount +
             household_investment .* investment_amount
@@ -122,10 +121,6 @@ function append_household_consumption_demand!(
     end
 
     return nothing
-end
-
-function entity_order_key(entity)
-    return parse(Int, match(r"Entity\((\d+),", string(entity)).captures[1])
 end
 
 function build_import_consumption_demand_cache!(world::Ark.World, demand_cache, exports)
