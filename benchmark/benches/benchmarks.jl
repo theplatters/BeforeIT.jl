@@ -60,7 +60,9 @@ function setup_to_system(n)
     return world
 end
 
-include("bench_step.jl")
+setup_for_step() = BeforeIT.AUSTRIA2010Q1 |> BeforeIT.ECSModel
+
+SUITE["step"] = @be setup_for_step() BeforeIT.step!(_) evals = 1
 
 # Include all individual system benchmarks
 for (i, sys) in enumerate(SYSTEMS)
@@ -70,8 +72,5 @@ for (i, sys) in enumerate(SYSTEMS)
     # Remove "!" if present
     name = replace(name, "!" => "")
     
-    file_path = joinpath(@__DIR__, "bench_$(name).jl")
-    if isfile(file_path)
-        include(file_path)
-    end
+    SUITE[name] = @be setup_to_system(i) SYSTEMS[i](_) evals=1
 end
