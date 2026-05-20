@@ -6,5 +6,5 @@ result = process_benches(SUITE)
 write_bench_table(result, "bench.csv")
 
 for r in result
-    @printf("%-40s %6.2fns, %7d allocs, %7dB\n", r.name, r.time_ns, r.allocs, r.bytes)
+    @printf("%-40s %6.2fμs, %7d allocs, %7dB\n", r.name, r.time_ns, r.allocs, r.bytes)
 end
