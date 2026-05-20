@@ -304,7 +304,7 @@ function get_params_and_initial_conditions(calibration_object, calibration_date;
         # Then distribute proportionally to compensation_employees to create a sectoral vector
         employers_social_contributions = scalar_employers_contributions .* (compensation_employees ./ sum(compensation_employees))
     end
-    fixed_capitalformation = Bit.pos(fixed_capitalformation)
+    fixed_capitalformation = pos(fixed_capitalformation)
     gross_capitalformation_dwellings = calibration_data["gross_capitalformation_dwellings"][T_calibration]
     taxes_products_capitalformation_dwellings =
         gross_capitalformation_dwellings *
@@ -333,8 +333,8 @@ function get_params_and_initial_conditions(calibration_object, calibration_date;
         (gross_capitalformation_dwellings - taxes_products_capitalformation_dwellings) * fixed_capitalformation /
         sum(fixed_capitalformation)
     fixed_capital_formation_other_than_dwellings = fixed_capitalformation - capitalformation_dwellings
-    exports = Bit.pos(exports)
-    imports = Bit.pos(
+    exports = pos(exports)
+    imports = pos(
         sum(intermediate_consumption, dims = 2) +
             household_consumption +
             government_consumption +
@@ -343,7 +343,7 @@ function get_params_and_initial_conditions(calibration_object, calibration_date;
             capitalformation_dwellings +
             exports - output,
     )
-    reexports = Bit.neg(
+    reexports = neg(
         sum(intermediate_consumption, dims = 2) +
             household_consumption +
             government_consumption +
@@ -358,7 +358,7 @@ function get_params_and_initial_conditions(calibration_object, calibration_date;
     # Government budget identity for other_net_transfers
     # Note: interest and deficit are quarterly values, divide by timescale for annual-equivalent
     # to match units with other annual variables (taxes, benefits, etc.)
-    other_net_transfers = Bit.pos(
+    other_net_transfers = pos(
         sum(taxes_products_household) +
             sum(taxes_products_capitalformation_dwellings) +
             sum(taxes_products_export) +
@@ -443,12 +443,12 @@ function get_params_and_initial_conditions(calibration_object, calibration_date;
     tau_FIRM =
         timescale * corporate_tax / (
         sum(
-            Bit.pos(
+            pos(
                 timescale * operating_surplus -
                     firm_interest_quarterly * fixed_assets_other_than_dwellings /
                     sum(fixed_assets_other_than_dwellings) +
-                    r_bar * firm_cash_quarterly * Bit.pos(operating_surplus) /
-                    sum(Bit.pos(operating_surplus)),
+                    r_bar * firm_cash_quarterly * pos(operating_surplus) /
+                    sum(pos(operating_surplus)),
             ),
         ) + firm_interest_quarterly - r_bar * (firm_debt_quarterly - bank_equity_quarterly)
     )
@@ -463,12 +463,12 @@ function get_params_and_initial_conditions(calibration_object, calibration_date;
     theta_DIV =
         timescale * (mixed_income + property_income) / (
         sum(
-            Bit.pos(
+            pos(
                 timescale * operating_surplus -
                     firm_interest_quarterly * fixed_assets_other_than_dwellings /
                     sum(fixed_assets_other_than_dwellings) +
-                    r_bar * firm_cash_quarterly * Bit.pos(operating_surplus) /
-                    sum(Bit.pos(operating_surplus)),
+                    r_bar * firm_cash_quarterly * pos(operating_surplus) /
+                    sum(pos(operating_surplus)),
             ),
         ) + firm_interest_quarterly - r_bar * (firm_debt_quarterly - bank_equity_quarterly) -
             timescale * corporate_tax
@@ -480,17 +480,17 @@ function get_params_and_initial_conditions(calibration_object, calibration_date;
     zeta_LTV = 0.6
     zeta_b = 0.5
 
-    alpha_pi_EA, beta_pi_EA, sigma_pi_EA, epsilon_pi_EA = Bit.estimate_for_calibration_script(
+    alpha_pi_EA, beta_pi_EA, sigma_pi_EA, epsilon_pi_EA = estimate_for_calibration_script(
         diff(log.(ea["gdp_deflator_quarterly"][(T_estimation_exo - 1):T_calibration_exo])),
     )
     alpha_Y_EA, beta_Y_EA, sigma_Y_EA, epsilon_Y_EA =
-        Bit.estimate_for_calibration_script(log.(ea["real_gdp_quarterly"][T_estimation_exo:T_calibration_exo]))
+        estimate_for_calibration_script(log.(ea["real_gdp_quarterly"][T_estimation_exo:T_calibration_exo]))
 
     a1 = (data["euribor"][T_estimation_exo:T_calibration_exo] .+ 1) .^ (1 / 4) .- 1
     a2 = exp.(diff(log.(ea["gdp_deflator_quarterly"][(T_estimation_exo - 1):T_calibration_exo]))) .- 1
     a3 = exp.(diff(log.(ea["real_gdp_quarterly"][(T_estimation_exo - 1):T_calibration_exo]))) .- 1
 
-    rho, r_star, xi_pi, xi_gamma, pi_star = Bit.estimate_taylor_rule(a1, a2, a3)
+    rho, r_star, xi_pi, xi_gamma, pi_star = estimate_taylor_rule(a1, a2, a3)
 
 
     G_est =
@@ -509,9 +509,9 @@ function get_params_and_initial_conditions(calibration_object, calibration_date;
         data["real_imports_quarterly"][T_calibration_exo]
     I_est = log.(I_est)
 
-    alpha_G, beta_G, sigma_G, epsilon_G = Bit.estimate_for_calibration_script(G_est)
-    alpha_E, beta_E, sigma_E, epsilon_E = Bit.estimate_for_calibration_script(E_est)
-    alpha_I, beta_I, sigma_I, epsilon_I = Bit.estimate_for_calibration_script(I_est)
+    alpha_G, beta_G, sigma_G, epsilon_G = estimate_for_calibration_script(G_est)
+    alpha_E, beta_E, sigma_E, epsilon_E = estimate_for_calibration_script(E_est)
+    alpha_I, beta_I, sigma_I, epsilon_I = estimate_for_calibration_script(I_est)
 
     C = cov([epsilon_Y_EA epsilon_E epsilon_I])
 

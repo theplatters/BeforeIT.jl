@@ -1,10 +1,10 @@
 using PrecompileTools
 
 @setup_workload let
-    parameters = Bit.AUSTRIA2010Q1.parameters
-    initial_conditions = Bit.AUSTRIA2010Q1.initial_conditions
+    parameters = AUSTRIA2010Q1.parameters
+    initial_conditions = AUSTRIA2010Q1.initial_conditions
     @compile_workload let
-        model = Bit.Model(parameters, initial_conditions)
-        Bit.step!(model)
+        model = Model(parameters, initial_conditions)
+        step!(model)
     end
 end

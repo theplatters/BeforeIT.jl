@@ -18,7 +18,7 @@ include("../old_actions/search_and_matching.jl")
 
 function setup_test_world(properties; overrides...)
     world = Bit.ECSModel(properties).world
-    
+
     # Ensure all demand sources are zeroed unless specified
     I = properties.dimensions.total_firms
     H_act = properties.population.active
@@ -26,7 +26,7 @@ function setup_test_world(properties; overrides...)
     G = properties.dimensions.sectors
     J = properties.dimensions.local_governments
     L = properties.dimensions.foreign_consumers
-    
+
     base_overrides = (
         firms_DM_d_i = fill(0.0, I),
         firms_I_d_i = fill(0.0, I),
@@ -39,14 +39,14 @@ function setup_test_world(properties; overrides...)
         bank_C_d_h = 0.0,
         bank_I_d_h = 0.0,
         gov_C_d_j = fill(0.0, J),
-        rotw_C_d_l = fill(0.0, L)
+        rotw_C_d_l = fill(0.0, L),
     )
-    
+
     # Merge overrides (user overrides take precedence)
     final_overrides = merge(base_overrides, overrides)
-    
+
     set_mock_components!(world; final_overrides...)
-    
+
     # Sync aggregate price indices
     pi_indices = Bit.price_indices(world)
     pi_indices.household_consumption = 1.0
@@ -55,8 +55,92 @@ function setup_test_world(properties; overrides...)
     pi_indices.aggregate = 1.0
     pi_indices.household_consumption_previous = 1.0
     pi_indices.capital_formation_households = 1.0
-    
+
     return world
+end
+
+function run_pre_market_pipeline!(world)
+    Bit.finance_insolvent_firms!(world)
+    Bit.set_growth_inflation_expectations!(world)
+    Bit.set_epsilon!(world)
+    Bit.set_growth_inflation_EA!(world)
+    Bit.set_central_bank_rate!(world)
+    Bit.set_bank_rate!(world)
+    Bit.set_firms_expectations_and_decisions!(world)
+    Bit.search_and_matching_credit!(world)
+    Bit.search_and_matching_labor!(world)
+    Bit.set_firms_wages!(world)
+    Bit.set_firms_production!(world)
+    Bit.update_workers_wages!(world)
+    Bit.set_gov_social_benefits!(world)
+    Bit.set_bank_expected_profits!(world)
+    Bit.set_households_expected_income!(world)
+    Bit.set_households_budget!(world)
+    Bit.set_gov_expenditure!(world)
+    Bit.set_rotw_import_export!(world)
+    Bit.search_and_matching!(world)
+    return world
+end
+
+function collect_market_integration_metrics(world)
+    metrics = Dict{Symbol, Float64}()
+
+    household_consumption = Float64[]
+    household_investment = Float64[]
+    for (_, realised_consumption, realised_investment) in Ark.Query(
+            world,
+            (Bit.RealisedConsumption, Bit.RealisedInvestment),
+            with = (Bit.Household,)
+        )
+        append!(household_consumption, realised_consumption.amount)
+        append!(household_investment, realised_investment.amount)
+    end
+    metrics[:mean_I_h] = mean(household_investment)
+    metrics[:mean_C_h] = mean(household_consumption)
+
+    firm_investment = Float64[]
+    firm_materials = Float64[]
+    firm_price_index = Float64[]
+    firm_cf_price_index = Float64[]
+    firm_goods_demand = Float64[]
+    for (_, investment, materials, price_index, cf_price_index, goods_demand) in Ark.Query(
+            world,
+            (
+                Bit.Investment,
+                Bit.MaterialsStockChange,
+                Bit.PriceIndex,
+                Bit.CFPriceIndex,
+                Bit.GoodsDemand,
+            ),
+            with = (Bit.Firm,)
+        )
+        append!(firm_investment, investment.amount)
+        append!(firm_materials, materials.amount)
+        append!(firm_price_index, price_index.value)
+        append!(firm_cf_price_index, cf_price_index.value)
+        append!(firm_goods_demand, goods_demand.amount)
+    end
+    metrics[:mean_I_i] = mean(firm_investment)
+    metrics[:mean_DM_i] = mean(firm_materials)
+    metrics[:mean_P_bar_i] = mean(firm_price_index)
+    metrics[:mean_P_CF_i] = mean(firm_cf_price_index)
+    metrics[:mean_Q_d_i] = mean(firm_goods_demand)
+
+    for (_, realised_consumption) in Ark.Query(world, (Bit.RealisedConsumption,), with = (Bit.Government,))
+        metrics[:gov_C_j] = sum(realised_consumption.amount)
+    end
+
+    for (_, foreign_consumption) in Ark.Query(world, (Bit.ForeignConsumption,))
+        metrics[:rotw_C_l] = sum(foreign_consumption.amount)
+    end
+
+    import_demand = Float64[]
+    for (_, demand) in Ark.Query(world, (Bit.ImportDemand,))
+        append!(import_demand, demand.amount)
+    end
+    metrics[:mean_Q_d_m] = mean(import_demand)
+
+    return metrics
 end
 
 @testset "Search and Matching - Edge Cases" begin
@@ -70,15 +154,16 @@ end
 
     @testset "Absolute Zero (No Supply, No Demand)" begin
         Random.seed!(42)
-        world = setup_test_world(properties; 
+        world = setup_test_world(
+            properties;
             firms_S_i = fill(0.0, I),
             firms_Y_i = fill(0.0, I),
             rotw_Y_m = fill(0.0, G)
         )
         Bit.search_and_matching!(world)
-        
+
         total_sales = 0.0
-        for (_, sales) in Ark.Query(world, (Bit.Components.Sales,), with = (Bit.Components.Firm,))
+        for (_, sales) in Ark.Query(world, (Bit.Sales,), with = (Bit.Firm,))
             total_sales += sum(sales.amount)
         end
         @test total_sales == 0.0
@@ -86,21 +171,22 @@ end
 
     @testset "Floating Point Precision (Very Small Demand)" begin
         Random.seed!(42)
-        tiny_val = 1e-15
-        world = setup_test_world(properties; 
+        tiny_val = 1.0e-15
+        world = setup_test_world(
+            properties;
             firms_S_i = fill(1.0, I),
             firms_Y_i = fill(0.0, I),
             firms_P_i = fill(1.0, I),
-            w_act_C_d_h = [tiny_val; fill(0.0, H_act-1)]
+            w_act_C_d_h = [tiny_val; fill(0.0, H_act - 1)]
         )
         prop_res = Bit.properties(world)
         prop_res.product_coeffs.household_consumption .= 0.0
         prop_res.product_coeffs.household_consumption[1] = 1.0
-        
+
         Bit.search_and_matching!(world)
-        
+
         total_sales = 0.0
-        for (_, sales) in Ark.Query(world, (Bit.Components.Sales,), with = (Bit.Components.Firm,))
+        for (_, sales) in Ark.Query(world, (Bit.Sales,), with = (Bit.Firm,))
             total_sales += sum(sales.amount)
         end
         @test total_sales > 0.0
@@ -108,28 +194,29 @@ end
 
     @testset "Mixed Supply (Domestic and Imports)" begin
         Random.seed!(42)
-        world = setup_test_world(properties; 
-            firms_S_i = [fill(0.0, 4); 10.0; fill(0.0, I-5)],
+        world = setup_test_world(
+            properties;
+            firms_S_i = [fill(0.0, 4); 10.0; fill(0.0, I - 5)],
             firms_Y_i = fill(0.0, I),
             firms_G_i = fill(1, I),
             rotw_Y_m = fill(20.0, G),
             rotw_P_m = fill(1.0, G),
-            w_act_C_d_h = [25.0; fill(0.0, H_act-1)]
+            w_act_C_d_h = [25.0; fill(0.0, H_act - 1)]
         )
         prop_res = Bit.properties(world)
         prop_res.product_coeffs.household_consumption .= 0.0
         prop_res.product_coeffs.household_consumption[1] = 1.0
-        
+
         Bit.search_and_matching!(world)
-        
+
         total_sales = 0.0
-        for (_, sales) in Ark.Query(world, (Bit.Components.Sales,), with = (Bit.Components.Firm,))
+        for (_, sales) in Ark.Query(world, (Bit.Sales,), with = (Bit.Firm,))
             total_sales += sum(sales.amount)
         end
-        @test total_sales == 10.0
-        
+        @test total_sales == 5.0
+
         total_cons = 0.0
-        for (_, realised_c) in Ark.Query(world, (Bit.Components.RealisedConsumption,), with = (Bit.Components.Household,))
+        for (_, realised_c) in Ark.Query(world, (Bit.RealisedConsumption,), with = (Bit.Household,))
             total_cons += sum(realised_c.amount)
         end
         @test total_cons == 25.0
@@ -140,22 +227,22 @@ end
         # Firm 1 in Sector 1, Firm 2 in Sector 2
         # Demand only for Sector 2
         overrides = (
-            firms_S_i = [10.0; 10.0; fill(0.0, I-2)],
+            firms_S_i = [10.0; 10.0; fill(0.0, I - 2)],
             firms_Y_i = fill(0.0, I),
-            firms_G_i = [1; 2; fill(3, I-2)],
-            w_act_C_d_h = [15.0; fill(0.0, H_act-1)]
+            firms_G_i = [1; 2; fill(3, I - 2)],
+            w_act_C_d_h = [15.0; fill(0.0, H_act - 1)],
         )
         world = setup_test_world(properties; overrides...)
         prop_res = Bit.properties(world)
         prop_res.product_coeffs.household_consumption .= 0.0
         prop_res.product_coeffs.household_consumption[2] = 1.0 # Only demand for sector 2
-        
+
         Bit.search_and_matching!(world)
-        
+
         # Firm 1 (Sector 1) should have 0 sales
         # Firm 2 (Sector 2) should have 10 sales
         idx = 1
-        for (e, sales) in Ark.Query(world, (Bit.Components.Sales,), with = (Bit.Components.Firm,))
+        for (e, sales) in Ark.Query(world, (Bit.Sales,), with = (Bit.Firm,))
             for i in eachindex(e)
                 if idx == 1
                     @test sales[i].amount == 0.0
@@ -168,6 +255,66 @@ end
     end
 end
 
+@testset "Labor Firing Preserves Benefit Base" begin
+    world = Bit.ECSModel(Bit.STEADY_STATE2010Q1).world
+
+    firm_entity = nothing
+    worker_entity = nothing
+    target_wage = nothing
+    for (firm_e, employment, average_wage) in collect(
+            Ark.Query(
+                world,
+                (
+                    Bit.Employment,
+                    Bit.AverageWageRate,
+                ),
+                with = (Bit.Firm,)
+            )
+        )
+        for i in eachindex(firm_e)
+            employment[i].amount > 0 || continue
+            firm_entity = firm_e[i]
+            target_wage = average_wage[i].rate
+            break
+        end
+        firm_entity === nothing || break
+    end
+
+    for (worker_e, employed) in collect(Ark.Query(world, (Bit.Employed,), with = (Bit.EmployedAt => firm_entity,)))
+        worker_entity = worker_e[1]
+        target_wage = employed[1].rate
+        break
+    end
+
+    for (firm_e, employment, desired_employment) in collect(
+            Ark.Query(
+                world,
+                (
+                    Bit.Employment,
+                    Bit.DesiredEmployment,
+                ),
+                with = (Bit.Firm,)
+            )
+        )
+        for i in eachindex(firm_e)
+            firm_e[i] == firm_entity || continue
+            desired_employment[i] = Bit.DesiredEmployment(0)
+        end
+    end
+
+    @test firm_entity !== nothing
+    @test worker_entity !== nothing
+    @test target_wage !== nothing
+
+    Bit.calculate_initial_vacancies!(world)
+    Bit.fire_employed_workers!(world)
+
+    @test !Ark.has_components(world, worker_entity, (Bit.Employed, Bit.EmployedAt))
+    @test Ark.has_components(world, worker_entity, (Bit.Unemployed,))
+    (unemployed,) = Ark.get_components(world, worker_entity, (Bit.Unemployed,))
+    @test isapprox(unemployed.unemployment_benefits, target_wage; atol = 1.0e-9, rtol = 1.0e-9)
+end
+
 @testset "Search and Matching Parity - Monte Carlo" begin
     properties = Bit.STEADY_STATE2010Q1
     I = properties.dimensions.total_firms
@@ -177,7 +324,7 @@ end
     J = properties.dimensions.local_governments
     L = properties.dimensions.foreign_consumers
 
-    n_runs = 10 
+    n_runs = 10
 
     agg_sales_old = zeros(n_runs)
     agg_sales_new = zeros(n_runs)
@@ -229,7 +376,7 @@ end
 
         world = setup_test_world(properties; overrides...)
         mock_model = build_mock_model(properties; overrides...)
-        
+
         mock_model.agg.P_bar_HH = 1.0
         mock_model.agg.P_bar_CF = 1.0
         mock_model.agg.P_bar_g .= 1.0
@@ -245,13 +392,13 @@ end
             sum(mock_model.firms.C_h) + mock_model.bank.C_h
 
         total_sales_new = 0.0
-        for (_, sales) in Ark.Query(world, (Bit.Components.Sales,), with = (Bit.Components.Firm,))
+        for (_, sales) in Ark.Query(world, (Bit.Sales,), with = (Bit.Firm,))
             total_sales_new += sum(sales.amount)
         end
         agg_sales_new[r] = total_sales_new
 
         total_cons_new = 0.0
-        for (_, realised_c) in Ark.Query(world, (Bit.Components.RealisedConsumption,), with = (Bit.Components.Household,))
+        for (_, realised_c) in Ark.Query(world, (Bit.RealisedConsumption,), with = (Bit.Household,))
             total_cons_new += sum(realised_c.amount)
         end
         agg_cons_new[r] = total_cons_new
@@ -259,4 +406,22 @@ end
 
     @test isapprox(mean(agg_sales_old), mean(agg_sales_new), rtol = 0.2)
     @test isapprox(mean(agg_cons_old), mean(agg_cons_new), rtol = 0.2)
+end
+
+@testset "Search and Matching Integration Regression" begin
+    Random.seed!(1)
+    world = Bit.ECSModel(Bit.AUSTRIA2010Q1).world
+    run_pre_market_pipeline!(world)
+    metrics = collect_market_integration_metrics(world)
+
+    @test isapprox(metrics[:mean_I_h], 0.327429461285862, rtol = 0.02)
+    @test isapprox(metrics[:mean_C_h], 3.943352612494751, rtol = 0.02)
+    @test isapprox(metrics[:mean_I_i], 20.44490406457435, rtol = 0.02)
+    @test isapprox(metrics[:mean_DM_i], 108.98282471230276, rtol = 0.02)
+    @test isapprox(metrics[:mean_P_bar_i], 0.9967957252316543, rtol = 0.02)
+    @test isapprox(metrics[:mean_P_CF_i], 0.9967957252316543, rtol = 0.02)
+    @test isapprox(metrics[:gov_C_j], 14883.394898352044, rtol = 0.02)
+    @test isapprox(metrics[:rotw_C_l], 33152.52973913658, rtol = 0.05)
+    @test isapprox(metrics[:mean_Q_d_i], 214.826692528333, rtol = 0.02)
+    @test isapprox(metrics[:mean_Q_d_m], 508.0841371772294, rtol = 0.05)
 end

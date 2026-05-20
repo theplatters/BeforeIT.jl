@@ -6,7 +6,7 @@ function set_gross_domestic_product!(world::Ark.World)
 
 
     push!(macro_state.gross_domestic_product_history, 0.0)
-    macro_state.gross_domestic_product_history[T_prime + t.step] = @sum_over (c.amount for c in Ark.Query(world, (Components.Output,)))
+    macro_state.gross_domestic_product_history[T_prime + t.step] = @sum_over (c.amount for c in Ark.Query(world, (Output,)))
     return nothing
 end
 

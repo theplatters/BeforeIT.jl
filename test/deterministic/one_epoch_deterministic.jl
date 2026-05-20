@@ -1,229 +1,152 @@
 @testset "one epoch deterministic" begin
+    model = Bit.Model(Bit.AUSTRIA2010Q1.parameters, Bit.AUSTRIA2010Q1.initial_conditions)
+    world = model.world
 
-    parameters = Bit.AUSTRIA2010Q1.parameters
-    initial_conditions = Bit.AUSTRIA2010Q1.initial_conditions
+    initial_cb_equity = _single_component_value(world, Bit.Equity; with = (Bit.CentralBank,))
+    initial_gov_debt = _single_component_value(world, Bit.GovernmentDebt; with = (Bit.Government,))
 
-    for parallel in [false, true]
-        model = Bit.Model(parameters, initial_conditions)
+    Bit.finance_insolvent_firms!(world)
 
-        gov = model.gov # government
-        cb = model.cb # central bank
-        rotw = model.rotw # rest of the world
-        firms = model.firms # firms
-        bank = model.bank # bank
-        w_act = model.w_act # active workers
-        w_inact = model.w_inact # inactive workers
-        agg = model.agg # aggregates
-        prop = model.prop # model properties
+    Bit.set_growth_inflation_expectations!(world)
+    expectations = Bit.Ark.get_resource(world, Bit.Expectations)
+    @test isapprox(expectations.gross_domestic_product, 134929.5631)
+    @test isapprox(expectations.output_growth, 0.0021822; rtol = 1.0e-4)
 
-        prop = model.prop
-        agg.Y_e, agg.gamma_e, agg.pi_e = Bit.growth_inflation_expectations(model)
+    Bit.set_epsilon!(world)
+    Bit.set_growth_inflation_EA!(world)
+    @test isapprox(_single_component_value(world, Bit.EuroAreaGrowth; field = :rate), 0.0016278; rtol = 1.0e-5)
+    @test isapprox(_single_component_value(world, Bit.EuroAreaGDP; field = :value), 2358680.8201; rtol = 1.0e-5)
+    @test isapprox(_single_component_value(world, Bit.EuroAreaInflation; field = :rate), 0.0033723; rtol = 1.0e-5)
 
-        @test isapprox(agg.Y_e, 134929.5631)
-        @test isapprox(agg.gamma_e, 0.0021822, rtol = 1.0e-4)
+    Bit.set_central_bank_rate!(world)
+    @test isapprox(_single_component_value(world, Bit.NominalInterestRate; with = (Bit.CentralBank,), field = :rate), 0.0017616; rtol = 1.0e-4)
 
-        agg.epsilon_Y_EA, agg.epsilon_E, agg.epsilon_I = Bit.epsilon(prop.C)
+    Bit.set_bank_rate!(world)
+    @test isapprox(_single_component_value(world, Bit.LendingRate; with = (Bit.Bank,), field = :rate), 0.028476; rtol = 1.0e-4)
 
-        rotw.Y_EA, rotw.gamma_EA, rotw.pi_EA = Bit.growth_inflation_EA(model)
+    Bit.set_firms_expectations_and_decisions!(world)
+    @test isapprox(_component_mean(world, Bit.ExpectedSales; with = (Bit.Firm,)), 220.0311; rtol = 1.0e-6)
+    @test isapprox(_component_mean(world, Bit.DesiredInvestment; with = (Bit.Firm,)), 21.6029; rtol = 1.0e-5)
+    @test isapprox(_component_mean(world, Bit.DesiredMaterials; with = (Bit.Firm,)), 110.8158; rtol = 1.0e-5)
+    @test isapprox(_component_mean(world, Bit.DesiredEmployment; with = (Bit.Firm,)), 6.2436; rtol = 1.0e-5)
+    @test isapprox(_component_mean(world, Bit.ExpectedProfits; with = (Bit.Firm,)), 17.5269; rtol = 1.0e-5)
+    @test isapprox(_component_mean(world, Bit.TargetLoans; with = (Bit.Firm,)), 6.3063; rtol = 1.0e-5)
+    @test isapprox(_component_mean(world, Bit.ExpectedCapital; with = (Bit.Firm,)), 1265.3191; rtol = 1.0e-5)
+    @test isapprox(_component_mean(world, Bit.ExpectedLoans; with = (Bit.Firm,)), 360.694; rtol = 1.0e-5)
+    @test isapprox(_component_mean(world, Bit.Price; with = (Bit.Firm,), field = :value), 1.0031; rtol = 1.0e-4)
 
-        @test isapprox(rotw.gamma_EA, 0.0016278, rtol = 1.0e-5)
-        @test isapprox(rotw.Y_EA, 2358680.8201, rtol = 1.0e-5)
-        @test isapprox(rotw.pi_EA, 0.0033723, rtol = 1.0e-5)
+    Bit.search_and_matching_credit!(world)
+    @test isapprox(_component_mean(world, Bit.LoanFlow; with = (Bit.Firm,), predicate = x -> x > 0.0), 95.9791; rtol = 1.0e-6)
 
-        # set central bank rate via the Taylor rule
-        cb.r_bar = Bit.central_bank_rate(model)
-        @test isapprox(cb.r_bar, 0.0017616, rtol = 1.0e-4)
+    Bit.search_and_matching_labor!(world)
+    Bit.set_firms_wages!(world)
+    Bit.set_firms_production!(world)
+    @test isapprox(_component_mean(world, Bit.WageBill; with = (Bit.Firm,)), 6.6122; rtol = 1.0e-5)
+    @test isapprox(_component_mean(world, Bit.Output; with = (Bit.Firm,)), 220.0311; rtol = 1.0e-6)
 
-        # update rate on loans and morgages
-        bank.r = Bit.bank_rate(model)
-        @test isapprox(bank.r, 0.028476, rtol = 1.0e-4)
-
-        Q_s_i, I_d_i, DM_d_i, N_d_i, Pi_e_i, DL_d_i, K_e_i, L_e_i, P_i =
-            Bit.firms_expectations_and_decisions(model)
-
-        firms.Q_s_i .= Q_s_i
-        firms.I_d_i .= I_d_i
-        firms.DM_d_i .= DM_d_i
-        firms.N_d_i .= N_d_i
-        firms.Pi_e_i .= Pi_e_i
-        firms.P_i .= P_i
-        firms.DL_d_i .= DL_d_i
-        firms.K_e_i .= K_e_i
-        firms.L_e_i .= L_e_i
-
-        @test isapprox(mean(Q_s_i), 220.0311, rtol = 1.0e-6)
-        @test isapprox(mean(I_d_i), 21.6029, rtol = 1.0e-5)
-        @test isapprox(mean(DM_d_i), 110.8158, rtol = 1.0e-5)
-        @test isapprox(mean(N_d_i), 6.2436, rtol = 1.0e-5)
-        @test isapprox(mean(Pi_e_i), 17.5269, rtol = 1.0e-5)
-        @test isapprox(mean(DL_d_i), 6.3063, rtol = 1.0e-5)
-        @test isapprox(mean(K_e_i), 1265.3191, rtol = 1.0e-5)
-        @test isapprox(mean(L_e_i), 360.694, rtol = 1.0e-5)
-        @test isapprox(mean(firms.P_i), 1.0031, rtol = 1.0e-4)
-
-        Bit.search_and_matching_credit!(model) # actual new loans obtained
-        @test isapprox(mean(firms.DL_i[firms.DL_i .> 0]), 95.9791, rtol = 1.0e-6)
-
-        Bit.search_and_matching_labour!(model)
-
-        firms.w_i .= Bit.firms_wages(model)
-        firms.Y_i .= Bit.firms_production(model)
-
-        # @test isapprox(mean(V_i), 0.0, rtol = 1e-6)
-        @test isapprox(mean(firms.w_i), 6.6122, rtol = 1.0e-5)
-        @test isapprox(mean(firms.Y_i), 220.0311, rtol = 1.0e-6)
-
-        # update wages for workers
-        Bit.update_workers_wages!(model)
-
-        @test isapprox(mean(model.w_act.w_h), 7.5221, rtol = 1.0e-5)
-
-        gov.sb_other, gov.sb_inact = Bit.gov_social_benefits(model)
-
-        @test isapprox(gov.sb_other, 0.59157, rtol = 1.0e-5)
-        @test isapprox(gov.sb_inact, 2.2434, rtol = 1.0e-4)
-
-        Pi_e_k = Bit.bank_expected_profits(model)
-        bank.Pi_e_k = Pi_e_k
-        @test isapprox(Pi_e_k, 6510.4793, rtol = 1.0e-5)
-
-        C_d_h, I_d_h = Bit.households_budget_act(model)
-        w_act.C_d_h .= C_d_h
-        w_act.I_d_h .= I_d_h
-        C_d_h, I_d_h = Bit.households_budget_inact(model)
-        w_inact.C_d_h .= C_d_h
-        w_inact.I_d_h .= I_d_h
-        C_d_h, I_d_h = Bit.households_budget_firms(model)
-        firms.C_d_h .= C_d_h
-        firms.I_d_h .= I_d_h
-        bank.C_d_h, bank.I_d_h = Bit.households_budget_bank(model)
-
-        C_d_h_sum = sum(w_act.C_d_h) + sum(w_inact.C_d_h) + sum(firms.C_d_h) + bank.C_d_h
-        I_d_h_sum = sum(w_act.I_d_h) + sum(w_inact.I_d_h) + sum(firms.I_d_h) + bank.I_d_h
-
-        @test isapprox(C_d_h_sum, 35538.3159, rtol = 1.0e-9, atol = 1.0e-6)
-        @test isapprox(I_d_h_sum, 2950.5957, rtol = 1.0e-6, atol = 1.0e-6)
-
-        C_G, C_d_j = Bit.gov_expenditure(model)
-        gov.C_G = C_G
-        gov.C_d_j .= C_d_j
-
-        @test isapprox(mean(gov.C_G), 14783.2494, rtol = 1.0e-6, atol = 1.0e-6)
-        @test isapprox(mean(gov.C_d_j), 95.0572, rtol = 1.0e-6, atol = 1.0e-6)
-
-        C_E, Y_I, C_d_l, Y_m, P_m = Bit.rotw_import_export(model)
-        rotw.C_E = C_E
-        rotw.Y_I = Y_I
-        rotw.C_d_l .= C_d_l
-        rotw.Y_m .= Y_m
-        rotw.P_m .= P_m
-
-        @test isapprox(mean(rotw.C_E), 34246.8702, rtol = 1.0e-6, atol = 1.0e-6)
-        @test isapprox(mean(rotw.C_d_l), 110.1048, rtol = 1.0e-6, atol = 1.0e-6)
-        @test isapprox(rotw.Y_I, 33214.9736, rtol = 1.0e-6, atol = 1.0e-6)
-        @test isapprox(mean(rotw.Y_m), 535.7254, rtol = 1.0e-6, atol = 1.0e-6)
-        @test isapprox(mean(rotw.P_m), 1.0031, rtol = 1.0e-4, atol = 1.0e-6)
-
-        Bit.search_and_matching!(model; parallel)
-
-        C_h_sum = sum(w_act.C_h) + sum(w_inact.C_h) + sum(firms.C_h) + bank.C_h
-        I_h_sum = sum(w_act.I_h) + sum(w_inact.I_h) + sum(firms.I_h) + bank.I_h
-        K_h_sum = sum(w_act.K_h) + sum(w_inact.K_h) + sum(firms.K_h) + bank.K_h
-        @test isapprox(C_h_sum, 35136.4805, rtol = 1.0e-4, atol = 1.0e-4)
-        @test isapprox(I_h_sum, 2699.6511, rtol = 1.0e-6, atol = 1.0e-6)
-        @test isapprox(K_h_sum, 408076.5511, rtol = 1.0e-6, atol = 1.0e-6)
-
-        @test isapprox(mean(firms.Q_d_i), 220.092, rtol = 1.0e-6)
-        @test isapprox(mean(firms.Q_i), 216.6644, rtol = 1.0e-6)
-        @test isapprox(mean(rotw.Q_d_m), 527.2969, rtol = 1.0e-6)
-        @test isapprox(mean(rotw.Q_m), 527.2969, rtol = 1.0e-5)
-        @test isapprox(mean(firms.I_i), 21.6029, rtol = 1.0e-5)
-        @test isapprox(mean(firms.DM_i), 110.7829, rtol = 1.0e-6)
-        @test isapprox(mean(firms.P_CF_i), 1.0031, rtol = 1.0e-4)
-        @test isapprox(mean(firms.P_bar_i), 1.0031, rtol = 1.0e-4)
-        @test isapprox(gov.C_j, 14370.3493, rtol = 1.0e-5)
-        @test isapprox(gov.P_j, 1.0031, rtol = 1.0e-4)
-
-        K_i, M_i, DS_i, S_i = Bit.firms_stocks(model)
-        firms.K_i .= K_i
-        firms.M_i .= M_i
-        firms.DS_i .= DS_i
-        firms.S_i .= S_i
-
-        @test isapprox(mean(firms.K_i), 1261.4216, rtol = 1.0e-6)
-        @test isapprox(mean(firms.M_i), 130.0548, rtol = 1.0e-6)
-        @test isapprox(mean(firms.DS_i), 3.3667, atol = 1.0e-5)
-        @test isapprox(mean(firms.S_i), 3.3667, atol = 1.0e-5)
-
-        # update firms profits
-        firms.Pi_i .= Bit.firms_profits(model)
-        @test isapprox(mean(firms.Pi_i), 17.5491, rtol = 1.0e-2)
-
-        # update bank profits
-        bank.Pi_k = Bit.bank_profits(model)
-        @test isapprox(bank.Pi_k, 6486.6381, rtol = 1.0e-5)
-
-        # update bank equity
-        bank.E_k = Bit.bank_equity(model)
-        @test isapprox(bank.E_k, 90742.39, rtol = 1.0e-5)
-
-        # update actual income of all households
-        w_act.Y_h .= Bit.households_income_act(model)
-        w_inact.Y_h .= Bit.households_income_inact(model)
-
-        firms.Y_h .= Bit.households_income_firms(model)
-        bank.Y_h = Bit.households_income_bank(model)
-
-        # update savings (deposits) of all households
-        w_act.D_h .= Bit.households_deposits(w_act, model)
-        w_inact.D_h .= Bit.households_deposits(w_inact, model)
-        firms.D_h .= Bit.households_deposits(firms, model)
-        bank.D_h = Bit.households_deposits(bank, model)
-
-        Y_h_sum = sum(w_act.Y_h) + sum(w_inact.Y_h) + sum(firms.Y_h) + bank.Y_h
-        D_h_sum = sum(w_act.D_h) + sum(w_inact.D_h) + sum(firms.D_h) + bank.D_h
-        @test isapprox(Y_h_sum, 45032.3263, rtol = 1.0e-2)
-        @test isapprox(D_h_sum, 221816.6764, rtol = 1.0e-3)
-
-        # compute central bank profits
-        E_CB = Bit.central_bank_equity(model)
-        Pi_CB = E_CB - cb.E_CB
-        cb.E_CB = E_CB
-        @test isapprox(Pi_CB, 1866.3821, rtol = 1.0e-5)
-
-        # compute gov revenues (Y_G), surplus/deficit (Pi_G) and debt (L_H)
-        gov.Y_G = Bit.gov_revenues(model)
-        @test isapprox(gov.Y_G, 28783.0089, rtol = 1.0e-2)
-
-        # compute gov deficit/surplus
-        L_G = Bit.gov_loans(model)
-        Pi_G = L_G - gov.L_G
-        gov.L_G = L_G
-        @test isapprox(Pi_G, 3140.6916, rtol = 1.0e-2)
-        @test isapprox(gov.L_G, 235751.5916, rtol = 1.0e-4)
-
-        # compute firms deposits, loans and equity
-        D_i = Bit.firms_deposits(model)
-        DD_i = D_i .- firms.D_i
-        firms.D_i .= D_i
-
-        firms.L_i .= Bit.firms_loans(model)
-        firms.E_i .= Bit.firms_equity(model)
-
-        @test isapprox(mean(DD_i), -14.8245, rtol = 1.0e-2)
-        @test isapprox(mean(firms.D_i), 71.7925, rtol = 1.0e-3)
-        @test isapprox(mean(firms.L_i), 367.0003, rtol = 1.0e-5)
-        @test isapprox(mean(firms.E_i), 1103.945, rtol = 1.0e-2)
-
-        # check central bank equity
-        @test isapprox(cb.E_CB, 108046.2821, rtol = 1.0e-2)
-
-        # update net credit/debit position of rest of the world
-        rotw.D_RoW = Bit.rotw_deposits(model)
-        @test isapprox(rotw.D_RoW, -644.0817, rtol = 1.0e-5)
-
-        # update bank net credit/debit position
-        bank.D_k = Bit.bank_deposits(model)
-        @test isapprox(bank.D_k, 128349.3912, rtol = 1.0e-3)
+    Bit.update_workers_wages!(world)
+    active_worker_wages = Float64[]
+    for (_, employed) in Bit.Ark.Query(world, (Bit.Employed,), with = (Bit.Household,))
+        append!(active_worker_wages, employed.rate)
     end
+    for (_, unemployed) in Bit.Ark.Query(world, (Bit.Unemployed,), with = (Bit.Household,))
+        append!(active_worker_wages, unemployed.unemployment_benefits)
+    end
+    @test isapprox(sum(active_worker_wages) / length(active_worker_wages), 7.5221; rtol = 1.0e-5)
+
+    Bit.set_gov_social_benefits!(world)
+    @test isapprox(_single_component_value(world, Bit.SocialBenefitsOther; with = (Bit.Government,)), 0.59157; rtol = 1.0e-5)
+    @test isapprox(_single_component_value(world, Bit.SocialBenefitsInactive; with = (Bit.Government,)), 2.2434; rtol = 1.0e-4)
+
+    Bit.set_bank_expected_profits!(world)
+    @test isapprox(_single_component_value(world, Bit.ExpectedProfits; with = (Bit.Bank,)), 6510.4793; rtol = 1.0e-5)
+
+    Bit.set_households_expected_income!(world)
+    Bit.set_households_budget!(world)
+    @test isapprox(_component_sum(world, Bit.ConsumptionBudget; with = (Bit.Household,)), 35538.3159; rtol = 1.0e-9, atol = 1.0e-6)
+    @test isapprox(_component_sum(world, Bit.InvestmentBudget; with = (Bit.Household,)), 2950.5957; rtol = 1.0e-6, atol = 1.0e-6)
+
+    Bit.set_gov_expenditure!(world)
+    @test isapprox(_single_component_value(world, Bit.ConsumptionDemand; with = (Bit.Government,)), 14783.2494; rtol = 1.0e-6, atol = 1.0e-6)
+    @test isapprox(_component_mean(world, Bit.ConsumptionDemand; with = (Bit.LocalGovernment,)), 95.0572; rtol = 1.0e-6, atol = 1.0e-6)
+
+    Bit.set_rotw_import_export!(world)
+    @test isapprox(_single_component_value(world, Bit.TotalExportDemand), 34246.8702; rtol = 1.0e-6, atol = 1.0e-6)
+    @test isapprox(_component_mean(world, Bit.ForeignConsumptionDemand), 110.1048; rtol = 1.0e-6, atol = 1.0e-6)
+    @test isapprox(_single_component_value(world, Bit.TotalImportSupply), 33214.9736; rtol = 1.0e-6, atol = 1.0e-6)
+    @test isapprox(_component_mean(world, Bit.ImportSupply; with = (Bit.ForeignSector,)), 535.7254; rtol = 1.0e-6, atol = 1.0e-6)
+    @test isapprox(_component_mean(world, Bit.ImportPrice; with = (Bit.ForeignSector,), field = :value), 1.0031; rtol = 1.0e-4, atol = 1.0e-6)
+
+    Bit.search_and_matching!(world)
+    @test isapprox(_component_sum(world, Bit.RealisedConsumption; with = (Bit.Household,)), 35136.4805; rtol = 1.0e-4, atol = 1.0e-4)
+    @test isapprox(_component_sum(world, Bit.RealisedInvestment; with = (Bit.Household,)), 2699.6511; rtol = 1.0e-6, atol = 1.0e-6)
+    @test isapprox(_component_sum(world, Bit.CapitalStock; with = (Bit.Household,)), 408076.5511; rtol = 1.0e-6, atol = 1.0e-6)
+    @test isapprox(_component_mean(world, Bit.GoodsDemand; with = (Bit.Firm,)), 220.092; rtol = 1.0e-6)
+    @test isapprox(_component_mean(world, Bit.Sales; with = (Bit.Firm,)), 216.6644; rtol = 1.0e-6)
+    @test isapprox(_component_mean(world, Bit.ImportDemand; with = (Bit.ForeignSector,)), 527.2969; rtol = 1.0e-6)
+    @test isapprox(_component_mean(world, Bit.ImportSales; with = (Bit.ForeignSector,)), 527.2969; rtol = 1.0e-5)
+    @test isapprox(_component_mean(world, Bit.Investment; with = (Bit.Firm,)), 21.6029; rtol = 1.0e-5)
+    @test isapprox(_component_mean(world, Bit.MaterialsStockChange; with = (Bit.Firm,)), 110.7829; rtol = 1.0e-6)
+    @test isapprox(_component_mean(world, Bit.CFPriceIndex; with = (Bit.Firm,), field = :value), 1.0031; rtol = 1.0e-4)
+    @test isapprox(_component_mean(world, Bit.PriceIndex; with = (Bit.Firm,), field = :value), 1.0031; rtol = 1.0e-4)
+    @test isapprox(_single_component_value(world, Bit.RealisedConsumption; with = (Bit.Government,)), 14370.3493; rtol = 1.0e-5)
+    @test isapprox(_single_component_value(world, Bit.PriceInflationGovernmentGoods; with = (Bit.Government,), field = :value), 1.0031; rtol = 1.0e-4)
+
+    Bit.set_inflation_priceindex!(world)
+    Bit.set_sector_specific_priceindex!(world)
+    Bit.set_capital_formation_priceindex!(world)
+    Bit.set_households_priceindex!(world)
+    Bit.set_firms_stocks!(world)
+    @test isapprox(_component_mean(world, Bit.CapitalStock; with = (Bit.Firm,)), 1261.4216; rtol = 1.0e-6)
+    @test isapprox(_component_mean(world, Bit.Intermediates; with = (Bit.Firm,)), 130.0548; rtol = 1.0e-6)
+    @test isapprox(_component_mean(world, Bit.FinalGoodsStockChange; with = (Bit.Firm,)), 3.3667; atol = 1.0e-5)
+    @test isapprox(_component_mean(world, Bit.Inventories; with = (Bit.Firm,)), 3.3667; atol = 1.0e-5)
+
+    Bit.set_firms_profits!(world)
+    @test isapprox(_component_mean(world, Bit.Profits; with = (Bit.Firm,)), 17.5491; rtol = 1.0e-2)
+
+    Bit.set_bank_profits!(world)
+    @test isapprox(_single_component_value(world, Bit.Profits; with = (Bit.Bank,)), 6486.6381; rtol = 1.0e-5)
+
+    Bit.set_bank_equity!(world)
+    @test isapprox(_single_component_value(world, Bit.Equity; with = (Bit.Bank,)), 90742.39; rtol = 1.0e-5)
+
+    Bit.set_households_income!(world)
+    Bit.set_households_deposit!(world)
+    @test isapprox(_component_sum(world, Bit.NetDisposableIncome; with = (Bit.Household,)), 45032.3263; rtol = 1.0e-2)
+    @test isapprox(_component_sum(world, Bit.Deposits; with = (Bit.Household,)), 221816.6764; rtol = 1.0e-3)
+
+    Bit.set_central_bank_equity!(world)
+    @test isapprox(_single_component_value(world, Bit.Equity; with = (Bit.CentralBank,)) - initial_cb_equity, 1866.3821; rtol = 1.0e-5)
+
+    Bit.set_gov_revenues!(world)
+    @test isapprox(_single_component_value(world, Bit.GovernmentRevenues; with = (Bit.Government,)), 28783.0089; rtol = 1.0e-2)
+
+    Bit.set_gov_loans!(world)
+    @test isapprox(_single_component_value(world, Bit.GovernmentDebt; with = (Bit.Government,)) - initial_gov_debt, 3140.6916; rtol = 1.0e-2)
+    @test isapprox(_single_component_value(world, Bit.GovernmentDebt; with = (Bit.Government,)), 235751.5916; rtol = 1.0e-4)
+
+    firm_deposits_before = _query_rows(world, (Bit.Deposits,); with = (Bit.Firm,))
+    Bit.set_firms_deposits!(world)
+    deposit_change = 0.0
+    firm_deposits_after = _query_rows(world, (Bit.Deposits,); with = (Bit.Firm,))
+    for i in eachindex(firm_deposits_after)
+        deposit_change += firm_deposits_after[i].components[1].amount - firm_deposits_before[i].components[1].amount
+    end
+    @test isapprox(deposit_change / length(firm_deposits_after), -14.8245; rtol = 1.0e-2)
+    @test isapprox(_component_mean(world, Bit.Deposits; with = (Bit.Firm,)), 71.7925; rtol = 1.0e-3)
+
+    Bit.set_firms_loans!(world)
+    @test isapprox(_component_mean(world, Bit.LoansOutstanding; with = (Bit.Firm,)), 367.0003; rtol = 1.0e-5)
+
+    Bit.set_firms_equity!(world)
+    @test isapprox(_component_mean(world, Bit.Equity; with = (Bit.Firm,)), 1103.945; rtol = 1.0e-2)
+
+    @test isapprox(_single_component_value(world, Bit.Equity; with = (Bit.CentralBank,)), 108046.2821; rtol = 1.0e-2)
+
+    Bit.set_rotw_deposits!(world)
+    @test isapprox(_single_component_value(world, Bit.NetForeignPosition), -644.0817; rtol = 1.0e-5)
+
+    Bit.set_bank_deposits!(world)
+    @test isapprox(_single_component_value(world, Bit.ResidualItems; with = (Bit.Bank,)), 128349.3912; rtol = 1.0e-3)
 end

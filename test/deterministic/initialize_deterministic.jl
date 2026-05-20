@@ -1,75 +1,38 @@
+using MAT: matread
+
+include("ecs_reference_helpers.jl")
+
 @testset "initialize deterministic" begin
-
     dir = @__DIR__
+    model = Bit.Model(Bit.AUSTRIA2010Q1.parameters, Bit.AUSTRIA2010Q1.initial_conditions)
+    props = Bit.properties(model)
+    total_firms = props.dimensions.total_firms
+    inactive = props.population.inactive
+    employable = props.population.active - total_firms - 1
+    firm_owner_range = (employable + inactive + 1):(employable + inactive + total_firms)
 
-    parameters = Bit.AUSTRIA2010Q1.parameters
-    initial_conditions = Bit.AUSTRIA2010Q1.initial_conditions
-    model = Bit.Model(parameters, initial_conditions)
-
-    properties = model.prop
-
-    H_act = Int(properties.H_act)
-    H_inact = Int(properties.H_inact)
-    I = properties.I
-    H = H_act + H_inact
-    H_W = H_act - I - 1
-
-    init_vars = matread(joinpath(dir, "../matlab_code/init_vars_firms.mat"))
-    for fieldname in fieldnames(typeof(model.firms))
-
-        if fieldname in [
-                :del, :lastid, :id_to_index, :ID,
-                :w_i, :Q_i, :I_i, :E_i, :P_bar_i,
-                :P_CF_i, :DS_i, :DM_i, :DL_i, :DL_d_i,
-                :K_e_i, :L_e_i, :Q_s_i, :I_d_i, :DM_d_i,
-                :N_d_i, :Pi_e_i, :C_d_h, :I_d_h, :C_h, :I_h,
-            ]
-            continue
-        end
-        julia_var = getfield(model.firms, fieldname)
-
-        if fieldname in [:Y_h, :K_h, :D_h]
-            matlab_var = init_vars[string(fieldname)]
-            matlab_var = matlab_var[(H_W + H_inact + 1):(H_W + H_inact + I)]
-            @test isapprox(julia_var, matlab_var)
+    firms = _firm_reference_state(model)
+    firms_ref = matread(joinpath(dir, "../matlab_code/init_vars_firms.mat"))
+    for field in keys(firms)
+        matlab_value = if field in (:D_h, :K_h, :Y_h)
+            vec(firms_ref[string(field)][firm_owner_range])
         else
-            matlab_var = init_vars[string(fieldname)]
-            @test isapprox(julia_var, matlab_var')
+            _mat_vector(firms_ref[string(field)])
         end
+        @test isapprox(getfield(firms, field), matlab_value)
     end
 
-    init_vars = matread(joinpath(dir, "../matlab_code/init_vars_bank.mat"))
-    for fieldname in fieldnames(typeof(model.bank))
-
-        if fieldname in [:Pi_e_k, :Y_h, :K_h, :D_h, :C_d_h, :I_d_h, :C_h, :I_h]
-            continue
-        end
-        julia_var = getfield(model.bank, fieldname)
-        matlab_var = init_vars[string(fieldname)]
-        @test isapprox(julia_var, matlab_var')
-
+    bank = _bank_reference_state(model)
+    bank_ref = matread(joinpath(dir, "../matlab_code/init_vars_bank.mat"))
+    for field in keys(bank)
+        @test isapprox(getfield(bank, field), _mat_vector(bank_ref[string(field)]))
     end
 
-    init_vars = matread(joinpath(dir, "../matlab_code/init_vars_households.mat"))
-    for fn in fieldnames(typeof(model.w_act))
-
-        if fn in [:del, :lastid, :id_to_index, :ID, :C_d_h, :I_d_h, :C_h, :I_h]
-            continue
-        end
-
-        if fn in [:w_h, :O_h]
-            julia_var = getfield(model.w_act, fn)
-            matlab_var = init_vars[string(fn)]
-            @test isapprox(julia_var, matlab_var')
-        else
-            julia_var = [
-                getfield(model.w_act, fn)
-                getfield(model.w_inact, fn)
-                getfield(model.firms, fn)
-                getfield(model.bank, fn)
-            ]
-            matlab_var = init_vars[string(fn)]
-            @test isapprox(julia_var, matlab_var')
-        end
-    end
+    households = _all_household_reference_state(model)
+    households_ref = matread(joinpath(dir, "../matlab_code/init_vars_households.mat"))
+    @test isapprox(households.w_h, _mat_vector(households_ref["w_h"]))
+    @test isapprox(households.O_h, _mat_vector(households_ref["O_h"]))
+    @test isapprox(households.Y_h, _mat_vector(households_ref["Y_h"]))
+    @test isapprox(households.D_h, _mat_vector(households_ref["D_h"]))
+    @test isapprox(households.K_h, _mat_vector(households_ref["K_h"]))
 end

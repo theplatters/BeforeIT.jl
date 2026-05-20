@@ -1,55 +1,54 @@
+abstract type AbstractComponent end
+
 module Components
 
-import Ark
-using ..BeforeIT: FloatType, IntType
+    export BIT_COMPONENTS
 
-# Registry
-const ALL = Type[]
-macro component(ex)
-    # Handle both @component struct Name ... end and @component Name begin ... end
-    return if ex isa Expr && ex.head == :struct
-        # Extract type name from struct definition
-        type_expr = ex.args[2]
+    using Ark
+    import BeforeIT: AbstractComponent, FloatType, IntType
 
-        name = if type_expr isa Symbol
-            type_expr
-        elseif type_expr.head == :(<:)
-            # struct Name <: Super
-            name_part = type_expr.args[1]
-            if name_part isa Expr && name_part.head == :curly
-                name_part.args[1]  # Name{T} -> Name
-            else
-                name_part
-            end
-        elseif type_expr.head == :curly
-            # struct Name{T}
-            type_expr.args[1]
-        else
-            error("Cannot extract name from: $type_expr")
+    const BIT_COMPONENTS = DataType[]
+
+    macro register(type, def)
+        def isa Expr && def.head == :struct || error("expected a struct definition")
+
+        name = def.args[2]
+
+        if name isa Expr && name.head == :<:
+            name = name.args[1]
         end
 
-        quote
-            $(esc(ex))  # Define the struct in caller's scope
-            push!($(esc(ALL)), $(esc(name)))  # Register the type
-            $(esc(name))  # Return the type
+        name isa Symbol || error("parametric structs are not supported")
+
+        relation = :($Ark.Relation)
+
+        comp_type = type == QuoteNode(:relation) ? Expr(:curly, relation, esc(name)) : esc(name)
+
+        return quote
+            $(esc(def))
+            push!($Components.BIT_COMPONENTS, $comp_type)
         end
-    else
-        error("@component expects a struct definition")
     end
+
+    macro register(def)
+        return esc(:(@register(:standard, $def)))
+    end
+
+    include("bank.jl")
+    include("central_bank.jl")
+    include("firms.jl")
+    include("government.jl")
+    include("households.jl")
+    include("loans.jl")
+    include("profits.jl")
+    include("rest_of_world.jl")
+    include("workers.jl")
+
 end
-abstract type AbstractComponent end
-include("bank.jl")
-include("central_bank.jl")
-include("firms.jl")
-include("government.jl")
-include("households.jl")
-include("loans.jl")
-include("profits.jl")
-include("rest_of_world.jl")
-include("workers.jl")
 
+using .Components
 
-# Convert to Tuple for Ark
-const COMPONENTS = Tuple(ALL)
-
+for C in BIT_COMPONENTS
+    name = C <: Ark.Relation ? nameof(C.parameters[1]) : nameof(C)
+    @eval using .Components: $name
 end

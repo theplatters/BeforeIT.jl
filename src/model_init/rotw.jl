@@ -9,25 +9,26 @@ function setup_rotw!(world::Ark.World, properties::Properties)
     rotw = Ark.new_entity!(
         world,
         (
-            Components.EuroAreaGDP(external.foreign_output),
-            Components.EuroAreaGrowth(0.0),
-            Components.EuroAreaInflation(external.foreign_inflation),
-            Components.NetForeignPosition(external.debt),
-            Components.ForeignConsumption(0.0),
-            Components.TotalExportDemand(external.exports[T_prime]),
-            Components.TotalImportSupply(external.imports[T_prime]),
+            EuroAreaGDP(external.foreign_output),
+            EuroAreaGrowth(0.0),
+            EuroAreaInflation(external.foreign_inflation),
+            ExportPriceInflation(0.0),
+            NetForeignPosition(external.debt),
+            ForeignConsumption(0.0),
+            TotalExportDemand(external.exports[T_prime]),
+            TotalImportSupply(external.imports[T_prime]),
         )
     )
 
     Ark.new_entities!(
         world, L, (
-            Components.ForeignConsumptionDemand,
-            Components.RestOfWorldEntity,
+            ForeignConsumptionDemand,
+            RestOfWorldEntity,
         )
     ) do (entities, fc, rowe)
         for i in eachindex(entities)
-            fc[i] = Components.ForeignConsumptionDemand(0.0)
-            rowe[i] = Components.RestOfWorldEntity(rotw)
+            fc[i] = ForeignConsumptionDemand(0.0)
+            rowe[i] = RestOfWorldEntity(rotw)
         end
     end
 
@@ -36,25 +37,25 @@ function setup_rotw!(world::Ark.World, properties::Properties)
         world, G,
         (
 
-            Components.ForeignSector,
-            Components.PrincipalProduct,
-            Components.ImportSupply,
-            Components.ImportSales,
-            Components.ImportDemand,
-            Components.ImportPrice,
-            Components.ExportPriceInflation,
-            Components.RestOfWorldEntity,
+            ForeignSector,
+            PrincipalProduct,
+            ImportSupply,
+            ImportSales,
+            ImportDemand,
+            ImportPrice,
+            ExportPriceInflation,
+            RestOfWorldEntity,
         )
     ) do (entities, fs, pp, isupply, isales, idemand, iprice, epi, rowe)
         for (g, i) in enumerate(eachindex(entities))
-            fs[i] = Components.ForeignSector()
-            pp[i] = Components.PrincipalProduct(g)
-            isupply[i] = Components.ImportSupply(0.0)
-            isales[i] = Components.ImportSales(0.0)
-            idemand[i] = Components.ImportDemand(0.0)
-            iprice[i] = Components.ImportPrice(0.0)
-            epi[i] = Components.ExportPriceInflation(0.0)
-            rowe[i] = Components.RestOfWorldEntity(rotw)
+            fs[i] = ForeignSector()
+            pp[i] = PrincipalProduct(g)
+            isupply[i] = ImportSupply(0.0)
+            isales[i] = ImportSales(0.0)
+            idemand[i] = ImportDemand(0.0)
+            iprice[i] = ImportPrice(0.0)
+            epi[i] = ExportPriceInflation(0.0)
+            rowe[i] = RestOfWorldEntity(rotw)
         end
     end
 

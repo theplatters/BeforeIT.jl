@@ -15,7 +15,7 @@
     # 1. Calculate Expected GDP (OOP: sum(firms.Y_i))
     # We simulate the OOP behavior by iterating over the ECS components directly
     expected_gdp = 0.0
-    for (_, output) in Ark.Query(world, (Bit.Components.Output,))
+    for (_, output) in Ark.Query(world, (Bit.Output,))
         expected_gdp += sum(output.amount)
     end
 

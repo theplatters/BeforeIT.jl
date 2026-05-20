@@ -10,32 +10,32 @@ function setup_workers!(world::Ark.World, properties::Properties)
 
     Ark.new_entities!(
         world, employable, (
-            Components.NetDisposableIncome(0.0),
-            Components.Deposits(0.0),
-            Components.ExpectedIncome(0.0),
-            Components.CapitalStock(0.0),
-            Components.Unemployed(unemployment_benefit / unemployment_benefit_rate),
-            Components.ConsumptionBudget(0.0),
-            Components.InvestmentBudget(0.0),
-            Components.RealisedConsumption(0.0),
-            Components.RealisedInvestment(0.0),
-            Components.Household(),
+            NetDisposableIncome(0.0),
+            Deposits(0.0),
+            ExpectedIncome(0.0),
+            CapitalStock(0.0),
+            Unemployed(unemployment_benefit / unemployment_benefit_rate),
+            ConsumptionBudget(0.0),
+            InvestmentBudget(0.0),
+            RealisedConsumption(0.0),
+            RealisedInvestment(0.0),
+            Household(),
         )
     )
 
     disposable_income = subsidies_other + subsidies_inactive
     Ark.new_entities!(
         world, inactive, (
-            Components.NetDisposableIncome(disposable_income),
-            Components.Deposits(debt * disposable_income),
-            Components.ExpectedIncome(0.0),
-            Components.CapitalStock(capital * disposable_income),
-            Components.Inactive(),
-            Components.ConsumptionBudget(0.0),
-            Components.InvestmentBudget(0.0),
-            Components.RealisedConsumption(0.0),
-            Components.RealisedInvestment(0.0),
-            Components.Household(),
+            NetDisposableIncome(disposable_income),
+            Deposits(debt * disposable_income),
+            ExpectedIncome(0.0),
+            CapitalStock(capital * disposable_income),
+            Inactive(),
+            ConsumptionBudget(0.0),
+            InvestmentBudget(0.0),
+            RealisedConsumption(0.0),
+            RealisedInvestment(0.0),
+            Household(),
         )
     )
 

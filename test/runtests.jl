@@ -1,10 +1,28 @@
+using Pkg
+
+Pkg.develop("Ark")
+
 import BeforeIT as Bit
+import Ark
 
 using Test
+using Runic
+
+include("include_internals.jl")
 
 @testset "BeforeIT.jl Tests" begin
-    @testset "Model Init" begin
-        include("model_init/init_model.jl")
+    @testset "Utils" begin
+        include("utils/toannual.jl")
+        include("utils/positive.jl")
+        include("utils/randpl.jl")
+        include("utils/nfvar3_and_estimate.jl")
+        include("utils/estimations.jl")
+        include("utils/zenodo_calibration.jl")
+    end
+
+    @testset "Invariants" begin
+        include("invariants/init_model.jl")
+        include("invariants/accounting_identities.jl")
     end
 
     @testset "Systems" begin
@@ -17,9 +35,25 @@ using Test
         include("systems/firms.jl")
         include("systems/government.jl")
         include("systems/households.jl")
-        include("systems/rotw.jl")
         include("systems/markets/search_and_matching.jl")
+        include("systems/rotw.jl")
     end
 
+    #@testset "Quality (Aqua.jl)" begin
+    #    include("package_sanity_tests.jl")
+    #end
 
+    # WARNING: this should be the last include among behavior tests because it
+    # overrides randomness to make subsequent model runs deterministic.
+    @testset "Deterministic Verification" begin
+        include("deterministic/runtests_deterministic.jl")
+    end
+
+    @testset "Format (Runic.jl)" begin
+        isformat = Bit.format_package(check = true)
+        @test isformat == true
+        if isformat == false
+            @warn "Formatting failed: use `import BeforeIT as Bit; using Runic; Bit.format_package()` to run the formatter"
+        end
+    end
 end
