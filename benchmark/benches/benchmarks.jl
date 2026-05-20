@@ -5,7 +5,7 @@ using BeforeIT
 const SUITE = BenchmarkGroup()
 
 # Systems in order as they appear in step!
-const SYSTEMS = [
+const SYSTEMS = (
     BeforeIT.finance_insolvent_firms!,
     BeforeIT.set_growth_inflation_expectations!,
     BeforeIT.set_epsilon!,
@@ -45,7 +45,7 @@ const SYSTEMS = [
     BeforeIT.set_bank_deposits!,
     BeforeIT.set_gross_domestic_product!,
     BeforeIT.set_time!,
-]
+)
 
 function setup_to_system(n)
     m = BeforeIT.AUSTRIA2010Q1 |> BeforeIT.ECSModel
@@ -72,5 +72,5 @@ for (i, sys) in enumerate(SYSTEMS)
     # Remove "!" if present
     name = replace(name, "!" => "")
     
-    SUITE[name] = @be setup_to_system(i) SYSTEMS[i](_) evals=1
+    SUITE[name] = @be setup_to_system($i) SYSTEMS[$i](_) evals=1
 end
