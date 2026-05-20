@@ -30,7 +30,7 @@ end
 
 function write_bench_table(data::Vector{Row}, file::String)
     return open(file, "w") do io
-        write(io, "Name,N,Time,Allocs,Bytes\n")
+        write(io, "Name,Time,Allocs,Bytes\n")
         for row in data
             write(io, "$(row.name),$(row.time_ns),$(row.allocs),$(row.bytes)\n")
         end
@@ -150,10 +150,9 @@ function read_bench_table(file::String)::Vector{Row}
                 data,
                 Row(
                     parts[1],
-                    parse(Int, parts[2]),
-                    parse(Float64, parts[3]),
+                    parse(Float64, parts[2]),
+                    parse(Int, parts[3]),
                     parse(Int, parts[4]),
-                    parse(Int, parts[5]),
                 ),
             )
         end
@@ -208,7 +207,6 @@ function compare_tables(a::Vector{Row}, b::Vector{Row})::Vector{CompareRow}
         if haskey(dict_a, bench)
             r = dict_a[bench]
             row.name = r.name
-            row.n = r.n
             row.time_ns_a = r.time_ns
         end
         if haskey(dict_b, bench)

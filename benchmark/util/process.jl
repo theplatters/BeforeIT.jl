@@ -6,11 +6,12 @@ function process_benches(suite::BenchmarkGroup)::Vector{Row}
 
     for name in sorted_keys
         bench = suite[name]
-        mean_secs = median(map(s -> s.time, bench.samples))
+        m = median(bench)
 
-        total_allocs = round(Int, median(map(s -> s.allocs, bench.samples)))
-        total_bytes = round(Int, median(map(s -> s.bytes, bench.samples)))
-        push!(data, Row(name, mean_secs, total_allocs, total_bytes))
+        time_ns = m.time * 10^6
+        total_allocs = round(Int, m.allocs)
+        total_bytes = round(Int, m.bytes)
+        push!(data, Row(name, time_ns, total_allocs, total_bytes))
     end
 
     return data
