@@ -1,4 +1,3 @@
-
 function search_and_matching_credit!(world::Ark.World)
     (; capital_requirement, loan_to_value_ratio) = BeforeIT.properties(world).banking_params
     total_expected_loans = @sum_over (el.amount for el in Ark.Query(world, (ExpectedLoans,)))

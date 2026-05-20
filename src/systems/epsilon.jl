@@ -5,7 +5,7 @@ function epsilon(C::AbstractMatrix)
         return zeros(size(C, 1))
     end
 
-    return cholesky(Symmetric(C)).L * randn(size(C, 1))
+    return rand(MvNormal(Symmetric(C)))
 end
 
 function set_epsilon!(model::Ark.World)
