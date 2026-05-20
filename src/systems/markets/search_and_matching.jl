@@ -585,7 +585,7 @@ function update_government_realised_consumption!(
                     realised_consumption[i] = RealisedConsumption(
                         realised_consumption[i].amount +
                             government_consumption[sector] * consumption_demand[j].amount -
-                            first_pass_vals[idx, sector],
+                            first_pass_vals[idx],
                     )
                     price_inflation[i] = PriceInflationGovernmentGoods(
                         price_inflation[i].value + demand_cache.nominal[idx, sector]
@@ -608,7 +608,7 @@ function update_foreign_consumption!(world::Ark.World, sector::Int64, demand_cac
                     foreign_consumption[i] = ForeignConsumption(
                         foreign_consumption[i].amount +
                             exports[sector] * consumption_demand[j].amount -
-                            first_pass_vals[idx, sector],
+                            first_pass_vals[idx],
                     )
                     export_price[i] = ExportPriceInflation(
                         export_price[i].value + demand_cache.nominal[idx, sector]
@@ -654,7 +654,7 @@ function update_household_realised_consumption_and_prices!(
 
             residual =
                 household_investment[sector] * investment_budget[i].amount -
-                first_pass_vals[household_index, sector]
+                first_pass_vals[household_index]
             sector_consumption_demand = household_consumption[sector] * consumption_budget[i].amount
 
             realised_consumption_comp = sector_consumption_demand - max(0.0, -residual)
@@ -741,22 +741,21 @@ function perform_retail_market!(world::Ark.World, sector::Int64)
         remaining_stocks,
     )
 
-    first_pass_vals = copy(demand_cache.vals)
-
+    first_pass_vals_sector = view(demand_cache.vals, :, sector)
 
     update_government_realised_consumption!(
         world,
         sector,
         demand_cache,
-        first_pass_vals,
+        first_pass_vals_sector,
         government_consumption,
     )
-    update_foreign_consumption!(world, sector, demand_cache, first_pass_vals, exports)
+    update_foreign_consumption!(world, sector, demand_cache, first_pass_vals_sector, exports)
     update_household_realised_consumption_and_prices!(
         world,
         sector,
         demand_cache,
-        first_pass_vals,
+        first_pass_vals_sector,
         household_consumption,
         household_investment,
     )
