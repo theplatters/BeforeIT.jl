@@ -179,6 +179,7 @@ function compare_multi_tables(a::Vector{Vector{Row}}, b::Vector{Vector{Row}})::V
         out.time_ns_a /= count
         out.time_ns_b /= count
         out.factor /= count
+        println(out.allocs, " ", count, " ", out.allocs/count)
         out.allocs /= count
         out.bytes /= count
         push!(data, out)
