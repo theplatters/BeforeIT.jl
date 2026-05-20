@@ -36,6 +36,7 @@ include("resources/data_collector.jl")
 include("cache/firm_cache.jl")
 include("cache/search_and_matching.jl")
 include("cache/search_and_matching_labor.jl")
+include("cache/search_and_matching_credit.jl")
 
 include("model_init/init_model.jl")
 include("model_init/firms.jl")
