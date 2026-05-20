@@ -102,7 +102,7 @@ function table_to_html(data::Vector{CompareRow})::String
         end
 
         if name != r.name
-            name_short = trim_prefix(r.name, "benchmark_")
+            name_short = chopprefix(r.name, "benchmark_")
             html *= @sprintf("""<tr><th colspan="6" align="center">%s</th></tr>\n""", name_short)
         end
 
