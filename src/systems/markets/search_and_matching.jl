@@ -19,8 +19,8 @@ function build_intermediate_demand_cache!(world::Ark.World)
 
     (; technology_matrix, capital_formation) = properties.product_coeffs
 
-    for (e, principal_product, desired_investment, desired_materials) in
-        Ark.Query(world, (PrincipalProduct, DesiredInvestment, DesiredMaterials))
+    for (e, principal_product, desired_investment, desired_materials, cache_index) in
+        Ark.Query(world, (PrincipalProduct, DesiredInvestment, DesiredMaterials, IntermediaryDemandCacheIndex))
         for i in eachindex(e)
             demand = compute_intermediate_demand_vector(
                 technology_matrix,
@@ -29,6 +29,7 @@ function build_intermediate_demand_cache!(world::Ark.World)
                 desired_materials[i].amount,
                 desired_investment[i].amount,
             )
+            cache_index[i] = IntermediaryDemandCacheIndex(demand_cache.current_index)
             BeforeIT.emblace!(demand, e[i], demand_cache)
         end
     end
@@ -93,39 +94,57 @@ function append_household_consumption_demand!(
         with,
         without,
     )
-    rows = Tuple{Ark.Entity, Float64, Float64}[]
-    for (e, consumption_budget, investment_budget) in
+
+    start_index = demand_cache.current_index
+    for (e, consumption_budget, investment_budget, cache_index) in
         Ark.Query(
             world,
-            (ConsumptionBudget, InvestmentBudget),
+            (ConsumptionBudget, InvestmentBudget, FinalDemandCacheIndex),
             with = (Household, with...),
             without = without,
         )
         for i in eachindex(e)
-            push!(
-                rows, (
-                    e[i],
-                    consumption_budget[i].amount,
-                    investment_budget[i].amount,
-                )
-            )
+            cache_index[i] = FinalDemandCacheIndex(demand_cache.current_index)
+            demand =
+                household_consumption .* consumption_budget[i].amount +
+                household_investment .* investment_budget[i].amount
+            BeforeIT.emblace!(demand, e[i], demand_cache)
+
         end
     end
 
-    sort!(rows; by = first)
-    for (entity, consumption_amount, investment_amount) in rows
-        demand =
-            household_consumption .* consumption_amount +
-            household_investment .* investment_amount
-        BeforeIT.emblace!(demand, entity, demand_cache)
-    end
-
+    sort_demand_cache_by_entity_order(world, demand_cache, with, without, start_index)
     return nothing
 end
 
-function build_import_consumption_demand_cache!(world::Ark.World, demand_cache, exports)
-    for (e, export_demand) in Ark.Query(world, (ForeignConsumptionDemand,))
+function sort_demand_cache_by_entity_order(world, demand_cache, with, without, start_index)
+    last_index = demand_cache.current_index - 1
+    p = sortperm(view(demand_cache.indices, start_index:last_index))
+    demand_cache.vals[start_index:last_index, :] = demand_cache.vals[start_index:last_index, :][p, :]
+    demand_cache.nominal[start_index:last_index, :] = demand_cache.nominal[start_index:last_index, :][p, :]
+    permute!(view(demand_cache.indices, start_index:last_index), p)
+    inv_p = invperm(p)
+    for (e, cache_index) in Ark.Query(
+            world,
+            (FinalDemandCacheIndex,),
+            with = (Household, with...),
+            without = without,
+        )
         for i in eachindex(e)
+            old_idx = cache_index[i].id
+            rel_old_idx = old_idx - start_index + 1
+            rel_new_idx = inv_p[rel_old_idx]
+            cache_index[i] = FinalDemandCacheIndex(rel_new_idx + start_index - 1)
+        end
+    end
+    return
+end
+
+function build_import_consumption_demand_cache!(world::Ark.World, demand_cache, exports)
+    for (e, export_demand, cache_index) in Ark.Query(world, (ForeignConsumptionDemand, FinalDemandCacheIndex))
+        for i in eachindex(e)
+
+            cache_index[i] = FinalDemandCacheIndex(demand_cache.current_index)
             BeforeIT.emblace!(exports * export_demand[i].amount, e[i], demand_cache)
         end
     end
@@ -134,9 +153,12 @@ function build_import_consumption_demand_cache!(world::Ark.World, demand_cache, 
 end
 
 function build_government_consumption_demand_cache!(world::Ark.World, demand_cache, government_consumption)
-    for (e, consumption_demand) in
-        Ark.Query(world, (ConsumptionDemand,), with = (LocalGovernment,))
+    for (e, consumption_demand, cache_index) in
+        Ark.Query(world, (ConsumptionDemand, FinalDemandCacheIndex), with = (LocalGovernment,))
         for i in eachindex(e)
+
+            cache_index[i] = FinalDemandCacheIndex(demand_cache.current_index)
+
             BeforeIT.emblace!(
                 government_consumption * consumption_demand[i].amount,
                 e[i],
@@ -154,13 +176,13 @@ function build_stock_cache!(world::Ark.World)
 
     build_domestic_stock_cache!(world, stock_cache)
     build_import_stock_cache!(world, stock_cache)
-    BeforeIT.finalize_stock_cache!(stock_cache)
+    BeforeIT.finalize_stock_cache!(stock_cache, world)
 
     return nothing
 end
 
 function build_domestic_stock_cache!(world::Ark.World, stock_cache)
-    for (e, pp, output, stocks, capital, capital_productivity, price) in
+    for (e, pp, output, stocks, capital, capital_productivity, price, cache_index) in
         Ark.Query(
             world,
             (
@@ -170,12 +192,14 @@ function build_domestic_stock_cache!(world::Ark.World, stock_cache)
                 CapitalStock,
                 CapitalProductivity,
                 Price,
+                StockCacheIndex,
             ),
         )
         @inbounds for i in eachindex(e)
             available_stock = output[i].amount + stocks[i].amount
             stock_capacity = capital[i].amount * capital_productivity[i].value - output[i].amount
 
+            cache_index[i] = StockCacheIndex(stock_cache.current_index)
             BeforeIT.emblace!(
                 available_stock,
                 stock_capacity,
@@ -191,14 +215,17 @@ function build_domestic_stock_cache!(world::Ark.World, stock_cache)
 end
 
 function build_import_stock_cache!(world::Ark.World, stock_cache)
-    for (e, pp, import_supply, price) in
+    for (e, pp, import_supply, price, cache_index) in
         Ark.Query(
             world, (
                 PrincipalProduct,
                 ImportSupply, ImportPrice,
+                StockCacheIndex,
             )
         )
         @inbounds for i in eachindex(e)
+
+            cache_index[i] = StockCacheIndex(stock_cache.current_index)
             BeforeIT.emblace!(
                 import_supply[i].amount,
                 Inf,
@@ -372,7 +399,7 @@ function allocate_intermediate_from_stock_capacity!(
 end
 
 function update_firm_realisations!(world::Ark.World, sector::Int64, demand_cache, technology_matrix, capital_formation)
-    for (e, material_stock_change, investment, principal_product, desired_materials, desired_investment, price_index, cf_price_index) in
+    for (e, material_stock_change, investment, principal_product, desired_materials, desired_investment, price_index, cf_price_index, entity_index) in
         Ark.Query(
             world,
             (
@@ -383,6 +410,7 @@ function update_firm_realisations!(world::Ark.World, sector::Int64, demand_cache
                 DesiredInvestment,
                 PriceIndex,
                 CFPriceIndex,
+                IntermediaryDemandCacheIndex,
             ),
         )
         for i in eachindex(e)
@@ -400,6 +428,7 @@ function update_firm_realisations!(world::Ark.World, sector::Int64, demand_cache
                 desired_investment,
                 price_index,
                 cf_price_index,
+                entity_index[i].id
             )
         end
     end
@@ -421,8 +450,8 @@ function update_firm_realisation_components!(
         desired_investment,
         price_index,
         cf_price_index,
+        entity_index
     )
-    entity_index = BeforeIT.find_entity_index(entity, demand_cache)
 
     materials_component =
         technology_matrix[sector, principal_product[i].id] * desired_materials[i].amount
@@ -585,10 +614,10 @@ function update_government_realised_consumption!(
     for (e, realised_consumption, price_inflation) in
         Ark.Query(world, (RealisedConsumption, PriceInflationGovernmentGoods), with = (Government,))
         for i in eachindex(e)
-            for (local_gov_e, consumption_demand) in
-                Ark.Query(world, (ConsumptionDemand,), with = (LocalGovernment => e[i],))
+            for (local_gov_e, consumption_demand, cache_index) in
+                Ark.Query(world, (ConsumptionDemand, FinalDemandCacheIndex), with = (LocalGovernment => e[i],))
                 for j in eachindex(local_gov_e)
-                    idx = BeforeIT.find_entity_index(local_gov_e[j], demand_cache)
+                    idx = cache_index[j].id
                     realised_consumption[i] = RealisedConsumption(
                         realised_consumption[i].amount +
                             government_consumption[sector] * consumption_demand[j].amount -
@@ -608,10 +637,10 @@ end
 function update_foreign_consumption!(world::Ark.World, sector::Int64, demand_cache, first_pass_vals, exports)
     for (e, foreign_consumption, export_price) in Ark.Query(world, (ForeignConsumption, ExportPriceInflation))
         for i in eachindex(e)
-            for (foreign_sector_e, consumption_demand) in
-                Ark.Query(world, (ForeignConsumptionDemand,))
+            for (foreign_sector_e, consumption_demand, cache_index) in
+                Ark.Query(world, (ForeignConsumptionDemand, FinalDemandCacheIndex))
                 for j in eachindex(foreign_sector_e)
-                    idx = BeforeIT.find_entity_index(foreign_sector_e[j], demand_cache)
+                    idx = cache_index[j].id
                     foreign_consumption[i] = ForeignConsumption(
                         foreign_consumption[i].amount +
                             exports[sector] * consumption_demand[j].amount -
@@ -643,7 +672,7 @@ function update_household_realised_consumption_and_prices!(
     total_realized_investment_expenditure = 0.0
     total_expenditure = 0.0
 
-    for (e, consumption_budget, investment_budget, realised_consumption, realised_investment) in
+    for (e, consumption_budget, investment_budget, realised_consumption, realised_investment, cache_index) in
         Ark.Query(
             world,
             (
@@ -651,12 +680,12 @@ function update_household_realised_consumption_and_prices!(
                 InvestmentBudget,
                 RealisedConsumption,
                 RealisedInvestment,
+                FinalDemandCacheIndex,
             ),
             with = (Household,),
         )
         for i in eachindex(e)
-            household_index = BeforeIT.find_entity_index(e[i], demand_cache)
-
+            household_index = cache_index[i].id
             total_real_demand += demand_cache.nominal[household_index, sector]
 
             residual =
@@ -689,11 +718,11 @@ function update_household_realised_consumption_and_prices!(
 end
 
 function update_goods_demand_from_remaining_stocks!(world::Ark.World, sector::Int64, stock_cache)
-    for (e, principal_product, good_demand, output, inventories) in
-        Ark.Query(world, (PrincipalProduct, GoodsDemand, Output, Inventories))
+    for (e, principal_product, good_demand, output, inventories, cache_index) in
+        Ark.Query(world, (PrincipalProduct, GoodsDemand, Output, Inventories, StockCacheIndex))
         for i in eachindex(e)
             principal_product[i].id != sector && continue
-            firm_index = BeforeIT.find_entity_index(e[i], stock_cache)
+            firm_index = cache_index[i].id
             good_demand[i] = GoodsDemand(
                 good_demand[i].amount +
                     output[i].amount + inventories[i].amount - stock_cache.available_stocks[firm_index],
@@ -705,11 +734,11 @@ function update_goods_demand_from_remaining_stocks!(world::Ark.World, sector::In
 end
 
 function update_import_demand_from_remaining_stocks!(world::Ark.World, sector::Int64, stock_cache)
-    for (e, principal_product, good_demand, good_supply) in
-        Ark.Query(world, (PrincipalProduct, ImportDemand, ImportSupply))
+    for (e, principal_product, good_demand, good_supply, cache_index) in
+        Ark.Query(world, (PrincipalProduct, ImportDemand, ImportSupply, StockCacheIndex))
         for i in eachindex(e)
             principal_product[i].id != sector && continue
-            rotw_index = BeforeIT.find_entity_index(e[i], stock_cache)
+            rotw_index = cache_index[i].id
 
             good_demand[i] = ImportDemand(
                 good_demand[i].amount +
