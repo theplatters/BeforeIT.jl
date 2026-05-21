@@ -37,22 +37,18 @@ mutable struct StockCache
     stock_capacity::Vector{Float64}
     prices::Vector{Float64}
     weights::Vector{Float64}
-    weight_vectors::Vector{FixedSizeWeightVector}
     sector::Vector{Int64}
     indices::Vector{Ark.Entity}
     current_index::Int64
     sector_offset::Vector{Int}
 end
 
-function StockCache(size::Int64, sectors::Int64, firms_per_sector)
-    weight_vector_prealloc = [FixedSizeWeightVector(firms + 1) for firms in firms_per_sector]
-
+function StockCache(size::Int64, sectors::Int64)
     return StockCache(
         Vector{Float64}(undef, size),
         Vector{Float64}(undef, size),
         Vector{Float64}(undef, size),
         Vector{Float64}(undef, size),
-        weight_vector_prealloc,
         Vector{Int64}(undef, size),
         Vector{Ark.Entity}(undef, size),
         1,
@@ -131,14 +127,6 @@ end
 
 function get_weights(cache::StockCache, sector::Int64)
     return @view cache.weights[cache.sector_offset[sector]:(cache.sector_offset[sector + 1] - 1)]
-end
-
-function get_weights_vector(cache::StockCache, sector::Int64)
-    weight_vector = cache.weight_vectors[sector]
-    @inbounds for (i, w) in enumerate(get_weights(cache, sector))
-        weight_vector[i] = w
-    end
-    return weight_vector
 end
 
 function build_sampling_weights!(

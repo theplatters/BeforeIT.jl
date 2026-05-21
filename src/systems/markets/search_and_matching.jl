@@ -496,7 +496,7 @@ function perform_firm_market!(world::Ark.World, sector::Int64)
     (; technology_matrix, capital_formation) = BeforeIT.properties(world).product_coeffs
     active = Vector{Int64}(undef, size(demand_cache.vals, 1))
 
-    weights = BeforeIT.get_weights_vector(stock_cache, sector)
+    weights = BeforeIT.get_weights(stock_cache, sector) |> FixedSizeWeightVector
     remaining_supply = sum(BeforeIT.get_available_stocks(stock_cache, sector))
 
     allocate_intermediate_from_available_stocks!(
@@ -511,7 +511,7 @@ function perform_firm_market!(world::Ark.World, sector::Int64)
     remaining_supply = sum(BeforeIT.get_stock_capacity(stock_cache, sector))
     update_firm_realisations!(world, sector, demand_cache, technology_matrix, capital_formation)
 
-    weights = BeforeIT.get_weights_vector(stock_cache, sector)
+    weights = BeforeIT.get_weights(stock_cache, sector) |> FixedSizeWeightVector
     allocate_intermediate_from_stock_capacity!(
         demand_cache,
         stock_cache,
