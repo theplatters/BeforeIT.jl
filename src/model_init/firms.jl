@@ -75,6 +75,8 @@ function setup_firms!(world::Ark.World, properties::Properties)
                 Deposits(D_h[i]),
                 Capitalist(),
                 Household(),
+
+                FinalDemandCacheIndex(0),
             )
         )
         Ark.new_entity!(
@@ -118,6 +120,8 @@ function setup_firms!(world::Ark.World, properties::Properties)
                 LoanFlow(0.0),
                 Owner() => owner,
                 Firm(),
+                IntermediaryDemandCacheIndex(0),
+                StockCacheIndex(0),
             )
         )
     end

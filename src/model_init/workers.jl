@@ -20,6 +20,7 @@ function setup_workers!(world::Ark.World, properties::Properties)
             RealisedConsumption(0.0),
             RealisedInvestment(0.0),
             Household(),
+            FinalDemandCacheIndex(0),
         )
     )
 
@@ -36,6 +37,7 @@ function setup_workers!(world::Ark.World, properties::Properties)
             RealisedConsumption(0.0),
             RealisedInvestment(0.0),
             Household(),
+            FinalDemandCacheIndex(0),
         )
     )
 
