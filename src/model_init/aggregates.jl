@@ -34,7 +34,8 @@ function setup_aggregates!(world::Ark.World, properties::Properties)
     Ark.add_resource!(
         world, StockCache(
             properties.dimensions.total_firms + properties.dimensions.sectors,
-            properties.dimensions.sectors
+            properties.dimensions.sectors,
+            properties.dimensions.firms_per_sector
         )
     )
 
