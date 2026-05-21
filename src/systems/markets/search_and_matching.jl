@@ -120,8 +120,8 @@ end
 function sort_demand_cache_by_entity_order(world, demand_cache, with, without, start_index)
     last_index = demand_cache.current_index - 1
     p = sortperm(view(demand_cache.indices, start_index:last_index))
-    permute!(view(demand_cache.vals, start_index:last_index), p)
-    permute!(view(demand_cache.nominal, start_index:last_index), p)
+    demand_cache.vals[start_index:last_index, :] = demand_cache.vals[start_index:last_index, :][p, :]
+    demand_cache.nominal[start_index:last_index, :] = demand_cache.nominal[start_index:last_index, :][p, :]
     permute!(view(demand_cache.indices, start_index:last_index), p)
     inv_p = invperm(p)
     for (e, cache_index) in Ark.Query(
