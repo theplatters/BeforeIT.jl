@@ -41,7 +41,7 @@ Bit.run!(model, 20)
 To run the test suite:
 
 ```bash
-julia --project=. test/runtests.jl
+julia  -e 'using Pkg; Pkg.activate("test"); include("test/runtests.jl")'
 ```
 
 Individual test files (e.g., `test/systems/banks.jl`) can also be run directly if the environment is active.
