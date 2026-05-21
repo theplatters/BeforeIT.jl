@@ -765,30 +765,32 @@ function set_firms_deposits!(world::Ark.World)
             loan_flow,
         ) in Ark.Query(world, FIRM_DEPOSIT_COMPONENTS)
 
-        @inbounds deposits.amount .= firm_deposits.(
-            deposits.amount,
-            prices.value,
-            sales.amount,
-            wage_bill.amount,
-            employment.amount,
-            household_price_index,
-            employer_contribution,
-            materials_stock_change.amount,
-            price_index.value,
-            tax_rates.output,
-            output.amount,
-            tax_rates.capital,
-            profits.amount,
-            corporate_tax_rate,
-            dividend_payout_ratio,
-            loans.amount,
-            r.rate,
-            r_bar.rate,
-            cf_price_index.value,
-            investment.amount,
-            loan_flow.amount,
-            debt_installment_rate,
-        )
+        for i in eachindex(deposits)
+            deposits[i] = Deposits(firm_deposits(
+                deposits[i].amount,
+                prices[i].value,
+                sales[i].amount,
+                wage_bill[i].amount,
+                employment[i].amount,
+                household_price_index,
+                employer_contribution,
+                materials_stock_change[i].amount,
+                price_index[i].value,
+                tax_rates[i].output,
+                output[i].amount,
+                tax_rates[i].capital,
+                profits[i].amount,
+                corporate_tax_rate,
+                dividend_payout_ratio,
+                loans[i].amount,
+                r.rate,
+                r_bar.rate,
+                cf_price_index[i].value,
+                investment[i].amount,
+                loan_flow[i].amount,
+                debt_installment_rate,
+            ))
+        end
     end
 
     return nothing
