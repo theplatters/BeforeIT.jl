@@ -94,6 +94,8 @@ function append_household_consumption_demand!(
         with,
         without,
     )
+
+    start_index = demand_cache.current_index
     for (e, consumption_budget, investment_budget, cache_index) in
         Ark.Query(
             world,
@@ -111,7 +113,31 @@ function append_household_consumption_demand!(
         end
     end
 
+    sort_demand_cache_by_entity_order(world, demand_cache, with, without, start_index)
     return nothing
+end
+
+function sort_demand_cache_by_entity_order(world, demand_cache, with, without, start_index)
+    last_index = demand_cache.current_index - 1
+    p = sortperm(view(demand_cache.indices, start_index:last_index))
+    permute!(view(demand_cache.vals, start_index:last_index), p)
+    permute!(view(demand_cache.nominal, start_index:last_index), p)
+    permute!(view(demand_cache.indices, start_index:last_index), p)
+    inv_p = invperm(p)
+    for (e, cache_index) in Ark.Query(
+            world,
+            (FinalDemandCacheIndex,),
+            with = (Household, with...),
+            without = without,
+        )
+        for i in eachindex(e)
+            old_idx = cache_index[i].id
+            rel_old_idx = old_idx - start_index + 1
+            rel_new_idx = inv_p[rel_old_idx]
+            cache_index[i] = FinalDemandCacheIndex(rel_new_idx + start_index - 1)
+        end
+    end
+    return
 end
 
 function build_import_consumption_demand_cache!(world::Ark.World, demand_cache, exports)

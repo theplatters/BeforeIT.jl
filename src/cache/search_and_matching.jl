@@ -162,7 +162,3 @@ end
 function choose_random_firm(cache::StockCache, sector, weights)
     return rand(weights) + cache.sector_offset[sector] - 1
 end
-
-function find_entity_index(entity, cache)
-    return cache.indices[entity]
-end
