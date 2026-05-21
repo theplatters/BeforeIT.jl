@@ -62,7 +62,7 @@ end
 
 setup_for_step() = BeforeIT.AUSTRIA2010Q1 |> BeforeIT.ECSModel
 
-SUITE["step"] = @be setup_for_step() BeforeIT.step!(_) evals = 1 SECONDS = 2
+SUITE["step"] = @be setup_for_step() BeforeIT.step!(_) evals = 1 seconds = 10
 
 # Include all individual system benchmarks
 for (i, sys) in enumerate(SYSTEMS)
@@ -72,5 +72,5 @@ for (i, sys) in enumerate(SYSTEMS)
     # Remove "!" if present
     name = replace(name, "!" => "")
 
-    SUITE[name] = @be setup_to_system($i) SYSTEMS[$i](_) evals = 1 SECONDS = 1
+    SUITE[name] = @be setup_to_system($i) SYSTEMS[$i](_) evals = 1 seconds = 5
 end

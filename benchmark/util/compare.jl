@@ -102,7 +102,7 @@ function table_to_html(data::Vector{CompareRow})::String
         end
 
         if name != r.name
-            name_short = trim_prefix(r.name, "benchmark_")
+            name_short = chopprefix(r.name, "benchmark_")
             html *= @sprintf("""<tr><th colspan="6" align="center">%s</th></tr>\n""", name_short)
         end
 
@@ -179,8 +179,11 @@ function compare_multi_tables(a::Vector{Vector{Row}}, b::Vector{Vector{Row}})::V
         out.time_ns_a /= count
         out.time_ns_b /= count
         out.factor /= count
-        out.allocs /= count
-        out.bytes /= count
+        # TODO: transform to float
+        allocs = out.allocs / count
+        out.allocs = ceil(Int, allocs)
+        bytes = out.bytes / count
+        out.bytes = ceil(Int, bytes)
         push!(data, out)
     end
 
