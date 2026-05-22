@@ -803,7 +803,7 @@ function perform_retail_market!(world::Ark.World, sector::Int64)
         sector_weights,
         BeforeIT.get_stock_capacity(stock_cache, sector),
     )
-    weights = sector_weights |> FixedSizeWeightVector
+    weights = sector_weights
     remaining_stocks = sum(BeforeIT.get_stock_capacity(stock_cache, sector))
 
     allocate_retail_from_stock_capacity!(
