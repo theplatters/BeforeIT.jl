@@ -1,24 +1,20 @@
 abstract type AbstractDemandCache end
 
-mutable struct DesiredIntermediatesCache <: AbstractDemandCache
+mutable struct DemandCache{Kind} <: AbstractDemandCache
     vals::Matrix{Float64}
     nominal::Matrix{Float64}
     indices::Vector{Ark.Entity}
     current_index::Int64
 end
 
-mutable struct DesiredHouseholdConsumptionCache <: AbstractDemandCache
-    vals::Matrix{Float64}
-    nominal::Matrix{Float64}
-    indices::Vector{Ark.Entity}
-    current_index::Int64
-end
+const DesiredIntermediatesCache = DemandCache{:intermediates}
+const DesiredHouseholdConsumptionCache = DemandCache{:household_consumption}
 
-function emblace!(val, entity, cache::T) where {T <: AbstractDemandCache}
-    cache.vals[cache.current_index, :] .= val
-    cache.indices[cache.current_index] = entity
+function reserve_row!(entity, cache::T) where {T <: AbstractDemandCache}
+    row = cache.current_index
+    cache.indices[row] = entity
     cache.current_index += 1
-    return nothing
+    return row
 end
 
 function reset_cache!(cache::T) where {T <: AbstractDemandCache}
