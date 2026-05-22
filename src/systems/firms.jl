@@ -766,30 +766,32 @@ function set_firms_deposits!(world::Ark.World)
         ) in Ark.Query(world, FIRM_DEPOSIT_COMPONENTS)
 
         for i in eachindex(deposits)
-            deposits[i] = Deposits(firm_deposits(
-                deposits[i].amount,
-                prices[i].value,
-                sales[i].amount,
-                wage_bill[i].amount,
-                employment[i].amount,
-                household_price_index,
-                employer_contribution,
-                materials_stock_change[i].amount,
-                price_index[i].value,
-                tax_rates[i].output,
-                output[i].amount,
-                tax_rates[i].capital,
-                profits[i].amount,
-                corporate_tax_rate,
-                dividend_payout_ratio,
-                loans[i].amount,
-                r.rate,
-                r_bar.rate,
-                cf_price_index[i].value,
-                investment[i].amount,
-                loan_flow[i].amount,
-                debt_installment_rate,
-            ))
+            deposits[i] = Deposits(
+                firm_deposits(
+                    deposits[i].amount,
+                    prices[i].value,
+                    sales[i].amount,
+                    wage_bill[i].amount,
+                    employment[i].amount,
+                    household_price_index,
+                    employer_contribution,
+                    materials_stock_change[i].amount,
+                    price_index[i].value,
+                    tax_rates[i].output,
+                    output[i].amount,
+                    tax_rates[i].capital,
+                    profits[i].amount,
+                    corporate_tax_rate,
+                    dividend_payout_ratio,
+                    loans[i].amount,
+                    r.rate,
+                    r_bar.rate,
+                    cf_price_index[i].value,
+                    investment[i].amount,
+                    loan_flow[i].amount,
+                    debt_installment_rate,
+                )
+            )
         end
     end
 
