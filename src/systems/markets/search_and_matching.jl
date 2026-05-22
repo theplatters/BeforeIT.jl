@@ -22,30 +22,59 @@ function build_intermediate_demand_cache!(world::Ark.World)
     for (e, principal_product, desired_investment, desired_materials, cache_index) in
         Ark.Query(world, (PrincipalProduct, DesiredInvestment, DesiredMaterials, IntermediaryDemandCacheIndex))
         for i in eachindex(e)
-            demand = compute_intermediate_demand_vector(
+            row = BeforeIT.reserve_row!(e[i], demand_cache)
+            cache_index[i] = IntermediaryDemandCacheIndex(row)
+            demand_row = @view demand_cache.vals[row, :]
+            fill_intermediate_demand_row!(
+                demand_row,
                 technology_matrix,
                 capital_formation,
                 principal_product[i].id,
                 desired_materials[i].amount,
                 desired_investment[i].amount,
             )
-            cache_index[i] = IntermediaryDemandCacheIndex(demand_cache.current_index)
-            BeforeIT.emblace!(demand, e[i], demand_cache)
         end
     end
 
     return nothing
 end
 
-function compute_intermediate_demand_vector(
+function fill_intermediate_demand_row!(
+        demand_row,
         technology_matrix,
         capital_formation,
         product_id,
         desired_materials_amount,
         desired_investment_amount,
     )
-    return @view(technology_matrix[:, product_id]) .* desired_materials_amount +
-        capital_formation .* desired_investment_amount
+    @inbounds for g in eachindex(demand_row, capital_formation)
+        demand_row[g] =
+            technology_matrix[g, product_id] * desired_materials_amount +
+            capital_formation[g] * desired_investment_amount
+    end
+    return nothing
+end
+
+function fill_household_consumption_demand_row!(
+        demand_row,
+        household_consumption,
+        household_investment,
+        consumption_budget,
+        investment_budget,
+    )
+    @inbounds for g in eachindex(demand_row, household_consumption, household_investment)
+        demand_row[g] =
+            household_consumption[g] * consumption_budget +
+            household_investment[g] * investment_budget
+    end
+    return nothing
+end
+
+function fill_scaled_demand_row!(demand_row, demand_coefficients, amount)
+    @inbounds for g in eachindex(demand_row, demand_coefficients)
+        demand_row[g] = demand_coefficients[g] * amount
+    end
+    return nothing
 end
 
 #TODO: This allocates alot and should be fixed, A single execution takes arround 14ms
@@ -56,8 +85,14 @@ function build_consumption_demand_cache!(world::Ark.World)
 
     coeffs = properties.product_coeffs
     build_household_consumption_demand_cache!(world, demand_cache, coeffs)
-    build_import_consumption_demand_cache!(world, demand_cache, coeffs.exports)
-    build_government_consumption_demand_cache!(world, demand_cache, coeffs.government_consumption)
+    append_scaled_final_demand!(world, demand_cache, ForeignConsumptionDemand, coeffs.exports)
+    append_scaled_final_demand!(
+        world,
+        demand_cache,
+        ConsumptionDemand,
+        coeffs.government_consumption;
+        with = (LocalGovernment,),
+    )
 
     return nothing
 end
@@ -104,11 +139,16 @@ function append_household_consumption_demand!(
             without = without,
         )
         for i in eachindex(e)
-            cache_index[i] = FinalDemandCacheIndex(demand_cache.current_index)
-            demand =
-                household_consumption .* consumption_budget[i].amount +
-                household_investment .* investment_budget[i].amount
-            BeforeIT.emblace!(demand, e[i], demand_cache)
+            row = BeforeIT.reserve_row!(e[i], demand_cache)
+            cache_index[i] = FinalDemandCacheIndex(row)
+            demand_row = @view demand_cache.vals[row, :]
+            fill_household_consumption_demand_row!(
+                demand_row,
+                household_consumption,
+                household_investment,
+                consumption_budget[i].amount,
+                investment_budget[i].amount,
+            )
 
         end
     end
@@ -140,30 +180,20 @@ function sort_demand_cache_by_entity_order(world, demand_cache, with, without, s
     return
 end
 
-function build_import_consumption_demand_cache!(world::Ark.World, demand_cache, exports)
-    for (e, export_demand, cache_index) in Ark.Query(world, (ForeignConsumptionDemand, FinalDemandCacheIndex))
+function append_scaled_final_demand!(
+        world::Ark.World,
+        demand_cache,
+        ::Type{DemandType},
+        demand_coefficients;
+        with = (),
+    ) where {DemandType}
+    for (e, demand, cache_index) in
+        Ark.Query(world, (DemandType, FinalDemandCacheIndex), with = with)
         for i in eachindex(e)
-
-            cache_index[i] = FinalDemandCacheIndex(demand_cache.current_index)
-            BeforeIT.emblace!(exports * export_demand[i].amount, e[i], demand_cache)
-        end
-    end
-
-    return nothing
-end
-
-function build_government_consumption_demand_cache!(world::Ark.World, demand_cache, government_consumption)
-    for (e, consumption_demand, cache_index) in
-        Ark.Query(world, (ConsumptionDemand, FinalDemandCacheIndex), with = (LocalGovernment,))
-        for i in eachindex(e)
-
-            cache_index[i] = FinalDemandCacheIndex(demand_cache.current_index)
-
-            BeforeIT.emblace!(
-                government_consumption * consumption_demand[i].amount,
-                e[i],
-                demand_cache,
-            )
+            row = BeforeIT.reserve_row!(e[i], demand_cache)
+            cache_index[i] = FinalDemandCacheIndex(row)
+            demand_row = @view demand_cache.vals[row, :]
+            fill_scaled_demand_row!(demand_row, demand_coefficients, demand[i].amount)
         end
     end
 
@@ -328,7 +358,6 @@ function allocate_intermediate_from_available_stocks!(
         active,
         sector,
         weights,
-        remaining_supply,
     )
     nactive = rebuild_active_buyers!(active, demand_cache.vals, sector)
 
@@ -348,7 +377,6 @@ function allocate_intermediate_from_available_stocks!(
             stock_cache.available_stocks[firm_index] = max(0.0, stock_cache.available_stocks[firm_index] - sold_amount)
             demand_cache.nominal[buyer, sector] += sold_amount * stock_cache.prices[firm_index]
             demand_cache.vals[buyer, sector] = max(demand_cache.vals[buyer, sector] - sold_amount, 0.0)
-            remaining_supply = max(0.0, remaining_supply - sold_amount)
 
             if (stock_cache.available_stocks[firm_index] <= 0.0)
                 weights[firm_index - stock_cache.sector_offset[sector] + 1] = 0.0
@@ -367,7 +395,6 @@ function allocate_intermediate_from_stock_capacity!(
         active,
         sector,
         weights,
-        remaining_supply,
     )
     nactive = rebuild_active_buyers!(active, demand_cache.vals, sector)
 
@@ -384,7 +411,6 @@ function allocate_intermediate_from_stock_capacity!(
             stock_cache.available_stocks[firm_index] -= sold_amount
             stock_cache.stock_capacity[firm_index] -= sold_amount
             demand_cache.vals[buyer, sector] = max(demand_cache.vals[buyer, sector] - sold_amount, 0.0)
-            remaining_supply = max(0.0, remaining_supply - sold_amount)
 
             if (stock_cache.stock_capacity[firm_index] <= 0.0)
                 weights[firm_index - stock_cache.sector_offset[sector] + 1] = 0.0
@@ -497,7 +523,6 @@ function perform_firm_market!(world::Ark.World, sector::Int64)
     active = Vector{Int64}(undef, size(demand_cache.vals, 1))
 
     weights = BeforeIT.get_weights(stock_cache, sector) |> FixedSizeWeightVector
-    remaining_supply = sum(BeforeIT.get_available_stocks(stock_cache, sector))
 
     allocate_intermediate_from_available_stocks!(
         demand_cache,
@@ -505,10 +530,8 @@ function perform_firm_market!(world::Ark.World, sector::Int64)
         active,
         sector,
         weights,
-        remaining_supply,
     )
 
-    remaining_supply = sum(BeforeIT.get_stock_capacity(stock_cache, sector))
     update_firm_realisations!(world, sector, demand_cache, technology_matrix, capital_formation)
 
     weights = BeforeIT.get_weights(stock_cache, sector) |> FixedSizeWeightVector
@@ -518,7 +541,6 @@ function perform_firm_market!(world::Ark.World, sector::Int64)
         active,
         sector,
         weights,
-        remaining_supply,
     )
 
 

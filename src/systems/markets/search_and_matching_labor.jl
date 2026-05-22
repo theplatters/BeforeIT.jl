@@ -18,16 +18,16 @@ function build_hiring_firms_cache!(world)
     cache = Ark.get_resource(world, HiringFirmsCache)
     reset_cache!(cache)
 
-    rows = Tuple{Ark.Entity, Int, Int}[]
+    rows = Tuple{Ark.Entity, Int}[]
     for (e, desired_employment, employment) in Ark.Query(world, (DesiredEmployment, Employment))
         for i in eachindex(e)
-            push!(rows, (e[i], desired_employment[i].amount - employment[i].amount, employment[i].amount))
+            push!(rows, (e[i], desired_employment[i].amount - employment[i].amount))
         end
     end
 
     sort!(rows; by = first)
-    for (entity, vacancies, employment) in rows
-        BeforeIT.emblace!(vacancies, employment, entity, cache)
+    for (entity, vacancies) in rows
+        BeforeIT.emblace!(vacancies, entity, cache)
     end
 
     return nothing
@@ -46,22 +46,6 @@ function build_worker_cache!(world)
     sort!(unemployed_workers)
     for worker_e in unemployed_workers
         BeforeIT.emblace_unemployed!(worker_e, cache)
-    end
-
-    employed_workers = Tuple{Ark.Entity, Ark.Entity}[]
-    for (firm_e, _employment) in Ark.Query(world, (Employment,))
-        for i in eachindex(firm_e)
-            for (worker_e, _) in Ark.Query(world, (EmployedAt => firm_e[i],))
-                for j in eachindex(worker_e)
-                    push!(employed_workers, (worker_e[j], firm_e[i]))
-                end
-            end
-        end
-    end
-
-    sort!(employed_workers; by = first)
-    for (worker_e, firm_e) in employed_workers
-        BeforeIT.emblace_employed!(worker_e, firm_e, cache)
     end
 
     return nothing
@@ -116,23 +100,23 @@ function hire_workers!(world::Ark.World)
 
 
     shuffle!(view(worker_cache.active, 1:worker_cache.n_unemployed))
-    while cache.nhiring > 0 && worker_cache.n_unemployed > 0
+    next_worker = 1
+    hired_count = 0
+    while cache.nhiring > 0 && next_worker <= worker_cache.n_unemployed
         shuffle!(view(cache.active, 1:cache.nhiring))
         i = 1
 
-        while i <= cache.nhiring && worker_cache.n_unemployed > 0
+        while i <= cache.nhiring && next_worker <= worker_cache.n_unemployed
 
             firm_index = cache.active[i]
-            worker_index = worker_cache.active[1]
+            worker_index = worker_cache.active[next_worker]
+            next_worker += 1
+            hired_count += 1
             worker_e = worker_cache.worker[worker_index]
             firm_e = cache.firms[firm_index]
             push!(add_employment, (worker_e, firm_e))
             hired_workers[firm_e] = get(hired_workers, firm_e, 0) + 1
 
-            if worker_cache.n_unemployed > 1
-                worker_cache.active[1:(worker_cache.n_unemployed - 1)] = worker_cache.active[2:worker_cache.n_unemployed]
-            end
-            worker_cache.n_unemployed -= 1
             cache.vacancies[firm_index] -= 1
 
             if iszero(cache.vacancies[firm_index])
@@ -145,6 +129,12 @@ function hire_workers!(world::Ark.World)
             end
         end
     end
+
+    remaining_unemployed = worker_cache.n_unemployed - hired_count
+    if remaining_unemployed > 0 && hired_count > 0
+        copyto!(worker_cache.active, 1, worker_cache.active, hired_count + 1, remaining_unemployed)
+    end
+    worker_cache.n_unemployed = remaining_unemployed
 
     for (worker_e, firm_e) in add_employment
         Ark.exchange_components!(
