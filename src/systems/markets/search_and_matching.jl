@@ -77,7 +77,6 @@ function fill_scaled_demand_row!(demand_row, demand_coefficients, amount)
     return nothing
 end
 
-#TODO: This allocates alot and should be fixed, A single execution takes arround 14ms
 function build_consumption_demand_cache!(world::Ark.World)
     properties = BeforeIT.properties(world)
     demand_cache = Ark.get_resource(world, DesiredHouseholdConsumptionCache)
