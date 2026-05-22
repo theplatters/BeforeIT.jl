@@ -268,73 +268,54 @@ function build_import_stock_cache!(world::Ark.World, stock_cache)
     return nothing
 end
 
+@generated function _zero_arrays_unrolled!(arrays::Tuple)
+    N = length(arrays.parameters)
+    exprs = Expr[]
+
+    push!(exprs, :(inds = eachindex(arrays[1])))
+
+    for j in 2:N
+        push!(
+            exprs, quote
+                comp = arrays[$j]
+                z = eltype(comp)(0.0) # Derive the correct zero directly from the array's type
+
+                @inbounds @simd ivdep for i in inds
+                    comp[i] = z
+                end
+            end
+        )
+    end
+    push!(exprs, :(return nothing))
+
+    return Expr(:block, exprs...)
+end
+
+function zero_out_query!(
+        world::Ark.World,
+        component_types::Tuple{Vararg{DataType, N}};
+        kwargs...
+    ) where {N}
+
+    # Iterate over the query chunks
+    for arrays in Ark.Query(world, component_types; kwargs...)
+        _zero_arrays_unrolled!(arrays)
+    end
+    return
+end
+
 function zero_out_components_for_search_and_match!(world::Ark.World)
+    zero_out_query!(world, (MaterialsStockChange, Investment, PriceIndex, CFPriceIndex))
+    zero_out_query!(world, (ForeignConsumption, ExportPriceInflation))
+    zero_out_query!(world, (Sales, GoodsDemand))
+    zero_out_query!(world, (ImportSales, ImportDemand))
+    zero_out_query!(world, (RealisedConsumption, PriceInflationGovernmentGoods); with = (Government,))
+    zero_out_query!(world, (RealisedConsumption, RealisedInvestment); with = (Household,))
+
+    # Cleaned up redundant property assignments
     price_indices = BeforeIT.price_indices(world)
-    for (e, material_stock_change, investment, price_index, cf_price_index) in
-        Ark.Query(
-            world,
-            (
-                MaterialsStockChange,
-                Investment,
-                PriceIndex,
-                CFPriceIndex,
-            ),
-        )
-        for i in eachindex(e)
-            material_stock_change[i] = MaterialsStockChange(0.0)
-            investment[i] = Investment(0.0)
-            price_index[i] = PriceIndex(0.0)
-            cf_price_index[i] = CFPriceIndex(0.0)
-
-        end
-    end
-    for (e, realised_consumption, price_inflation) in
-        Ark.Query(world, (RealisedConsumption, PriceInflationGovernmentGoods), with = (Government,))
-        for i in eachindex(e)
-            realised_consumption[i] = RealisedConsumption(0.0)
-            price_inflation[i] = PriceInflationGovernmentGoods(0.0)
-        end
-    end
-
-    for (e, foreign_consumption, export_price) in Ark.Query(world, (ForeignConsumption, ExportPriceInflation))
-        for i in eachindex(e)
-            foreign_consumption[i] = ForeignConsumption(0.0)
-            export_price[i] = ExportPriceInflation(0.0)
-        end
-    end
-
-    for (e, realised_consumption, realised_investment) in
-        Ark.Query(
-            world,
-            (
-                RealisedConsumption,
-                RealisedInvestment,
-            ),
-            with = (Household,),
-        )
-        for i in eachindex(e)
-            realised_consumption[i] = RealisedConsumption(0.0)
-            realised_investment[i] = RealisedInvestment(0.0)
-        end
-    end
-
-    for (e, sales, goods_demand) in Ark.Query(world, (Sales, GoodsDemand))
-        for i in eachindex(e)
-            sales[i] = Sales(0.0)
-            goods_demand[i] = GoodsDemand(0.0)
-        end
-    end
-
-    for (e, sales, demand) in Ark.Query(world, (ImportSales, ImportDemand))
-        for i in eachindex(e)
-            sales[i] = ImportSales(0.0)
-            demand[i] = ImportDemand(0.0)
-        end
-    end
-
     price_indices.household_consumption = 0.0
     price_indices.capital_formation_households = 0.0
-
 
     return
 end
