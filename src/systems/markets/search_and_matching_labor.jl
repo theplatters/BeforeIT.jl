@@ -8,8 +8,10 @@ function search_and_matching_labor!(world::Ark.World)
 end
 
 function calculate_initial_vacancies!(world::Ark.World)
-    for (_, vacancies, desired_employment, employment) in Ark.Query(world, (Vacancies, DesiredEmployment, Employment))
-        vacancies.amount .= desired_employment.amount - employment.amount
+    for (e, vacancies, desired_employment, employment) in Ark.Query(world, (Vacancies, DesiredEmployment, Employment))
+        for i in eachindex(e)
+            vacancies[i] = Vacancies(desired_employment[i].amount - employment[i].amount)
+        end
     end
     return nothing
 end
@@ -52,14 +54,12 @@ function build_worker_cache!(world)
 end
 
 function fire_employed_workers!(world::Ark.World)
-    remove_employment = Vector{Ark.Entity}()
-    unemployment_benefits = Dict{Ark.Entity, Float64}()
     employed_workers = Tuple{Ark.Entity, Ark.Entity, Float64}[]
-    firm_state = Dict{Ark.Entity, Tuple{Any, Any, Int}}()
+    firm_state = Dict{Ark.Entity, Tuple{Vacancies, Employment}}()
 
     for (firm_e, vacancies, employment) in Ark.Query(world, (Vacancies, Employment))
         for i in eachindex(firm_e)
-            firm_state[firm_e[i]] = (vacancies, employment, i)
+            firm_state[firm_e[i]] = (vacancies[i], employment[i])
             for (worker_e, employed) in Ark.Query(world, (Employed,), with = (EmployedAt => firm_e[i],))
                 for j in eachindex(worker_e)
                     push!(employed_workers, (worker_e[j], firm_e[i], employed[j].rate))
@@ -70,13 +70,15 @@ function fire_employed_workers!(world::Ark.World)
 
     sort!(employed_workers; by = first)
     shuffle!(employed_workers)
+    remove_employment = Vector{Ark.Entity}()
+    unemployment_benefits = Dict{Ark.Entity, Float64}()
     for (worker_e, firm_e, wage_rate) in employed_workers
-        vacancies, employment, index = firm_state[firm_e]
-        vacancies[index].amount >= 0 && continue
+        vacancies, employment = firm_state[firm_e]
+        vacancies.amount >= 0 && continue
         push!(remove_employment, worker_e)
         unemployment_benefits[worker_e] = wage_rate
-        vacancies[index] = Vacancies(vacancies[index].amount + 1)
-        employment[index] = Employment(employment[index].amount - 1)
+        vacancies = Vacancies(vacancies.amount + 1)
+        employment = Employment(employment.amount - 1)
     end
 
     for now_unemployed in remove_employment
