@@ -1,6 +1,9 @@
 using BenchmarkTools
 using Chairmarks
 using BeforeIT
+using Random
+
+Random.seed!(42)
 
 const SUITE = BenchmarkGroup()
 
