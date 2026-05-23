@@ -176,7 +176,8 @@ function sort_demand_cache_by_entity_order(world, demand_cache, with, without, s
             cache_index[i] = FinalDemandCacheIndex(rel_new_idx + start_index - 1)
         end
     end
-    return
+
+    return nothing
 end
 
 function append_scaled_final_demand!(
@@ -265,6 +266,7 @@ function build_import_stock_cache!(world::Ark.World, stock_cache)
             )
         end
     end
+
     return nothing
 end
 
@@ -301,7 +303,8 @@ function zero_out_query!(
     for arrays in Ark.Query(world, component_types; kwargs...)
         _zero_arrays_unrolled!(arrays)
     end
-    return
+
+    return nothing
 end
 
 function zero_out_components_for_search_and_match!(world::Ark.World)
@@ -317,7 +320,7 @@ function zero_out_components_for_search_and_match!(world::Ark.World)
     price_indices.household_consumption = 0.0
     price_indices.capital_formation_households = 0.0
 
-    return
+    return nothing
 end
 
 
@@ -523,7 +526,6 @@ function perform_firm_market!(world::Ark.World, sector::Int64)
         weights,
     )
 
-
     return nothing
 end
 
@@ -562,7 +564,6 @@ function allocate_retail_from_available_stocks!(
         nactive = rebuild_active_buyers!(active, demand_cache.vals, sector)
 
     end
-
 
     return nothing
 end
@@ -676,14 +677,7 @@ function update_household_realised_consumption_and_prices!(
 
     for (e, consumption_budget, investment_budget, realised_consumption, realised_investment, cache_index) in
         Ark.Query(
-            world,
-            (
-                ConsumptionBudget,
-                InvestmentBudget,
-                RealisedConsumption,
-                RealisedInvestment,
-                FinalDemandCacheIndex,
-            ),
+            world, (ConsumptionBudget, InvestmentBudget, RealisedConsumption, RealisedInvestment, FinalDemandCacheIndex),
             with = (Household,),
         )
         for i in eachindex(e)
@@ -818,7 +812,6 @@ function perform_retail_market!(world::Ark.World, sector::Int64)
     update_goods_demand_from_remaining_stocks!(world, sector, stock_cache)
     update_import_demand_from_remaining_stocks!(world, sector, stock_cache)
 
-
     return nothing
 end
 
@@ -837,12 +830,7 @@ function finalize_search_and_match!(world::Ark.World)
 
     for (_, realised_consumption, realised_investment, capital_stock) in
         Ark.Query(
-            world,
-            (
-                RealisedConsumption,
-                RealisedInvestment,
-                CapitalStock,
-            ),
+            world, (RealisedConsumption, RealisedInvestment, CapitalStock),
             with = (Household,),
         )
         total_consumption += sum(realised_consumption.amount)
@@ -852,7 +840,6 @@ function finalize_search_and_match!(world::Ark.World)
 
     price_indices.household_consumption = total_consumption / BeforeIT.zero_to_one(price_indices.household_consumption)
     price_indices.capital_formation_households = total_investment / BeforeIT.zero_to_one(price_indices.capital_formation_households)
-
 
     for (e, realised_consumption, price_inflation) in
         Ark.Query(world, (RealisedConsumption, PriceInflationGovernmentGoods), with = (Government,))
@@ -867,14 +854,16 @@ function finalize_search_and_match!(world::Ark.World)
         end
     end
 
-    for (_, sales, good_demand, output, inventories) in
-        Ark.Query(world, (Sales, GoodsDemand, Output, Inventories))
-        sales.amount .= min.(good_demand.amount, output.amount .+ inventories.amount)
+    for (e, sales, good_demand, output, inventories) in Ark.Query(world, (Sales, GoodsDemand, Output, Inventories))
+        for i in eachindex(e)
+            sales[i] = Sales(min(good_demand[i].amount, output[i].amount + inventories[i].amount))
+        end
     end
 
-    for (_, sales, demand, output) in
-        Ark.Query(world, (ImportSales, ImportDemand, ImportSupply))
-        sales.amount .= min.(demand.amount, output.amount)
+    for (e, sales, demand, output) in Ark.Query(world, (ImportSales, ImportDemand, ImportSupply))
+        for i in eachindex(e)
+            sales[i] = ImportSales(min(demand[i].amount, output[i].amount))
+        end
     end
 
     for (_, price_index, cf_price_index, materials, investment) in Ark.Query(world, (PriceIndex, CFPriceIndex, MaterialsStockChange, Investment))
@@ -887,7 +876,6 @@ function finalize_search_and_match!(world::Ark.World)
             end
         end
     end
-
 
     return nothing
 end
