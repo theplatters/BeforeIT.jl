@@ -8,8 +8,10 @@ function search_and_matching_labor!(world::Ark.World)
 end
 
 function calculate_initial_vacancies!(world::Ark.World)
-    for (_, vacancies, desired_employment, employment) in Ark.Query(world, (Vacancies, DesiredEmployment, Employment))
-        vacancies.amount .= desired_employment.amount - employment.amount
+    for (e, vacancies, desired_employment, employment) in Ark.Query(world, (Vacancies, DesiredEmployment, Employment))
+        for i in eachindex(e)
+            vacancies[i] = Vacancies(desired_employment[i].amount - employment[i].amount)
+        end
     end
     return nothing
 end
@@ -25,7 +27,6 @@ function build_hiring_firms_cache!(world)
         end
     end
 
-    sort!(rows; by = first)
     for (entity, vacancies) in rows
         BeforeIT.emblace!(vacancies, entity, cache)
     end
@@ -98,7 +99,6 @@ function hire_workers!(world::Ark.World)
     add_employment = Tuple{Ark.Entity, Ark.Entity}[]
     hired_workers = Dict{Ark.Entity, Int}()
 
-
     shuffle!(view(worker_cache.active, 1:worker_cache.n_unemployed))
     next_worker = 1
     hired_count = 0
@@ -151,7 +151,6 @@ function hire_workers!(world::Ark.World)
             employment[i] = Employment(employment[i].amount + hired)
         end
     end
-
 
     return nothing
 end
