@@ -27,99 +27,73 @@ end
 
 
 mutable struct StockCache
-    available_stocks::Vector{Float64}
-    stock_capacity::Vector{Float64}
-    prices::Vector{Float64}
-    weights::Vector{Float64}
+    available_stocks::Vector{Vector{Float64}}
+    stock_capacity::Vector{Vector{Float64}}
+    prices::Vector{Vector{Float64}}
+    weights::Vector{Vector{Float64}}
     weight_vectors::Vector{FixedSizeWeightVector}
-    sector::Vector{Int64}
-    current_index::Int64
-    sector_offset::Vector{Int}
+    current_indices::Vector{Int64}
 end
 
 function StockCache(size::Int64, sectors::Int64, firms_per_sector)
-    weight_vectors = [FixedSizeWeightVector(firm_size + 1) for firm_size in firms_per_sector]
+    available_stocks = [Vector{Float64}(undef, firms_per_sector[g] + 1) for g in 1:sectors]
+    stock_capacity = [Vector{Float64}(undef, firms_per_sector[g] + 1) for g in 1:sectors]
+    prices = [Vector{Float64}(undef, firms_per_sector[g] + 1) for g in 1:sectors]
+    weights = [Vector{Float64}(undef, firms_per_sector[g] + 1) for g in 1:sectors]
+    weight_vectors = [FixedSizeWeightVector(firms_per_sector[g] + 1) for g in 1:sectors]
+    current_indices = ones(Int64, sectors)
+
     return StockCache(
-        Vector{Float64}(undef, size),
-        Vector{Float64}(undef, size),
-        Vector{Float64}(undef, size),
-        Vector{Float64}(undef, size),
+        available_stocks,
+        stock_capacity,
+        prices,
+        weights,
         weight_vectors,
-        Vector{Int64}(undef, size),
-        1,
-        Vector{Int64}(undef, sectors + 1),
+        current_indices,
     )
 end
 
 function emblace!(available, stock_capacity, price, sector, entity, cache::StockCache)
-    cache.available_stocks[cache.current_index] = available
-    cache.stock_capacity[cache.current_index] = stock_capacity
-    cache.prices[cache.current_index] = price
-    cache.sector[cache.current_index] = sector
-    cache.current_index += 1
+    idx = cache.current_indices[sector]
+    cache.available_stocks[sector][idx] = available
+    cache.stock_capacity[sector][idx] = stock_capacity
+    cache.prices[sector][idx] = price
+    cache.current_indices[sector] += 1
     return nothing
 end
 
 
 function reset_cache!(cache::StockCache)
-    cache.current_index = 1
+    fill!(cache.current_indices, 1)
     return nothing
 end
 
 
 function finalize_stock_cache!(cache::StockCache, world::Ark.World)
-
-    p = sortperm(cache.sector)
-
-    permute!(cache.available_stocks, p)
-    permute!(cache.stock_capacity, p)
-    permute!(cache.sector, p)
-    permute!(cache.prices, p)
-
-    inv_p = invperm(p)
-    for (e, s) in Ark.Query(world, (StockCacheIndex,))
-        @inbounds for i in eachindex(e)
-            s[i] = StockCacheIndex(inv_p[s[i].id])
-        end
-    end
-
-
-    prev_sector = -1
-    for (i, sector) in enumerate(cache.sector)
-        if sector != prev_sector
-            cache.sector_offset[sector] = i
-            prev_sector = sector
-        end
-    end
-
-    cache.sector_offset[cache.sector[end] + 1] = length(cache.sector) + 1
-
-    @inbounds for i in 1:(length(cache.sector_offset) - 1)
+    @inbounds for g in eachindex(cache.available_stocks)
         build_sampling_weights!(
-            get_weights(cache, i),
-            get_prices(cache, i),
-            get_available_stocks(cache, i)
+            cache.weights[g],
+            cache.prices[g],
+            cache.available_stocks[g]
         )
-
     end
-
     return
 end
 
 function get_available_stocks(cache::StockCache, sector::Int64)
-    return @view cache.available_stocks[cache.sector_offset[sector]:(cache.sector_offset[sector + 1] - 1)]
+    return cache.available_stocks[sector]
 end
 
 function get_stock_capacity(cache::StockCache, sector::Int64)
-    return @view cache.stock_capacity[cache.sector_offset[sector]:(cache.sector_offset[sector + 1] - 1)]
+    return cache.stock_capacity[sector]
 end
 
 function get_prices(cache::StockCache, sector::Int64)
-    return @view cache.prices[cache.sector_offset[sector]:(cache.sector_offset[sector + 1] - 1)]
+    return cache.prices[sector]
 end
 
 function get_weights(cache::StockCache, sector::Int64)
-    return @view cache.weights[cache.sector_offset[sector]:(cache.sector_offset[sector + 1] - 1)]
+    return cache.weights[sector]
 end
 
 function get_weight_vector(cache::StockCache, sector::Int64)
@@ -165,5 +139,5 @@ function build_sampling_weights!(
 end
 
 function choose_random_firm(cache::StockCache, sector, weights)
-    return rand(weights) + cache.sector_offset[sector] - 1
+    return rand(weights)
 end
