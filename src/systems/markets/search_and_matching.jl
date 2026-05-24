@@ -206,13 +206,14 @@ function build_domestic_stock_cache!(world::Ark.World, stock_cache)
         @inbounds for i in eachindex(e)
             available_stock = output[i].amount + stocks[i].amount
             stock_capacity = capital[i].amount * capital_productivity[i].value - output[i].amount
+            sector = pp[i].id
 
-            cache_index[i] = StockCacheIndex(stock_cache.current_index)
+            cache_index[i] = StockCacheIndex(stock_cache.current_indices[sector])
             BeforeIT.emblace!(
                 available_stock,
                 stock_capacity,
                 price[i].value,
-                pp[i].id,
+                sector,
                 e[i],
                 stock_cache,
             )
@@ -232,13 +233,14 @@ function build_import_stock_cache!(world::Ark.World, stock_cache)
             )
         )
         @inbounds for i in eachindex(e)
+            sector = pp[i].id
 
-            cache_index[i] = StockCacheIndex(stock_cache.current_index)
+            cache_index[i] = StockCacheIndex(stock_cache.current_indices[sector])
             BeforeIT.emblace!(
                 import_supply[i].amount,
                 Inf,
                 price[i].value,
-                pp[i].id,
+                sector,
                 e[i],
                 stock_cache,
             )
@@ -333,14 +335,14 @@ function allocate_intermediate_from_available_stocks!(
             firm_index = BeforeIT.choose_random_firm(stock_cache, sector, weights)
 
 
-            sold_amount = min(stock_cache.available_stocks[firm_index], demand_cache.vals[buyer, sector])
+            sold_amount = min(stock_cache.available_stocks[sector][firm_index], demand_cache.vals[buyer, sector])
 
-            stock_cache.available_stocks[firm_index] = max(0.0, stock_cache.available_stocks[firm_index] - sold_amount)
-            demand_cache.nominal[buyer, sector] += sold_amount * stock_cache.prices[firm_index]
+            stock_cache.available_stocks[sector][firm_index] = max(0.0, stock_cache.available_stocks[sector][firm_index] - sold_amount)
+            demand_cache.nominal[buyer, sector] += sold_amount * stock_cache.prices[sector][firm_index]
             demand_cache.vals[buyer, sector] = max(demand_cache.vals[buyer, sector] - sold_amount, 0.0)
 
-            if (stock_cache.available_stocks[firm_index] <= 0.0)
-                weights[firm_index - stock_cache.sector_offset[sector] + 1] = 0.0
+            if (stock_cache.available_stocks[sector][firm_index] <= 0.0)
+                weights[firm_index] = 0.0
             end
         end
 
@@ -367,14 +369,14 @@ function allocate_intermediate_from_stock_capacity!(
 
             buyer = active[i]
             firm_index = BeforeIT.choose_random_firm(stock_cache, sector, weights)
-            sold_amount = min(stock_cache.stock_capacity[firm_index], demand_cache.vals[buyer, sector])
+            sold_amount = min(stock_cache.stock_capacity[sector][firm_index], demand_cache.vals[buyer, sector])
 
-            stock_cache.available_stocks[firm_index] -= sold_amount
-            stock_cache.stock_capacity[firm_index] -= sold_amount
+            stock_cache.available_stocks[sector][firm_index] -= sold_amount
+            stock_cache.stock_capacity[sector][firm_index] -= sold_amount
             demand_cache.vals[buyer, sector] = max(demand_cache.vals[buyer, sector] - sold_amount, 0.0)
 
-            if (stock_cache.stock_capacity[firm_index] <= 0.0)
-                weights[firm_index - stock_cache.sector_offset[sector] + 1] = 0.0
+            if (stock_cache.stock_capacity[sector][firm_index] <= 0.0)
+                weights[firm_index] = 0.0
             end
 
         end
@@ -516,7 +518,7 @@ function allocate_retail_from_available_stocks!(
         remaining_stocks,
     )
     nactive = rebuild_active_buyers!(active, demand_cache.vals, sector)
-    while nactive > 0 && remaining_stocks > 0.0&& !iszero(weights)
+    while nactive > 0 && remaining_stocks > 0.0 && !iszero(weights)
         shuffle!(view(active, 1:nactive))
 
         for i in 1:nactive
@@ -526,14 +528,14 @@ function allocate_retail_from_available_stocks!(
             buyer = active[i]
             firm_index = BeforeIT.choose_random_firm(stock_cache, sector, weights)
 
-            price = stock_cache.prices[firm_index]
-            sold_amount = min(stock_cache.available_stocks[firm_index], demand_cache.vals[buyer, sector] / price)
+            price = stock_cache.prices[sector][firm_index]
+            sold_amount = min(stock_cache.available_stocks[sector][firm_index], demand_cache.vals[buyer, sector] / price)
 
-            stock_cache.available_stocks[firm_index] -= sold_amount
+            stock_cache.available_stocks[sector][firm_index] -= sold_amount
             demand_cache.nominal[buyer, sector] += sold_amount
             demand_cache.vals[buyer, sector] = max(demand_cache.vals[buyer, sector] - sold_amount * price, 0.0)
-            if (stock_cache.available_stocks[firm_index] <= 0.0)
-                weights[firm_index - stock_cache.sector_offset[sector] + 1] = 0.0
+            if (stock_cache.available_stocks[sector][firm_index] <= 0.0)
+                weights[firm_index] = 0.0
             end
 
             remaining_stocks = max(0.0, remaining_stocks - sold_amount)
@@ -565,17 +567,17 @@ function allocate_retail_from_stock_capacity!(
             buyer = active[i]
 
             firm_index = BeforeIT.choose_random_firm(stock_cache, sector, weights)
-            price = stock_cache.prices[firm_index]
+            price = stock_cache.prices[sector][firm_index]
             sold_amount = min(
-                stock_cache.stock_capacity[firm_index],
+                stock_cache.stock_capacity[sector][firm_index],
                 demand_cache.vals[buyer, sector] / price,
             )
 
-            stock_cache.available_stocks[firm_index] -= sold_amount
-            stock_cache.stock_capacity[firm_index] = max(0.0, stock_cache.stock_capacity[firm_index] - sold_amount)
+            stock_cache.available_stocks[sector][firm_index] -= sold_amount
+            stock_cache.stock_capacity[sector][firm_index] = max(0.0, stock_cache.stock_capacity[sector][firm_index] - sold_amount)
             demand_cache.vals[buyer, sector] = max(demand_cache.vals[buyer, sector] - sold_amount * price, 0.0)
-            if (stock_cache.stock_capacity[firm_index] <= 0.0)
-                weights[firm_index - stock_cache.sector_offset[sector] + 1] = 0.0
+            if (stock_cache.stock_capacity[sector][firm_index] <= 0.0)
+                weights[firm_index] = 0.0
             end
         end
 
@@ -699,7 +701,7 @@ function update_goods_demand_from_remaining_stocks!(world::Ark.World, sector::In
             firm_index = cache_index[i].id
             good_demand[i] = GoodsDemand(
                 good_demand[i].amount +
-                    output[i].amount + inventories[i].amount - stock_cache.available_stocks[firm_index],
+                    output[i].amount + inventories[i].amount - stock_cache.available_stocks[sector][firm_index],
             )
         end
     end
@@ -716,7 +718,7 @@ function update_import_demand_from_remaining_stocks!(world::Ark.World, sector::I
 
             good_demand[i] = ImportDemand(
                 good_demand[i].amount +
-                    good_supply[i].amount - stock_cache.available_stocks[rotw_index],
+                    good_supply[i].amount - stock_cache.available_stocks[sector][rotw_index],
             )
         end
     end
