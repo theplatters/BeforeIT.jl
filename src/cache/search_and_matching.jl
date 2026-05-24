@@ -3,7 +3,6 @@ abstract type AbstractDemandCache end
 mutable struct DemandCache{Kind} <: AbstractDemandCache
     vals::Matrix{Float64}
     nominal::Matrix{Float64}
-    indices::Vector{Ark.Entity}
     current_index::Int64
 end
 
@@ -12,7 +11,6 @@ const DesiredHouseholdConsumptionCache = DemandCache{:household_consumption}
 
 function reserve_row!(entity, cache::T) where {T <: AbstractDemandCache}
     row = cache.current_index
-    cache.indices[row] = entity
     cache.current_index += 1
     return row
 end
@@ -24,7 +22,7 @@ function reset_cache!(cache::T) where {T <: AbstractDemandCache}
 end
 
 function (::Type{T})(values::Int64, sectors::Int64) where {T <: AbstractDemandCache}
-    return T(Matrix{Float64}(undef, values, sectors), zeros(values, sectors), Vector{Ark.Entity}(undef, values), 1)
+    return T(Matrix{Float64}(undef, values, sectors), zeros(values, sectors), 1)
 end
 
 
@@ -35,7 +33,6 @@ mutable struct StockCache
     weights::Vector{Float64}
     weight_vectors::Vector{FixedSizeWeightVector}
     sector::Vector{Int64}
-    indices::Vector{Ark.Entity}
     current_index::Int64
     sector_offset::Vector{Int}
 end
@@ -49,7 +46,6 @@ function StockCache(size::Int64, sectors::Int64, firms_per_sector)
         Vector{Float64}(undef, size),
         weight_vectors,
         Vector{Int64}(undef, size),
-        Vector{Ark.Entity}(undef, size),
         1,
         Vector{Int64}(undef, sectors + 1),
     )
@@ -60,7 +56,6 @@ function emblace!(available, stock_capacity, price, sector, entity, cache::Stock
     cache.stock_capacity[cache.current_index] = stock_capacity
     cache.prices[cache.current_index] = price
     cache.sector[cache.current_index] = sector
-    cache.indices[cache.current_index] = entity
     cache.current_index += 1
     return nothing
 end
@@ -80,7 +75,6 @@ function finalize_stock_cache!(cache::StockCache, world::Ark.World)
     permute!(cache.stock_capacity, p)
     permute!(cache.sector, p)
     permute!(cache.prices, p)
-    permute!(cache.indices, p)
 
     inv_p = invperm(p)
     for (e, s) in Ark.Query(world, (StockCacheIndex,))
