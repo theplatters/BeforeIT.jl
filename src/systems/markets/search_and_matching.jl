@@ -129,52 +129,30 @@ function append_household_consumption_demand!(
         without,
     )
 
-    start_index = demand_cache.current_index
-    for (e, consumption_budget, investment_budget, cache_index) in
-        Ark.Query(
-            world,
-            (ConsumptionBudget, InvestmentBudget, FinalDemandCacheIndex),
-            with = (Household, with...),
-            without = without,
-        )
-        for i in eachindex(e)
-            row = BeforeIT.reserve_row!(e[i], demand_cache)
-            cache_index[i] = FinalDemandCacheIndex(row)
-            demand_row = @view demand_cache.vals[row, :]
-            fill_household_consumption_demand_row!(
-                demand_row,
-                household_consumption,
-                household_investment,
-                consumption_budget[i].amount,
-                investment_budget[i].amount,
-            )
-
-        end
-    end
-
-    sort_demand_cache_by_entity_order(world, demand_cache, with, without, start_index)
-    return nothing
-end
-
-function sort_demand_cache_by_entity_order(world, demand_cache, with, without, start_index)
-    last_index = demand_cache.current_index - 1
-    p = sortperm(view(demand_cache.indices, start_index:last_index))
-    demand_cache.vals[start_index:last_index, :] = demand_cache.vals[start_index:last_index, :][p, :]
-    demand_cache.nominal[start_index:last_index, :] = demand_cache.nominal[start_index:last_index, :][p, :]
-    permute!(view(demand_cache.indices, start_index:last_index), p)
-    inv_p = invperm(p)
-    for (e, cache_index) in Ark.Query(
+    entities = Ark.Entity[]
+    for (e,) in Ark.Query(
             world,
             (FinalDemandCacheIndex,),
             with = (Household, with...),
             without = without,
         )
-        for i in eachindex(e)
-            old_idx = cache_index[i].id
-            rel_old_idx = old_idx - start_index + 1
-            rel_new_idx = inv_p[rel_old_idx]
-            cache_index[i] = FinalDemandCacheIndex(rel_new_idx + start_index - 1)
-        end
+        append!(entities, e)
+    end
+
+    sort!(entities)
+
+    for entity in entities
+        cb, ib = Ark.get_components(world, entity, (ConsumptionBudget, InvestmentBudget))
+        row = BeforeIT.reserve_row!(entity, demand_cache)
+        Ark.set_components!(world, entity, (FinalDemandCacheIndex(row),))
+        demand_row = @view demand_cache.vals[row, :]
+        fill_household_consumption_demand_row!(
+            demand_row,
+            household_consumption,
+            household_investment,
+            cb.amount,
+            ib.amount,
+        )
     end
 
     return nothing
