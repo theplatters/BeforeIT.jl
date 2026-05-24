@@ -128,31 +128,34 @@ function append_household_consumption_demand!(
         with,
         without,
     )
-
-    entities = Ark.Entity[]
-    for (e,) in Ark.Query(
-            world,
-            (FinalDemandCacheIndex,),
+    
+    Ark.sort_entities!(
+        Ark.Filter(world,
+            (FinalDemandCacheIndex,);
             with = (Household, with...),
             without = without,
         )
-        append!(entities, e)
-    end
+    )
 
-    sort!(entities)
+    q = Ark.Query(world,
+        (FinalDemandCacheIndex, ConsumptionBudget, InvestmentBudget);
+        with = (Household, with...),
+        without = without,
+    )
 
-    for entity in entities
-        cb, ib = Ark.get_components(world, entity, (ConsumptionBudget, InvestmentBudget))
-        row = BeforeIT.reserve_row!(entity, demand_cache)
-        Ark.set_components!(world, entity, (FinalDemandCacheIndex(row),))
-        demand_row = @view demand_cache.vals[row, :]
-        fill_household_consumption_demand_row!(
-            demand_row,
-            household_consumption,
-            household_investment,
-            cb.amount,
-            ib.amount,
-        )
+    for (e, fd, cb, ib,) in q
+        for i in eachindex(e)
+            row = BeforeIT.reserve_row!(e[i], demand_cache)
+            fd[i] = FinalDemandCacheIndex(row)
+            demand_row = @view demand_cache.vals[row, :]
+            fill_household_consumption_demand_row!(
+                demand_row,
+                household_consumption,
+                household_investment,
+                cb[i].amount,
+                ib[i].amount,
+            )
+        end
     end
 
     return nothing
