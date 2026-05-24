@@ -3,9 +3,15 @@ function search_and_matching!(world::Ark.World; parallel = false)
     build_consumption_demand_cache!(world)
     build_stock_cache!(world)
     zero_out_components_for_search_and_match!(world)
+
+    intermediate_cache = Ark.get_resource(world, BeforeIT.DesiredIntermediatesCache)
+    consumption_cache = Ark.get_resource(world, DesiredHouseholdConsumptionCache)
+    max_npotential_buyers = max(size(intermediate_cache.vals, 1), size(consumption_cache.vals, 1))
+    active = Vector{Int64}(undef, max_npotential_buyers)
+
     for g in 1:BeforeIT.properties(world).dimensions.sectors
-        perform_firm_market!(world, g)
-        perform_retail_market!(world, g)
+        perform_firm_market!(world, g, active)
+        perform_retail_market!(world, g, active)
     end
     finalize_search_and_match!(world)
     return nothing
@@ -329,16 +335,15 @@ function allocate_intermediate_from_available_stocks!(
 
     nactive = rebuild_active_buyers!(active, demand_vals_sector)
 
-    while nactive > 0 && !iszero(weights)
+    @inbounds while nactive > 0 && !iszero(weights)
         shuffle!(view(active, 1:nactive))
 
+        new_nactive = 0
         for i in 1:nactive
             iszero(weights) && break
 
             buyer = active[i]
-
             firm_index = BeforeIT.choose_random_firm(stock_cache, sector, weights)
-
 
             sold_amount = min(sector_available_stocks[firm_index], demand_vals_sector[buyer])
 
@@ -346,12 +351,17 @@ function allocate_intermediate_from_available_stocks!(
             demand_nominal_sector[buyer] += sold_amount * sector_prices[firm_index]
             demand_vals_sector[buyer] = max(demand_vals_sector[buyer] - sold_amount, 0.0)
 
-            if (sector_available_stocks[firm_index] <= 0.0)
+            if sector_available_stocks[firm_index] <= 0.0
                 weights[firm_index] = 0.0
+            end
+
+            if demand_vals_sector[buyer] > 0.0
+                new_nactive += 1
+                active[new_nactive] = buyer
             end
         end
 
-        nactive = rebuild_active_buyers!(active, demand_vals_sector)
+        nactive = new_nactive
     end
 
     return nothing
@@ -370,9 +380,10 @@ function allocate_intermediate_from_stock_capacity!(
 
     nactive = rebuild_active_buyers!(active, demand_vals_sector)
 
-    while nactive > 0 && !iszero(weights)
+    @inbounds while nactive > 0 && !iszero(weights)
         shuffle!(view(active, 1:nactive))
 
+        new_nactive = 0
         for i in 1:nactive
             iszero(weights) && break
 
@@ -384,13 +395,17 @@ function allocate_intermediate_from_stock_capacity!(
             sector_stock_capacity[firm_index] -= sold_amount
             demand_vals_sector[buyer] = max(demand_vals_sector[buyer] - sold_amount, 0.0)
 
-            if (sector_stock_capacity[firm_index] <= 0.0)
+            if sector_stock_capacity[firm_index] <= 0.0
                 weights[firm_index] = 0.0
             end
 
+            if demand_vals_sector[buyer] > 0.0
+                new_nactive += 1
+                active[new_nactive] = buyer
+            end
         end
 
-        nactive = rebuild_active_buyers!(active, demand_vals_sector)
+        nactive = new_nactive
     end
 
     return nothing
@@ -492,12 +507,12 @@ function update_firm_realisation_components!(
     return nothing
 end
 
-function perform_firm_market!(world::Ark.World, sector::Int64)
+function perform_firm_market!(world::Ark.World, sector::Int64, active)
     demand_cache = Ark.get_resource(world, BeforeIT.DesiredIntermediatesCache)
     stock_cache = Ark.get_resource(world, BeforeIT.StockCache)
 
     (; technology_matrix, capital_formation) = BeforeIT.properties(world).product_coeffs
-    active = Vector{Int64}(undef, size(demand_cache.vals, 1))
+    demand_cache.nominal[:, sector] .= 0.0
 
     weights = BeforeIT.get_weight_vector(stock_cache, sector)
 
@@ -529,19 +544,18 @@ function allocate_retail_from_available_stocks!(
         active,
         sector,
         weights,
-        remaining_stocks,
     )
     sector_available_stocks = stock_cache.available_stocks[sector]
     sector_prices = stock_cache.prices[sector]
     demand_vals_sector = @view demand_cache.vals[:, sector]
     demand_nominal_sector = @view demand_cache.nominal[:, sector]
 
-    nactive = rebuild_active_buyers!(active, demand_vals_sector)
-    while nactive > 0 && remaining_stocks > 0.0 && !iszero(weights)
+nactive = rebuild_active_buyers!(active, demand_vals_sector)
+    while nactive > 0 && !iszero(weights)
         shuffle!(view(active, 1:nactive))
 
+        new_nactive = 0
         for i in 1:nactive
-            remaining_stocks <= 0.0 && break
             iszero(weights) && break
 
             buyer = active[i]
@@ -557,10 +571,13 @@ function allocate_retail_from_available_stocks!(
                 weights[firm_index] = 0.0
             end
 
-            remaining_stocks = max(0.0, remaining_stocks - sold_amount)
+            if demand_vals_sector[buyer] > 0.0
+                new_nactive += 1
+                active[new_nactive] = buyer
+            end
         end
 
-        nactive = rebuild_active_buyers!(active, demand_vals_sector)
+        nactive = new_nactive
 
     end
 
@@ -582,9 +599,10 @@ function allocate_retail_from_stock_capacity!(
 
     nactive = rebuild_active_buyers!(active, demand_vals_sector)
 
-    while nactive > 0 && !iszero(weights)
+    @inbounds while nactive > 0 && !iszero(weights)
         shuffle!(view(active, 1:nactive))
 
+        new_nactive = 0
         for i in 1:nactive
             iszero(weights) && break
 
@@ -600,13 +618,18 @@ function allocate_retail_from_stock_capacity!(
             sector_available_stocks[firm_index] -= sold_amount
             sector_stock_capacity[firm_index] = max(0.0, sector_stock_capacity[firm_index] - sold_amount)
             demand_vals_sector[buyer] = max(demand_vals_sector[buyer] - sold_amount * price, 0.0)
-            if (sector_stock_capacity[firm_index] <= 0.0)
+            
+            if sector_stock_capacity[firm_index] <= 0.0
                 weights[firm_index] = 0.0
+            end
+
+            if demand_vals_sector[buyer] > 0.0
+                new_nactive += 1
+                active[new_nactive] = buyer
             end
         end
 
-
-        nactive = rebuild_active_buyers!(active, demand_vals_sector)
+        nactive = new_nactive
     end
     return nothing
 end
@@ -750,11 +773,11 @@ function update_import_demand_from_remaining_stocks!(world::Ark.World, sector::I
     return nothing
 end
 
-function perform_retail_market!(world::Ark.World, sector::Int64)
+function perform_retail_market!(world::Ark.World, sector::Int64, active)
     demand_cache = Ark.get_resource(world, DesiredHouseholdConsumptionCache)
     stock_cache = Ark.get_resource(world, BeforeIT.StockCache)
 
-    active = Vector{Int64}(undef, size(demand_cache.vals, 1))
+    demand_cache.nominal[:, sector] .= 0.0
     (; government_consumption, exports, household_consumption, household_investment) =
         BeforeIT.properties(world).product_coeffs
 
@@ -769,7 +792,6 @@ function perform_retail_market!(world::Ark.World, sector::Int64)
         sector_available_stocks,
     )
     weights = sector_weights
-    remaining_stocks = sum(sector_available_stocks)
 
     allocate_retail_from_available_stocks!(
         demand_cache,
@@ -777,7 +799,6 @@ function perform_retail_market!(world::Ark.World, sector::Int64)
         active,
         sector,
         weights,
-        remaining_stocks,
     )
 
     first_pass_vals_sector = view(demand_cache.vals, :, sector)

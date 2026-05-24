@@ -17,7 +17,6 @@ end
 
 function reset_cache!(cache::T) where {T <: AbstractDemandCache}
     cache.current_index = 1
-    cache.nominal .= 0.0
     return nothing
 end
 
