@@ -26,7 +26,7 @@ function (::Type{T})(values::Int64, sectors::Int64) where {T <: AbstractDemandCa
 end
 
 
-mutable struct StockCache
+struct StockCache
     available_stocks::Vector{Vector{Float64}}
     stock_capacity::Vector{Vector{Float64}}
     prices::Vector{Vector{Float64}}
