@@ -1,4 +1,4 @@
-mutable struct CreditMatchingCache
+struct CreditMatchingCache
     active_rows::Vector{Int}
 end
 
