@@ -340,7 +340,6 @@ function allocate_intermediate_from_available_stocks!(
 
         new_nactive = 0
         for i in 1:nactive
-            iszero(weights) && break
 
             buyer = active[i]
             firm_index = BeforeIT.choose_random_firm(stock_cache, sector, weights)
@@ -355,6 +354,7 @@ function allocate_intermediate_from_available_stocks!(
 
             if sector_available_stocks[firm_index] <= 0.0
                 weights[firm_index] = 0.0
+                iszero(weights) && break
             end
 
             if new_demand > 0.0
@@ -387,7 +387,6 @@ function allocate_intermediate_from_stock_capacity!(
 
         new_nactive = 0
         for i in 1:nactive
-            iszero(weights) && break
 
             buyer = active[i]
             firm_index = BeforeIT.choose_random_firm(stock_cache, sector, weights)
@@ -401,6 +400,7 @@ function allocate_intermediate_from_stock_capacity!(
 
             if sector_stock_capacity[firm_index] <= 0.0
                 weights[firm_index] = 0.0
+                iszero(weights) && break
             end
 
             if new_demand > 0.0
@@ -562,7 +562,6 @@ function allocate_retail_from_available_stocks!(
 
         new_nactive = 0
         for i in 1:nactive
-            iszero(weights) && break
 
             buyer = active[i]
             firm_index = BeforeIT.choose_random_firm(stock_cache, sector, weights)
@@ -575,9 +574,10 @@ function allocate_retail_from_available_stocks!(
             sector_available_stocks[firm_index] -= sold_amount
             demand_nominal_sector[buyer] += sold_amount
             demand_vals_sector[buyer] = new_demand
-    
+
             if sector_available_stocks[firm_index] <= 0.0
                 weights[firm_index] = 0.0
+                iszero(weights) && break
             end
 
             if new_demand > 0.0
@@ -613,7 +613,6 @@ function allocate_retail_from_stock_capacity!(
 
         new_nactive = 0
         for i in 1:nactive
-            iszero(weights) && break
 
             buyer = active[i]
 
@@ -629,6 +628,7 @@ function allocate_retail_from_stock_capacity!(
             
             if sector_stock_capacity[firm_index] <= 0.0
                 weights[firm_index] = 0.0
+                iszero(weights) && break
             end
 
             if new_demand > 0.0
