@@ -557,7 +557,7 @@ function allocate_retail_from_available_stocks!(
     demand_nominal_sector = @view demand_cache.nominal[:, sector]
 
     nactive = rebuild_active_buyers!(active, demand_vals_sector)
-    while nactive > 0 && !iszero(weights)
+    @inbounds while nactive > 0 && !iszero(weights)
         shuffle!(view(active, 1:nactive))
 
         new_nactive = 0
