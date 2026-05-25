@@ -329,17 +329,25 @@ abstract type StockType end
 struct Stock <: StockType end
 struct Capacity <: StockType end
 
-calc_sold_amount(available_stocks, stock_capacity, price, demand_cache_vals, firm_index, buyer, ::Intermediate, ::Stock) = min(available_stocks[firm_index], demand_cache_vals[buyer])
-calc_sold_amount(available_stocks, stock_capacity, price, demand_cache_vals, firm_index, buyer, ::Intermediate, ::Capacity) = min(stock_capacity[firm_index], demand_cache_vals[buyer])
+@inline calc_sold_amount(available_stock, stock_capacity, price, demand_cache_val, firm_index, buyer, ::Intermediate, ::Stock) = min(available_stock, demand_cache_val)
+@inline calc_sold_amount(available_stocks, stock_capacity, price, demand_cache_val, firm_index, buyer, ::Intermediate, ::Capacity) = min(stock_capacity, demand_cache_val)
 
-calc_sold_amount(available_stocks, stock_capacity, price, demand_cache_vals, firm_index, buyer, ::Final, ::Stock) = min(
-    available_stocks[firm_index],
-    demand_cache_vals[buyer] / price,
-)
-calc_sold_amount(available_stocks, stock_capacity, price, demand_cache_vals, firm_index, buyer, ::Final, ::Capacity) = min(
-    stock_capacity[firm_index],
-    demand_cache_vals[buyer] / price,
-)
+@inline function calc_sold_amount(available_stock, stock_capacity, price, demand_cache_val, firm_index, buyer, ::Final, ::Stock)
+    return if available_stock * price <= demand_cache_val
+        available_stock
+    else
+        demand_cache_val / price
+    end
+end
+
+@inline function calc_sold_amount(available_stock, stock_capacity, price, demand_cache_val, firm_index, buyer, ::Final, ::Capacity)
+    return if stock_capacity * price <= demand_cache_val
+        stock_capacity
+    else
+        demand_cache_val / price
+    end
+end
+
 
 function reduce_stocks_by_sold_amount!(available_stocks, stock_capacity, firm_index, sold_amount, ::Stock)
     available_stocks[firm_index] -= sold_amount
@@ -348,7 +356,7 @@ end
 
 function reduce_stocks_by_sold_amount!(available_stocks, stock_capacity, firm_index, sold_amount, ::Capacity)
     available_stocks[firm_index] -= sold_amount
-    stock_capacity[firm_index] = max(0.0, stock_capacity[firm_index] - sold_amount)
+    stock_capacity[firm_index] -= sold_amount
     return nothing
 end
 
@@ -390,7 +398,7 @@ function adjust_weights!(available_stocks, stock_capacity, weights, firm_index, 
     return false
 end
 
-function _allocate(demand_cache, stock_cache, active, sector, weights, market, stock_source)
+function _allocate(demand_cache, stock_cache, active, sector, weights, market::M, stock_source::S) where {M <: ProductType, S <: StockType}
     sector_available_stocks = stock_cache.available_stocks[sector]
     sector_stock_capacity = stock_cache.stock_capacity[sector]
     sector_prices = stock_cache.prices[sector]
@@ -409,7 +417,9 @@ function _allocate(demand_cache, stock_cache, active, sector, weights, market, s
             firm_index = BeforeIT.choose_random_firm(stock_cache, sector, weights)
 
             price = sector_prices[firm_index]
-            sold_amount = calc_sold_amount(sector_available_stocks, sector_stock_capacity, price, demand_vals_sector, firm_index, buyer, market, stock_source)
+            available_stock = sector_available_stocks[firm_index]
+            stock_capacity = sector_stock_capacity[firm_index]
+            sold_amount = calc_sold_amount(available_stock, stock_capacity, price, demand_vals_sector[buyer], firm_index, buyer, market, stock_source)
 
 
             reduce_stocks_by_sold_amount!(sector_available_stocks, sector_stock_capacity, firm_index, sold_amount, stock_source)
