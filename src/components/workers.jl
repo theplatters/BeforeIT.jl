@@ -2,7 +2,9 @@
     rate::FloatType
 end
 
-@register :relation struct EmployedAt end
+@register :relation struct EmployedAt
+    entity::Ark.Entity
+end
 
 @register struct Inactive <: AbstractComponent end
 

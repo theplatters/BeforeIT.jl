@@ -63,7 +63,7 @@ function seed_initial_employment!(world::Ark.World, properties::Properties)
             world,
             worker_e,
             remove = (Unemployed,),
-            add = (Employed(wage_rate), EmployedAt() => firm_e),
+            add = (Employed(wage_rate), EmployedAt(firm_e) => firm_e),
         )
     end
 

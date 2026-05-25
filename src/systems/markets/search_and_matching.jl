@@ -496,15 +496,17 @@ function update_firm_realisation_components!(
 
     realised_quantities = BeforeIT.zero_to_one(realised_quantities)
 
+    nominal_spent = demand_nominal_sector[entity_index]
+
     price_index[i] = PriceIndex(
         price_index[i].value +
-            demand_nominal_sector[entity_index] *
+            nominal_spent *
             material_stock_change_amount / realised_quantities,
     )
 
     cf_price_index[i] = CFPriceIndex(
         cf_price_index[i].value +
-            demand_nominal_sector[entity_index] *
+            nominal_spent *
             investment_amount / realised_quantities,
     )
 
