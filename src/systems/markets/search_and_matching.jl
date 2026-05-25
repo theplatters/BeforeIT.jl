@@ -382,7 +382,7 @@ function reduce_demand_by_sold_amount!(demand_cache_vals, demand_cache_nominal, 
     return nothing
 end
 
-function adjust_weights!(available_stocks, stock_capacity, weights, firm_index, sector, ::Stock)
+function adjust_weights!(available_stocks, stock_capacity, weights, firm_index, ::Stock)
     if available_stocks[firm_index] <= 0.0
         weights[firm_index] = 0.0
         return true
@@ -390,7 +390,7 @@ function adjust_weights!(available_stocks, stock_capacity, weights, firm_index, 
     return false
 end
 
-function adjust_weights!(available_stocks, stock_capacity, weights, firm_index, sector, ::Capacity)
+function adjust_weights!(available_stocks, stock_capacity, weights, firm_index, ::Capacity)
     if stock_capacity[firm_index] <= 0.0
         weights[firm_index] = 0.0
         return true
@@ -425,7 +425,7 @@ function _allocate(demand_cache, stock_cache, active, sector, weights, market::M
             reduce_stocks_by_sold_amount!(sector_available_stocks, sector_stock_capacity, firm_index, sold_amount, stock_source)
             reduce_demand_by_sold_amount!(demand_vals_sector, demand_nominal_sector, sold_amount, buyer, price, market, stock_source)
 
-            adjust_weights!(sector_available_stocks, sector_stock_capacity, weights, firm_index, sector, stock_source)  && iszero(weights) && break
+            adjust_weights!(sector_available_stocks, sector_stock_capacity, weights, firm_index, stock_source)  && iszero(weights) && break
 
             if demand_vals_sector[buyer] > 0.0
                 new_nactive += 1
