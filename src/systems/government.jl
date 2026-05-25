@@ -40,10 +40,7 @@ function set_gov_revenues!(world::Ark.World)
     τ_cf = taxes.capital_formation
     θ_div = prop.banking_params.dividend_payout_ratio
 
-    (;
-        employers_contribution,
-        employees_contribution,
-    ) = prop.social_insurance
+    (; employers_contribution, employees_contribution) = prop.social_insurance
 
     cpi = Ark.get_resource(world, PriceIndices).household_consumption
 
@@ -118,7 +115,7 @@ function set_gov_loans!(world::Ark.World)
     for (e, sb_inactive, sb_other, debt, realised_consumption, revenues) in Ark.Query(world, (SocialBenefitsInactive, SocialBenefitsOther, GovernmentDebt, RealisedConsumption, GovernmentRevenues))
         for i in eachindex(e)
             social_benefits = cpi * (inactive * sb_inactive[i].amount + theta_UB * total_wages_unemployed + total * sb_other[i].amount)
-            debt[i] = GovernmentDebt(debt[i].amount + social_benefits + realised_consumption[i].amount + r_g * debt[i].amount - revenues[i].amount)
+            debt[i] = (debt[i].amount + social_benefits + realised_consumption[i].amount + r_g * debt[i].amount - revenues[i].amount) |> GovernmentDebt
         end
     end
 
