@@ -347,9 +347,9 @@ function allocate_intermediate_from_available_stocks!(
 
             remaining_demand = demand_vals_sector[buyer]
             sold_amount = min(sector_available_stocks[firm_index], remaining_demand)
-            new_demand = max(remaining_demand - sold_amount, 0.0)
+            new_demand = remaining_demand - sold_amount
 
-            sector_available_stocks[firm_index] = max(0.0, sector_available_stocks[firm_index] - sold_amount)
+            sector_available_stocks[firm_index] -= sold_amount
             demand_nominal_sector[buyer] += sold_amount * sector_prices[firm_index]
             demand_vals_sector[buyer] = new_demand
 
@@ -393,7 +393,7 @@ function allocate_intermediate_from_stock_capacity!(
             firm_index = BeforeIT.choose_random_firm(stock_cache, sector, weights)
             remaining_demand = demand_vals_sector[buyer]
             sold_amount = min(sector_stock_capacity[firm_index], remaining_demand)
-            new_demand = max(remaining_demand - sold_amount, 0.0)
+            new_demand = remaining_demand - sold_amount
 
             sector_available_stocks[firm_index] -= sold_amount
             sector_stock_capacity[firm_index] -= sold_amount
@@ -570,12 +570,13 @@ function allocate_retail_from_available_stocks!(
             price = sector_prices[firm_index]
             remaining_demand = demand_vals_sector[buyer]
             sold_amount = min(sector_available_stocks[firm_index], remaining_demand / price)
-            new_demand = max(remaining_demand - sold_amount * price, 0.0)
+            new_demand = remaining_demand - sold_amount * price
 
             sector_available_stocks[firm_index] -= sold_amount
             demand_nominal_sector[buyer] += sold_amount
             demand_vals_sector[buyer] = new_demand
-            if (sector_available_stocks[firm_index] <= 0.0)
+    
+            if sector_available_stocks[firm_index] <= 0.0
                 weights[firm_index] = 0.0
             end
 
@@ -619,14 +620,11 @@ function allocate_retail_from_stock_capacity!(
             firm_index = BeforeIT.choose_random_firm(stock_cache, sector, weights)
             price = sector_prices[firm_index]
             remaining_demand = demand_vals_sector[buyer]
-            sold_amount = min(
-                sector_stock_capacity[firm_index],
-                remaining_demand / price,
-            )
-            new_demand = max(remaining_demand - sold_amount * price, 0.0)
+            sold_amount = min(sector_stock_capacity[firm_index], remaining_demand / price)
+            new_demand = remaining_demand - sold_amount * price
 
             sector_available_stocks[firm_index] -= sold_amount
-            sector_stock_capacity[firm_index] = max(0.0, sector_stock_capacity[firm_index] - sold_amount)
+            sector_stock_capacity[firm_index] -= sold_amount
             demand_vals_sector[buyer] = new_demand
             
             if sector_stock_capacity[firm_index] <= 0.0
