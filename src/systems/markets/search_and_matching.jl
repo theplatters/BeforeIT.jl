@@ -266,7 +266,7 @@ end
         push!(
             exprs, quote
                 comp = arrays[$j]
-                z = eltype(comp)(0.0) # Derive the correct zero directly from the array's type
+                z = eltype(comp)(0.0)
 
                 @inbounds @simd ivdep for i in inds
                     comp[i] = z
@@ -285,7 +285,6 @@ function zero_out_query!(
         kwargs...
     ) where {N}
 
-    # Iterate over the query chunks
     for arrays in Ark.Query(world, component_types; kwargs...)
         _zero_arrays_unrolled!(arrays)
     end
@@ -321,14 +320,79 @@ function rebuild_active_buyers!(active, demand_col)
     return nactive
 end
 
-function allocate_intermediate_from_available_stocks!(
-        demand_cache,
-        stock_cache,
-        active,
-        sector,
-        weights,
-    )
+
+abstract type ProductType end
+struct Intermediate <: ProductType end
+struct Final <: ProductType end
+
+abstract type StockType end
+struct Stock <: StockType end
+struct Capacity <: StockType end
+
+calc_sold_amount(available_stocks, stock_capacity, price, demand_cache_vals, firm_index, buyer, ::Intermediate, ::Stock) = min(available_stocks[firm_index], demand_cache_vals[buyer])
+calc_sold_amount(available_stocks, stock_capacity, price, demand_cache_vals, firm_index, buyer, ::Intermediate, ::Capacity) = min(stock_capacity[firm_index], demand_cache_vals[buyer])
+
+calc_sold_amount(available_stocks, stock_capacity, price, demand_cache_vals, firm_index, buyer, ::Final, ::Stock) = min(
+    available_stocks[firm_index],
+    demand_cache_vals[buyer] / price,
+)
+calc_sold_amount(available_stocks, stock_capacity, price, demand_cache_vals, firm_index, buyer, ::Final, ::Capacity) = min(
+    stock_capacity[firm_index],
+    demand_cache_vals[buyer] / price,
+)
+
+function reduce_stocks_by_sold_amount!(available_stocks, stock_capacity, firm_index, sold_amount, ::Stock)
+    available_stocks[firm_index] -= sold_amount
+    return nothing
+end
+
+function reduce_stocks_by_sold_amount!(available_stocks, stock_capacity, firm_index, sold_amount, ::Capacity)
+    available_stocks[firm_index] -= sold_amount
+    stock_capacity[firm_index] = max(0.0, stock_capacity[firm_index] - sold_amount)
+    return nothing
+end
+
+function reduce_demand_by_sold_amount!(demand_cache_vals, demand_cache_nominal, sold_amount, buyer, price, ::Intermediate, ::Stock)
+    demand_cache_nominal[buyer] += sold_amount * price
+    demand_cache_vals[buyer] -= sold_amount
+    return nothing
+end
+
+function reduce_demand_by_sold_amount!(demand_cache_vals, demand_cache_nominal, sold_amount, buyer, price, ::Intermediate, ::Capacity)
+    demand_cache_vals[buyer] -= sold_amount
+    return nothing
+end
+
+function reduce_demand_by_sold_amount!(demand_cache_vals, demand_cache_nominal, sold_amount, buyer, price, ::Final, ::Stock)
+    demand_cache_nominal[buyer] += sold_amount
+    demand_cache_vals[buyer] -= sold_amount * price
+    return nothing
+end
+
+function reduce_demand_by_sold_amount!(demand_cache_vals, demand_cache_nominal, sold_amount, buyer, price, ::Final, ::Capacity)
+    demand_cache_vals[buyer] -= sold_amount * price
+    return nothing
+end
+
+function adjust_weights!(available_stocks, stock_capacity, weights, firm_index, sector, ::Stock)
+    if available_stocks[firm_index] <= 0.0
+        weights[firm_index] = 0.0
+        return true
+    end
+    return false
+end
+
+function adjust_weights!(available_stocks, stock_capacity, weights, firm_index, sector, ::Capacity)
+    if stock_capacity[firm_index] <= 0.0
+        weights[firm_index] = 0.0
+        return true
+    end
+    return false
+end
+
+function _allocate(demand_cache, stock_cache, active, sector, weights, market, stock_source)
     sector_available_stocks = stock_cache.available_stocks[sector]
+    sector_stock_capacity = stock_cache.stock_capacity[sector]
     sector_prices = stock_cache.prices[sector]
     demand_vals_sector = @view demand_cache.vals[:, sector]
     demand_nominal_sector = @view demand_cache.nominal[:, sector]
@@ -344,20 +408,16 @@ function allocate_intermediate_from_available_stocks!(
             buyer = active[i]
             firm_index = BeforeIT.choose_random_firm(stock_cache, sector, weights)
 
-            remaining_demand = demand_vals_sector[buyer]
-            sold_amount = min(sector_available_stocks[firm_index], remaining_demand)
-            new_demand = remaining_demand - sold_amount
+            price = sector_prices[firm_index]
+            sold_amount = calc_sold_amount(sector_available_stocks, sector_stock_capacity, price, demand_vals_sector, firm_index, buyer, market, stock_source)
 
-            sector_available_stocks[firm_index] -= sold_amount
-            demand_nominal_sector[buyer] += sold_amount * sector_prices[firm_index]
-            demand_vals_sector[buyer] = new_demand
 
-            if sector_available_stocks[firm_index] <= 0.0
-                weights[firm_index] = 0.0
-                iszero(weights) && break
-            end
+            reduce_stocks_by_sold_amount!(sector_available_stocks, sector_stock_capacity, firm_index, sold_amount, stock_source)
+            reduce_demand_by_sold_amount!(demand_vals_sector, demand_nominal_sector, sold_amount, buyer, price, market, stock_source)
 
-            if new_demand > 0.0
+            adjust_weights!(sector_available_stocks, sector_stock_capacity, weights, firm_index, sector, stock_source)  && iszero(weights) && break
+
+            if demand_vals_sector[buyer] > 0.0
                 new_nactive += 1
                 active[new_nactive] = buyer
             end
@@ -369,51 +429,70 @@ function allocate_intermediate_from_available_stocks!(
     return nothing
 end
 
-function allocate_intermediate_from_stock_capacity!(
-        demand_cache,
-        stock_cache,
-        active,
-        sector,
-        weights,
-    )
-    sector_available_stocks = stock_cache.available_stocks[sector]
-    sector_stock_capacity = stock_cache.stock_capacity[sector]
-    demand_vals_sector = @view demand_cache.vals[:, sector]
+allocate_intermediate_from_available_stocks!(
+    demand_cache,
+    stock_cache,
+    active,
+    sector,
+    weights,
+) = _allocate(
+    demand_cache,
+    stock_cache,
+    active,
+    sector,
+    weights,
+    Intermediate(),
+    Stock()
+)
 
-    nactive = rebuild_active_buyers!(active, demand_vals_sector)
+allocate_intermediate_from_stock_capacity!(
+    demand_cache,
+    stock_cache,
+    active,
+    sector,
+    weights,
+) = _allocate(
+    demand_cache,
+    stock_cache,
+    active,
+    sector,
+    weights,
+    Intermediate(),
+    Capacity()
+)
 
-    @inbounds while nactive > 0 && !iszero(weights)
-        shuffle!(view(active, 1:nactive))
+allocate_retail_from_available_stocks!(
+    demand_cache,
+    stock_cache,
+    active,
+    sector,
+    weights,
+) = _allocate(
+    demand_cache,
+    stock_cache,
+    active,
+    sector,
+    weights,
+    Final(),
+    Stock()
+)
 
-        new_nactive = 0
-        for i in 1:nactive
+allocate_retail_from_stock_capacity!(
+    demand_cache,
+    stock_cache,
+    active,
+    sector,
+    weights,
+) = _allocate(
+    demand_cache,
+    stock_cache,
+    active,
+    sector,
+    weights,
+    Final(),
+    Capacity()
+)
 
-            buyer = active[i]
-            firm_index = BeforeIT.choose_random_firm(stock_cache, sector, weights)
-            remaining_demand = demand_vals_sector[buyer]
-            sold_amount = min(sector_stock_capacity[firm_index], remaining_demand)
-            new_demand = remaining_demand - sold_amount
-
-            sector_available_stocks[firm_index] -= sold_amount
-            sector_stock_capacity[firm_index] -= sold_amount
-            demand_vals_sector[buyer] = new_demand
-
-            if sector_stock_capacity[firm_index] <= 0.0
-                weights[firm_index] = 0.0
-                iszero(weights) && break
-            end
-
-            if new_demand > 0.0
-                new_nactive += 1
-                active[new_nactive] = buyer
-            end
-        end
-
-        nactive = new_nactive
-    end
-
-    return nothing
-end
 
 function update_firm_realisations!(world::Ark.World, sector::Int64, demand_cache, technology_matrix, capital_formation)
     demand_vals_sector = @view demand_cache.vals[:, sector]
@@ -544,103 +623,6 @@ function perform_firm_market!(world::Ark.World, sector::Int64, active)
     return nothing
 end
 
-function allocate_retail_from_available_stocks!(
-        demand_cache,
-        stock_cache,
-        active,
-        sector,
-        weights,
-    )
-    sector_available_stocks = stock_cache.available_stocks[sector]
-    sector_prices = stock_cache.prices[sector]
-    demand_vals_sector = @view demand_cache.vals[:, sector]
-    demand_nominal_sector = @view demand_cache.nominal[:, sector]
-
-    nactive = rebuild_active_buyers!(active, demand_vals_sector)
-    @inbounds while nactive > 0 && !iszero(weights)
-        shuffle!(view(active, 1:nactive))
-
-        new_nactive = 0
-        for i in 1:nactive
-
-            buyer = active[i]
-            firm_index = BeforeIT.choose_random_firm(stock_cache, sector, weights)
-
-            price = sector_prices[firm_index]
-            remaining_demand = demand_vals_sector[buyer]
-            sold_amount = min(sector_available_stocks[firm_index], remaining_demand / price)
-            new_demand = remaining_demand - sold_amount * price
-
-            sector_available_stocks[firm_index] -= sold_amount
-            demand_nominal_sector[buyer] += sold_amount
-            demand_vals_sector[buyer] = new_demand
-
-            if sector_available_stocks[firm_index] <= 0.0
-                weights[firm_index] = 0.0
-                iszero(weights) && break
-            end
-
-            if new_demand > 0.0
-                new_nactive += 1
-                active[new_nactive] = buyer
-            end
-        end
-
-        nactive = new_nactive
-
-    end
-
-    return nothing
-end
-
-function allocate_retail_from_stock_capacity!(
-        demand_cache,
-        stock_cache,
-        active,
-        sector,
-        weights,
-        remaining_stocks,
-    )
-    sector_available_stocks = stock_cache.available_stocks[sector]
-    sector_stock_capacity = stock_cache.stock_capacity[sector]
-    sector_prices = stock_cache.prices[sector]
-    demand_vals_sector = @view demand_cache.vals[:, sector]
-
-    nactive = rebuild_active_buyers!(active, demand_vals_sector)
-
-    @inbounds while nactive > 0 && !iszero(weights)
-        shuffle!(view(active, 1:nactive))
-
-        new_nactive = 0
-        for i in 1:nactive
-
-            buyer = active[i]
-
-            firm_index = BeforeIT.choose_random_firm(stock_cache, sector, weights)
-            price = sector_prices[firm_index]
-            remaining_demand = demand_vals_sector[buyer]
-            sold_amount = min(sector_stock_capacity[firm_index], remaining_demand / price)
-            new_demand = remaining_demand - sold_amount * price
-
-            sector_available_stocks[firm_index] -= sold_amount
-            sector_stock_capacity[firm_index] -= sold_amount
-            demand_vals_sector[buyer] = new_demand
-            
-            if sector_stock_capacity[firm_index] <= 0.0
-                weights[firm_index] = 0.0
-                iszero(weights) && break
-            end
-
-            if new_demand > 0.0
-                new_nactive += 1
-                active[new_nactive] = buyer
-            end
-        end
-
-        nactive = new_nactive
-    end
-    return nothing
-end
 
 function update_government_realised_consumption!(
         world::Ark.World,
@@ -841,7 +823,6 @@ function perform_retail_market!(world::Ark.World, sector::Int64, active)
         active,
         sector,
         weights,
-        remaining_stocks,
     )
 
     update_goods_demand_from_remaining_stocks!(world, sector, stock_cache)

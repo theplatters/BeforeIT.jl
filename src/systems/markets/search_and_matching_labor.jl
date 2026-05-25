@@ -68,14 +68,16 @@ function fire_employed_workers!(world::Ark.World)
         vacancies, employment = Ark.get_components(world, firm_e, (Vacancies, Employment))
         vacancies.amount >= 0 && continue
         push!(remove_employment, worker_e)
-        Ark.set_components!(world, firm_e, 
+        Ark.set_components!(
+            world, firm_e,
             (Vacancies(vacancies.amount + 1), Employment(employment.amount - 1))
         )
     end
 
     for now_unemployed in remove_employment
         unemployment_benefit, = Ark.get_components(world, now_unemployed, (Employed,))
-        Ark.exchange_components!(world, now_unemployed,
+        Ark.exchange_components!(
+            world, now_unemployed,
             remove = (Employed, EmployedAt),
             add = (Unemployed(unemployment_benefit.rate),)
         )
