@@ -6,13 +6,29 @@ function search_and_matching!(world::Ark.World; parallel = false)
 
     intermediate_cache = Ark.get_resource(world, BeforeIT.DesiredIntermediatesCache)
     consumption_cache = Ark.get_resource(world, DesiredHouseholdConsumptionCache)
-    max_npotential_buyers = max(size(intermediate_cache.vals, 1), size(consumption_cache.vals, 1))
-    active = Vector{Int64}(undef, max_npotential_buyers)
 
-    for g in 1:BeforeIT.properties(world).dimensions.sectors
-        perform_firm_market!(world, g, active)
-        perform_retail_market!(world, g, active)
+    max_npotential_buyers = max(size(intermediate_cache.vals, 1), size(consumption_cache.vals, 1))
+
+
+    if parallel
+        lock = ReentrantLock()
+
+        Threads.@threads for g in 1:BeforeIT.properties(world).dimensions.sectors
+            t_active = Vector{Int64}(undef, max_npotential_buyers)
+            perform_firm_market!(world, g, t_active, lck = lock)
+            perform_retail_market!(world, g, t_active, lck = lock)
+        end
+
+    else
+
+        active = Vector{Int64}(undef, max_npotential_buyers)
+
+        for g in 1:BeforeIT.properties(world).dimensions.sectors
+            perform_firm_market!(world, g, active)
+            perform_retail_market!(world, g, active)
+        end
     end
+
     finalize_search_and_match!(world)
     return nothing
 end
@@ -300,7 +316,6 @@ function zero_out_components_for_search_and_match!(world::Ark.World)
     zero_out_query!(world, (RealisedConsumption, PriceInflationGovernmentGoods); with = (Government,))
     zero_out_query!(world, (RealisedConsumption, RealisedInvestment); with = (Household,))
 
-    # Cleaned up redundant property assignments
     price_indices = BeforeIT.price_indices(world)
     price_indices.household_consumption = 0.0
     price_indices.capital_formation_households = 0.0
@@ -602,7 +617,7 @@ function update_firm_realisation_components!(
     return nothing
 end
 
-function perform_firm_market!(world::Ark.World, sector::Int64, active)
+function perform_firm_market!(world::Ark.World, sector::Int64, active; lck = nothing)
     demand_cache = Ark.get_resource(world, BeforeIT.DesiredIntermediatesCache)
     stock_cache = Ark.get_resource(world, BeforeIT.StockCache)
 
@@ -619,7 +634,15 @@ function perform_firm_market!(world::Ark.World, sector::Int64, active)
         weights,
     )
 
+    if !isnothing(lck)
+        lock(lck)
+    end
+
     update_firm_realisations!(world, sector, demand_cache, technology_matrix, capital_formation)
+
+    if !isnothing(lck)
+        unlock(lck)
+    end
 
     weights = BeforeIT.get_weight_vector(stock_cache, sector)
     allocate_intermediate_from_stock_capacity!(
@@ -773,7 +796,7 @@ function update_import_demand_from_remaining_stocks!(world::Ark.World, sector::I
     return nothing
 end
 
-function perform_retail_market!(world::Ark.World, sector::Int64, active)
+function perform_retail_market!(world::Ark.World, sector::Int64, active; lck = nothing)
     demand_cache = Ark.get_resource(world, DesiredHouseholdConsumptionCache)
     stock_cache = Ark.get_resource(world, BeforeIT.StockCache)
 
@@ -803,6 +826,9 @@ function perform_retail_market!(world::Ark.World, sector::Int64, active)
 
     first_pass_vals_sector = view(demand_cache.vals, :, sector)
 
+    if !isnothing(lck)
+        lock(lck)
+    end
     update_government_realised_consumption!(
         world,
         demand_nominal_sector,
@@ -818,6 +844,10 @@ function perform_retail_market!(world::Ark.World, sector::Int64, active)
         household_investment[sector],
     )
 
+    if !isnothing(lck)
+        unlock(lck)
+    end
+
     sector_weights .= original_sector_weights
     sector_stock_capacity = BeforeIT.get_stock_capacity(stock_cache, sector)
     zero_inactive_retail_weights!(
@@ -825,7 +855,6 @@ function perform_retail_market!(world::Ark.World, sector::Int64, active)
         sector_stock_capacity,
     )
     weights = sector_weights
-    remaining_stocks = sum(sector_stock_capacity)
 
     allocate_retail_from_stock_capacity!(
         demand_cache,
@@ -835,8 +864,15 @@ function perform_retail_market!(world::Ark.World, sector::Int64, active)
         weights,
     )
 
+    if !isnothing(lck)
+        lock(lck)
+    end
     update_goods_demand_from_remaining_stocks!(world, sector, stock_cache)
     update_import_demand_from_remaining_stocks!(world, sector, stock_cache)
+
+    if !isnothing(lck)
+        unlock(lck)
+    end
 
     return nothing
 end
