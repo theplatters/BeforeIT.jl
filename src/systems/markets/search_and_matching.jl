@@ -7,23 +7,26 @@ function search_and_matching!(world::Ark.World; parallel = false)
     intermediate_cache = Ark.get_resource(world, BeforeIT.DesiredIntermediatesCache)
     consumption_cache = Ark.get_resource(world, DesiredHouseholdConsumptionCache)
 
-    max_npotential_buyers = max(size(intermediate_cache.vals, 1), size(consumption_cache.vals, 1))
 
+    props = BeforeIT.properties(world)
+    sectors = props.dimensions.sectors
 
     if parallel
         lock = ReentrantLock()
 
-        Threads.@threads for g in 1:BeforeIT.properties(world).dimensions.sectors
-            t_active = Vector{Int64}(undef, max_npotential_buyers)
-            perform_firm_market!(world, g, t_active, lck = lock)
-            perform_retail_market!(world, g, t_active, lck = lock)
+        t_active_buffer = Ark.get_resource(world, ParallelActiveCache).active
+        tasks = map(t_active_buffer) do (sector_range, t_active)
+            Threads.@spawn for g in sector_range
+                perform_firm_market!(world, g, t_active, lck = lock)
+                perform_retail_market!(world, g, t_active, lck = lock)
+            end
         end
+        fetch.(tasks)
 
     else
 
-        active = Vector{Int64}(undef, max_npotential_buyers)
-
-        for g in 1:BeforeIT.properties(world).dimensions.sectors
+        active = Ark.get_resource(world, SerialActiveCache).active
+        for g in 1:sectors
             perform_firm_market!(world, g, active)
             perform_retail_market!(world, g, active)
         end
