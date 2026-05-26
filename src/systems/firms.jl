@@ -130,7 +130,6 @@ end
         current_deposits::Float64,
         growth::Float64,
         inflation::Float64,
-        depreciation_rate::Float64,
         labor_productivity::Float64,
         capital_productivity::Float64,
         intermediate_productivity::Float64,
@@ -144,10 +143,6 @@ end
     )
 
     capacity_constraint_sales = min(expected_sales, capital_stock * capital_productivity)
-
-    desired_investment = desired_investment_amount(
-        depreciation_rate, capital_productivity, capacity_constraint_sales
-    )
 
     desired_materials = desired_materials_amount(
         intermediate_productivity, capacity_constraint_sales
@@ -183,7 +178,6 @@ end
 
     return (
         expected_sales,
-        desired_investment,
         desired_materials,
         desired_employment,
         expected_profit,
@@ -216,28 +210,6 @@ const FIRM_EXPECTATION_COMPONENTS = (
     TargetLoans,
 )
 
-function legacy_desired_investment_sales_by_entity(world::Ark.World, growth::Float64)
-    entities = Ark.Entity[]
-    expected_sales = Float64[]
-    capacity_sales = Float64[]
-
-    for (e, goods_demand, capital_stock, capital_productivity) in Ark.Query(
-            world,
-            (GoodsDemand, CapitalStock, CapitalProductivity),
-            with = (Firm,),
-        )
-        @inbounds for i in eachindex(e)
-            push!(entities, e[i])
-            push!(expected_sales, expected_sales_amount(goods_demand[i].amount, growth))
-            push!(capacity_sales, capital_stock[i].amount * capital_productivity[i].value)
-        end
-    end
-
-    selected_sales = min(expected_sales, capacity_sales)
-
-    return Dict(entity => selected_sales[i] for (i, entity) in enumerate(entities))
-end
-
 function set_firms_expectations_and_decisions!(world::Ark.World)
     expectations = Ark.get_resource(world, Expectations)
     price_indices = Ark.get_resource(world, PriceIndices)
@@ -247,7 +219,8 @@ function set_firms_expectations_and_decisions!(world::Ark.World)
     growth = expectations.output_growth
     inflation = expectations.inflation
 
-    legacy_desired_investment_sales = legacy_desired_investment_sales_by_entity(world, growth)
+    use_capacity_sales_for_investment = false
+    investment_sales_match = true
 
     sector = price_indices.sector
     household = price_indices.household_consumption
@@ -324,7 +297,6 @@ function set_firms_expectations_and_decisions!(world::Ark.World)
 
             (
                 expected_sales_amount,
-                _,
                 desired_materials_amount,
                 desired_employment_amount,
                 expected_profit_amount,
@@ -339,7 +311,6 @@ function set_firms_expectations_and_decisions!(world::Ark.World)
                 current_deposits,
                 growth,
                 inflation,
-                δ,
                 a_l,
                 a_k,
                 a_m,
@@ -349,13 +320,15 @@ function set_firms_expectations_and_decisions!(world::Ark.World)
                 corporate_tax,
             )
 
-            desired_investment_level = desired_investment_amount(
-                δ,
-                a_k,
-                legacy_desired_investment_sales[e[i]],
-            )
+            capacity_sales_amount = capital_stock * a_k
+            if investment_sales_match && !isequal(capacity_sales_amount, expected_sales_amount)
+                use_capacity_sales_for_investment = capacity_sales_amount < expected_sales_amount
+                investment_sales_match = false
+            end
 
-            desired_investment[i] = DesiredInvestment(desired_investment_level)
+            desired_investment_sales = use_capacity_sales_for_investment ? capacity_sales_amount : expected_sales_amount
+
+            desired_investment[i] = DesiredInvestment(desired_investment_amount(δ, a_k, desired_investment_sales))
             desired_materials[i] = DesiredMaterials(desired_materials_amount)
             desired_employment[i] = DesiredEmployment(desired_employment_amount)
             expected_sales[i] = ExpectedSales(expected_sales_amount)
