@@ -28,7 +28,7 @@ macro sum_over(generator)
     end |> esc
 end
 
-single(q::Ark.Query) = getfield.(first(q), 1)
+single(q::Ark.Query) = only.(only(q))
 
 properties(w::Ark.World) = Ark.get_resource(w, Properties)
 expectations(w::Ark.World) = Ark.get_resource(w, Expectations)
