@@ -28,7 +28,26 @@ macro sum_over(generator)
     end |> esc
 end
 
-single(q::Ark.Query) = only.(only(q))
+@generated function single(q::Q) where {Q<:Query}
+    result_type = Base.eltype(Q)
+    result_expr = Expr(:tuple, (:(only(getfield(row, $i))) for i in 1:length(result_type.parameters))...)
+
+    return quote
+        first = iterate(q)
+        if first === nothing
+            throw(ArgumentError("query must contain exactly one matching table"))
+        end
+
+        row, state = first
+        second = iterate(q, state)
+        if second !== nothing
+            close!(q)
+            throw(ArgumentError("query must contain exactly one matching table"))
+        end
+
+        return $result_expr
+    end
+end
 
 properties(w::Ark.World) = Ark.get_resource(w, Properties)
 expectations(w::Ark.World) = Ark.get_resource(w, Expectations)
