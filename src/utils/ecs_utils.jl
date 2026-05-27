@@ -28,7 +28,7 @@ macro sum_over(generator)
     end |> esc
 end
 
-@generated function single(q::Q) where {Q<:Query}
+@generated function single(q::Q) where {Q<:Ark.Query}
     result_type = Base.eltype(Q)
     result_expr = Expr(:tuple, (:(only(getfield(row, $i))) for i in 1:length(result_type.parameters))...)
 
