@@ -28,7 +28,21 @@ macro sum_over(generator)
     end |> esc
 end
 
-single(q::Ark.Query) = Iterators.flatten(zip(tup...) for tup in q) |> only
+@inline function single(q::Ark.Query)
+    firstv = iterate(q)
+    if firstv === nothing
+        throw(ArgumentError("query must contain exactly one matching table"))
+    end
+
+    row, state = firstv
+    secondv = iterate(q, state)
+    if secondv !== nothing
+        Ark.close!(q)
+        throw(ArgumentError("query must contain exactly one matching table"))
+    end
+
+    return first.(row)
+end
 
 properties(w::Ark.World) = Ark.get_resource(w, Properties)
 expectations(w::Ark.World) = Ark.get_resource(w, Expectations)
