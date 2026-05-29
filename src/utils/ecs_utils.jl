@@ -41,7 +41,7 @@ function single(q::Ark.Query)
         throw(ArgumentError("query must contain exactly one matching table"))
     end
 
-    return first.(firstv)
+    return first.(row)
 end
 
 properties(w::Ark.World) = Ark.get_resource(w, Properties)
