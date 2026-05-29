@@ -28,7 +28,7 @@ macro sum_over(generator)
     end |> esc
 end
 
-function single(q::Ark.Query)
+@inline function single(q::Ark.Query)
     firstv = iterate(q)
     if firstv === nothing
         throw(ArgumentError("query must contain exactly one matching table"))
@@ -37,7 +37,7 @@ function single(q::Ark.Query)
     row, state = firstv
     secondv = iterate(q, state)
     if secondv !== nothing
-        close!(q)
+        Ark.close!(q)
         throw(ArgumentError("query must contain exactly one matching table"))
     end
 
