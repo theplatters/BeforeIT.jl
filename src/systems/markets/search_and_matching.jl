@@ -12,13 +12,11 @@ function search_and_matching!(world::Ark.World; parallel = false)
     sectors = props.dimensions.sectors
 
     if parallel
-        lock = ReentrantLock()
-
         t_active_buffer = Ark.get_resource(world, ParallelActiveCache).active
         tasks = map(t_active_buffer) do (sector_range, t_active)
             Threads.@spawn for g in sector_range
-                perform_firm_market!(world, g, t_active, lck = lock)
-                perform_retail_market!(world, g, t_active, lck = lock)
+                perform_firm_market!(world, g, t_active)
+                perform_retail_market!(world, g, t_active)
             end
         end
         fetch.(tasks)
@@ -32,6 +30,7 @@ function search_and_matching!(world::Ark.World; parallel = false)
         end
     end
 
+    update_search_and_match_realisations!(world)
     finalize_search_and_match!(world)
     return nothing
 end
@@ -523,7 +522,7 @@ allocate_retail_from_stock_capacity!(
 
 
 function update_firm_realisations!(world::Ark.World, sector::Int64, demand_cache, technology_matrix, capital_formation)
-    demand_vals_sector = @view demand_cache.vals[:, sector]
+    demand_vals_sector = @view demand_cache.first_pass_vals[:, sector]
     demand_nominal_sector = @view demand_cache.nominal[:, sector]
 
     for (e, material_stock_change, investment, principal_product, desired_materials, desired_investment, price_index, cf_price_index, entity_index) in
@@ -620,11 +619,10 @@ function update_firm_realisation_components!(
     return nothing
 end
 
-function perform_firm_market!(world::Ark.World, sector::Int64, active; lck = nothing)
+function perform_firm_market!(world::Ark.World, sector::Int64, active)
     demand_cache = Ark.get_resource(world, BeforeIT.DesiredIntermediatesCache)
     stock_cache = Ark.get_resource(world, BeforeIT.StockCache)
 
-    (; technology_matrix, capital_formation) = BeforeIT.properties(world).product_coeffs
     demand_cache.nominal[:, sector] .= 0.0
 
     weights = BeforeIT.get_weight_vector(stock_cache, sector)
@@ -637,15 +635,10 @@ function perform_firm_market!(world::Ark.World, sector::Int64, active; lck = not
         weights,
     )
 
-    if !isnothing(lck)
-        lock(lck)
-    end
-
-    update_firm_realisations!(world, sector, demand_cache, technology_matrix, capital_formation)
-
-    if !isnothing(lck)
-        unlock(lck)
-    end
+    copyto!(
+        @view(demand_cache.first_pass_vals[:, sector]),
+        @view(demand_cache.vals[:, sector]),
+    )
 
     weights = BeforeIT.get_weight_vector(stock_cache, sector)
     allocate_intermediate_from_stock_capacity!(
@@ -799,15 +792,11 @@ function update_import_demand_from_remaining_stocks!(world::Ark.World, sector::I
     return nothing
 end
 
-function perform_retail_market!(world::Ark.World, sector::Int64, active; lck = nothing)
+function perform_retail_market!(world::Ark.World, sector::Int64, active)
     demand_cache = Ark.get_resource(world, DesiredHouseholdConsumptionCache)
     stock_cache = Ark.get_resource(world, BeforeIT.StockCache)
 
     demand_cache.nominal[:, sector] .= 0.0
-    (; government_consumption, exports, household_consumption, household_investment) =
-        BeforeIT.properties(world).product_coeffs
-
-    demand_nominal_sector = @view demand_cache.nominal[:, sector]
 
     sector_weights = BeforeIT.get_weight_vector(stock_cache, sector)
     original_sector_weights = copy(sector_weights)
@@ -827,29 +816,10 @@ function perform_retail_market!(world::Ark.World, sector::Int64, active; lck = n
         weights,
     )
 
-    first_pass_vals_sector = view(demand_cache.vals, :, sector)
-
-    if !isnothing(lck)
-        lock(lck)
-    end
-    update_government_realised_consumption!(
-        world,
-        demand_nominal_sector,
-        first_pass_vals_sector,
-        government_consumption[sector],
+    copyto!(
+        @view(demand_cache.first_pass_vals[:, sector]),
+        @view(demand_cache.vals[:, sector]),
     )
-    update_foreign_consumption!(world, demand_nominal_sector, first_pass_vals_sector, exports[sector])
-    update_household_realised_consumption_and_prices!(
-        world,
-        demand_nominal_sector,
-        first_pass_vals_sector,
-        household_consumption[sector],
-        household_investment[sector],
-    )
-
-    if !isnothing(lck)
-        unlock(lck)
-    end
 
     sector_weights .= original_sector_weights
     sector_stock_capacity = BeforeIT.get_stock_capacity(stock_cache, sector)
@@ -867,14 +837,51 @@ function perform_retail_market!(world::Ark.World, sector::Int64, active; lck = n
         weights,
     )
 
-    if !isnothing(lck)
-        lock(lck)
-    end
-    update_goods_demand_from_remaining_stocks!(world, sector, stock_cache)
-    update_import_demand_from_remaining_stocks!(world, sector, stock_cache)
+    return nothing
+end
 
-    if !isnothing(lck)
-        unlock(lck)
+function update_search_and_match_realisations!(world::Ark.World)
+    intermediate_cache = Ark.get_resource(world, BeforeIT.DesiredIntermediatesCache)
+    consumption_cache = Ark.get_resource(world, DesiredHouseholdConsumptionCache)
+    stock_cache = Ark.get_resource(world, BeforeIT.StockCache)
+
+    (; technology_matrix, capital_formation, government_consumption, exports, household_consumption, household_investment) =
+        BeforeIT.properties(world).product_coeffs
+
+    for sector in eachindex(household_consumption)
+        update_firm_realisations!(
+            world,
+            sector,
+            intermediate_cache,
+            technology_matrix,
+            capital_formation,
+        )
+
+        demand_nominal_sector = @view consumption_cache.nominal[:, sector]
+        first_pass_vals_sector = @view consumption_cache.first_pass_vals[:, sector]
+
+        update_government_realised_consumption!(
+            world,
+            demand_nominal_sector,
+            first_pass_vals_sector,
+            government_consumption[sector],
+        )
+        update_foreign_consumption!(
+            world,
+            demand_nominal_sector,
+            first_pass_vals_sector,
+            exports[sector],
+        )
+        update_household_realised_consumption_and_prices!(
+            world,
+            demand_nominal_sector,
+            first_pass_vals_sector,
+            household_consumption[sector],
+            household_investment[sector],
+        )
+
+        update_goods_demand_from_remaining_stocks!(world, sector, stock_cache)
+        update_import_demand_from_remaining_stocks!(world, sector, stock_cache)
     end
 
     return nothing

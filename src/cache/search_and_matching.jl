@@ -3,6 +3,7 @@ abstract type AbstractDemandCache end
 mutable struct DemandCache{Kind} <: AbstractDemandCache
     vals::Matrix{Float64}
     nominal::Matrix{Float64}
+    first_pass_vals::Matrix{Float64}
     current_index::Int64
 end
 
@@ -21,7 +22,12 @@ function reset_cache!(cache::T) where {T <: AbstractDemandCache}
 end
 
 function (::Type{T})(values::Int64, sectors::Int64) where {T <: AbstractDemandCache}
-    return T(Matrix{Float64}(undef, values, sectors), zeros(values, sectors), 1)
+    return T(
+        Matrix{Float64}(undef, values, sectors),
+        zeros(values, sectors),
+        Matrix{Float64}(undef, values, sectors),
+        1,
+    )
 end
 
 
