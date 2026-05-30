@@ -475,6 +475,7 @@ function set_firms_production!(world::Ark.World)
                 intermediates[i].amount,
                 intermediate_productivity[i].value,
             ) |> Output
+        end
     end
     return nothing
 end
