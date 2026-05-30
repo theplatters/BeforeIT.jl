@@ -122,6 +122,7 @@ end
 
 function build_household_consumption_demand_cache!(world::Ark.World, demand_cache, coeffs)
     (; household_consumption, household_investment) = coeffs
+    entities = Ark.get_resource(world, HouseholdConsumptionDemandEntityBuffer).entities
 
     household_groups = (
         (; with = (), without = (Inactive, Capitalist, Banker)),
@@ -134,6 +135,7 @@ function build_household_consumption_demand_cache!(world::Ark.World, demand_cach
         append_household_consumption_demand!(
             world,
             demand_cache,
+            entities,
             household_consumption,
             household_investment;
             group.with,
@@ -147,13 +149,13 @@ end
 function append_household_consumption_demand!(
         world::Ark.World,
         demand_cache,
+        entities,
         household_consumption,
         household_investment;
         with,
         without,
     )
-
-    entities = Ark.Entity[]
+    empty!(entities)
     for (e,) in Ark.Query(
             world,
             (FinalDemandCacheIndex,),
