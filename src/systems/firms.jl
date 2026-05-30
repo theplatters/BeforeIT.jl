@@ -466,7 +466,7 @@ function set_firms_production!(world::Ark.World)
                 intermediate_productivity[i].value,
                 employment[i].amount,
             )
-            production = firm_production(
+            production[i] = firm_production(
                 expected_sales[i].amount,
                 employment[i].amount,
                 effective_labor_productivity,
