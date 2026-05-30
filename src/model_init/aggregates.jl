@@ -28,6 +28,11 @@ function setup_aggregates!(world::Ark.World, properties::Properties)
     Ark.add_resource!(world, intermediate_cache)
     Ark.add_resource!(world, HiringFirmsCache(properties.dimensions.total_firms))
     Ark.add_resource!(world, WorkersCache(properties.population.active))
+    Ark.add_resource!(world, FireEmployedWorkersCache(properties.population.active))
+    Ark.add_resource!(
+        world,
+        HireWorkersCache(properties.population.active, properties.dimensions.total_firms)
+    )
     Ark.add_resource!(world, CreditMatchingCache(properties.dimensions.total_firms))
     Ark.add_resource!(world, HouseholdConsumptionDemandEntityBuffer(properties.population.total))
     Ark.add_resource!(
