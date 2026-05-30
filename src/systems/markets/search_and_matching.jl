@@ -165,7 +165,7 @@ function append_household_consumption_demand!(
         append!(entities, e)
     end
 
-    sort!(entities)
+    sort!(entities; alg=Base.Sort.QuickSort)
 
     for entity in entities
         cb, ib = Ark.get_components(world, entity, (ConsumptionBudget, InvestmentBudget))
