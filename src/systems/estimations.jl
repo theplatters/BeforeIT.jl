@@ -54,12 +54,14 @@ function set_inflation_priceindex!(world::Ark.World)
 
     interval = properties.dimensions.interval_for_expectation_estimation
     t = Ark.get_resource(world, TimeIndex).step
+
     total_monetary_output_value = 0.0
     total_output = 0.0
-
-    for (_, prices, quantities) in Ark.Query(world, (Price, Output))
-        total_monetary_output_value += sum(prices.value .* quantities.amount)
-        total_output += sum(quantities.amount)
+    for (e, prices, quantities) in Ark.Query(world, (Price, Output))
+        for i in eachindex(e)
+            total_monetary_output_value += prices[i].value .* quantities[i].amount
+            total_output += quantities[i].amount
+        end
     end
     price_index = total_monetary_output_value / total_output
 
