@@ -146,7 +146,7 @@ function build_household_consumption_demand_cache!(world::Ark.World, demand_cach
     return nothing
 end
 
-function append_household_consumption_demand!(
+@inline function append_household_consumption_demand!(
         world::Ark.World,
         demand_cache,
         entities,
@@ -184,7 +184,7 @@ function append_household_consumption_demand!(
     return nothing
 end
 
-function append_scaled_final_demand!(
+@inline function append_scaled_final_demand!(
         world::Ark.World,
         demand_cache,
         ::Type{DemandType},
@@ -299,7 +299,7 @@ end
     return Expr(:block, exprs...)
 end
 
-function zero_out_query!(
+@inline function zero_out_query!(
         world::Ark.World,
         component_types::Tuple{Vararg{DataType, N}};
         kwargs...
