@@ -10,6 +10,16 @@ end
 const DesiredIntermediatesCache = DemandCache{:intermediates}
 const DesiredHouseholdConsumptionCache = DemandCache{:household_consumption}
 
+struct HouseholdConsumptionDemandEntityBuffer
+    entities::Vector{Ark.Entity}
+end
+
+function HouseholdConsumptionDemandEntityBuffer(size::Int64)
+    entities = Ark.Entity[]
+    sizehint!(entities, size)
+    return HouseholdConsumptionDemandEntityBuffer(entities)
+end
+
 function reserve_row!(entity, cache::T) where {T <: AbstractDemandCache}
     row = cache.current_index
     cache.current_index += 1
