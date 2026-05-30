@@ -29,19 +29,7 @@ macro sum_over(generator)
 end
 
 @inline function single(q::Ark.Query)
-    firstv = iterate(q)
-    if firstv === nothing
-        throw(ArgumentError("query must contain exactly one matching table"))
-    end
-
-    row, state = firstv
-    secondv = iterate(q, state)
-    if secondv !== nothing
-        Ark.close!(q)
-        throw(ArgumentError("query must contain exactly one matching table"))
-    end
-
-    return first.(row)
+    return first.(only(q))
 end
 
 properties(w::Ark.World) = Ark.get_resource(w, Properties)
