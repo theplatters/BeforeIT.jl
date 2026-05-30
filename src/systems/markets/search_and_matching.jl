@@ -799,7 +799,6 @@ function perform_retail_market!(world::Ark.World, sector::Int64, active)
     demand_cache.nominal[:, sector] .= 0.0
 
     sector_weights = BeforeIT.get_weight_vector(stock_cache, sector)
-    original_sector_weights = copy(sector_weights)
 
     sector_available_stocks = BeforeIT.get_available_stocks(stock_cache, sector)
     zero_inactive_retail_weights!(
@@ -821,7 +820,7 @@ function perform_retail_market!(world::Ark.World, sector::Int64, active)
         @view(demand_cache.vals[:, sector]),
     )
 
-    sector_weights .= original_sector_weights
+    sector_weights = BeforeIT.get_weight_vector(stock_cache, sector)
     sector_stock_capacity = BeforeIT.get_stock_capacity(stock_cache, sector)
     zero_inactive_retail_weights!(
         sector_weights,
