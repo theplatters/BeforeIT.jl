@@ -71,11 +71,14 @@ function set_gov_revenues!(world::Ark.World)
     capital_income = τ_income * (1 - τ_firm) * θ_div * total_profits
     corporate_income = τ_firm * total_profits
     capital_formation = τ_cf * total_investment
+
     products = 0.0
     production = 0.0
     for (e, y, p, τ) in Ark.Query(world, (Output, Price, TaxRates))
-        products += sum(y.amount .* p.value .* τ.output)
-        production += sum(y.amount .* p.value .* τ.capital)
+        for i in eachindex(e)
+            products += y[i].amount * p[i].value * τ[i].output
+            production += y[i].amount * p[i].value * τ[i].capital
+        end
     end
 
     τ_export = prop.tax_rates.exports # or matching property name

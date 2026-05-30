@@ -452,36 +452,30 @@ const FIRM_PRODUCTION_COMPONENTS = (
 )
 
 function set_firms_production!(world::Ark.World)
-    for (
-            _,
-            expected_sales,
-            production,
-            employment,
-            labor_productivity,
-            capital,
-            capital_productivity,
-            intermediates,
-            intermediate_productivity,
-        ) in Ark.Query(world, FIRM_PRODUCTION_COMPONENTS)
+    for (e, expected_sales, production, employment,
+        labor_productivity, capital, capital_productivity,
+        intermediates, intermediate_productivity) in Ark.Query(world, FIRM_PRODUCTION_COMPONENTS)
 
-        effective_labor_productivity = firm_labor_productivity.(
-            labor_productivity.value,
-            expected_sales.amount,
-            capital.amount,
-            capital_productivity.value,
-            intermediates.amount,
-            intermediate_productivity.value,
-            employment.amount,
-        )
-        @inbounds production.amount .= firm_production.(
-            expected_sales.amount,
-            employment.amount,
-            effective_labor_productivity,
-            capital.amount,
-            capital_productivity.value,
-            intermediates.amount,
-            intermediate_productivity.value,
-        )
+        for i in eachindex(e)
+            effective_labor_productivity = firm_labor_productivity(
+                labor_productivity[i].value,
+                expected_sales[i].amount,
+                capital[i].amount,
+                capital_productivity[i].value,
+                intermediates[i].amount,
+                intermediate_productivity[i].value,
+                employment[i].amount,
+            )
+            production[i] = firm_production(
+                expected_sales[i].amount,
+                employment[i].amount,
+                effective_labor_productivity,
+                capital[i].amount,
+                capital_productivity[i].value,
+                intermediates[i].amount,
+                intermediate_productivity[i].value,
+            ) |> Output
+        end
     end
     return nothing
 end
