@@ -131,7 +131,8 @@ function build_household_consumption_demand_cache!(world::Ark.World, demand_cach
         (; with = (Banker,), without = ()),
     )
 
-    for group in household_groups
+    Base.Cartesian.@nexprs 4 i -> begin
+        group = household_groups[i]
         append_household_consumption_demand!(
             world,
             demand_cache,
