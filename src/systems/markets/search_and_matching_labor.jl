@@ -20,7 +20,7 @@ function build_hiring_firms_cache!(world)
     cache = Ark.get_resource(world, HiringFirmsCache)
     reset_cache!(cache)
 
-    rows = Tuple{Ark.Entity, Int}[]
+    rows = cache.rows
     for (e, desired_employment, employment) in Ark.Query(world, (DesiredEmployment, Employment))
         for i in eachindex(e)
             push!(rows, (e[i], desired_employment[i].amount - employment[i].amount))
@@ -39,7 +39,7 @@ function build_worker_cache!(world)
     cache = Ark.get_resource(world, WorkersCache)
     BeforeIT.reset_cache!(cache)
 
-    unemployed_workers = Ark.Entity[]
+    unemployed_workers = cache.unemployed_workers
     for (worker_e, _) in Ark.Query(world, (Unemployed,))
         append!(unemployed_workers, worker_e)
     end
@@ -53,8 +53,10 @@ function build_worker_cache!(world)
 end
 
 function fire_employed_workers!(world::Ark.World)
-    remove_employment = Vector{Ark.Entity}()
-    employed_workers = Tuple{Ark.Entity, Ark.Entity}[]
+    cache = Ark.get_resource(world, FireEmployedWorkersCache)
+    BeforeIT.reset_cache!(cache)
+    remove_employment = cache.remove_employment
+    employed_workers = cache.employed_workers
 
     for (worker_e, employed, employed_at) in Ark.Query(world, (Employed, EmployedAt))
         for j in eachindex(worker_e)
@@ -90,9 +92,11 @@ function hire_workers!(world::Ark.World)
 
     cache = Ark.get_resource(world, HiringFirmsCache)
     worker_cache = Ark.get_resource(world, WorkersCache)
+    hire_cache = Ark.get_resource(world, HireWorkersCache)
+    BeforeIT.reset_cache!(hire_cache)
 
-    add_employment = Tuple{Ark.Entity, Ark.Entity}[]
-    hired_workers = Dict{Ark.Entity, Int}()
+    add_employment = hire_cache.add_employment
+    hired_workers = hire_cache.hired_workers
 
     shuffle!(view(worker_cache.active, 1:worker_cache.n_unemployed))
     next_worker = 1
