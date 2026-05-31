@@ -22,22 +22,21 @@ for i in $(seq 1 6); do
 
     import BeforeIT as Bit
 
-    function run_model(parameters, initial_conditions, T)
-        model = Bit.Model(parameters, initial_conditions)
+    function run_model(properties, T)
+        model = Bit.Model(properties)
         Bit.run!(model, T; parallel = true)
     end
 
-    function ensemble_run_model(parameters, initial_conditions, T)
-        models = (Bit.Model(parameters, initial_conditions) for _ in 1:24)
+    function ensemble_run_model(properties, T)
+        models = (Bit.Model(properties) for _ in 1:24)
         Bit.ensemblerun!(models, T; parallel = true)
     end
 
-    parameters = Bit.AUSTRIA2010Q1.parameters
-    initial_conditions = Bit.AUSTRIA2010Q1.initial_conditions
+    properties = Bit.AUSTRIA2010Q1
     T = 12
 
-    b1 = @benchmark run_model(\$parameters, \$initial_conditions, \$T) seconds=20
-    b2 = @benchmark ensemble_run_model(\$parameters, \$initial_conditions, \$T) seconds=20
+    b1 = @benchmark run_model(\$properties, \$T) seconds=20
+    b2 = @benchmark ensemble_run_model(\$properties, \$T) seconds=20
 
     min_b1_ns = minimum(b1.times)
     min_b2_ns = minimum(b2.times)

@@ -3,6 +3,7 @@
 # # Extension by Specialization
 
 import BeforeIT as Bit
+import JLD2
 using Plots
 
 # When extending the BeforeIT model it is required to first create a new model
@@ -20,7 +21,8 @@ Bit.central_bank_rate(model::NewModel) = model.cb.fixed_rate
 
 # Now, we can initialize the model to include the new type, to do so, we will need
 # to initialize all model components first
-p, ic = Bit.AUSTRIA2010Q1.parameters, Bit.AUSTRIA2010Q1.initial_conditions
+p = JLD2.load(joinpath(dirname(pathof(Bit)), "..", "data", "austria", "parameters", "2010Q1.jld2"))
+ic = Bit.AUSTRIA2010Q1.initial_conditions
 firms = Bit.Firms(p, ic)
 w_act, w_inact = Bit.Workers(p, ic)
 cb = Bit.CentralBank(p, ic)

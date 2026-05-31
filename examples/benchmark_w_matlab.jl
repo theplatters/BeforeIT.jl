@@ -14,18 +14,16 @@ using CairoMakie, Statistics, ThreadPinning
 
 pinthreads(:cores)
 
-function run(parameters, initial_conditions, T; parallel = false)
-    model = Bit.Model(parameters, initial_conditions)
+function run(properties, T; parallel = false)
+    model = Bit.Model(properties)
     return Bit.run!(model, T; parallel = parallel)
 end
 
-parameters = Bit.AUSTRIA2010Q1.parameters
-initial_conditions = Bit.AUSTRIA2010Q1.initial_conditions
 T = 12
 
 # We run the code to compile it first
-@time run(parameters, initial_conditions, T; parallel = false);
-@time run(parameters, initial_conditions, T; parallel = true);
+@time run(Bit.AUSTRIA2010Q1, T; parallel = false);
+@time run(Bit.AUSTRIA2010Q1, T; parallel = true);
 
 # Time taken by the MATLAB code and the Generated C code with MATLAB Coder
 # (4 threads for the parallel version), computed independently on an
@@ -63,7 +61,7 @@ n_runs = 5
 
 julia_times_small = zeros(n_runs)
 for i in 1:n_runs
-    julia_times_small[i] = @elapsed run(parameters, initial_conditions, T; parallel = false)
+    julia_times_small[i] = @elapsed run(Bit.AUSTRIA2010Q1, T; parallel = false)
 end
 julia_times_small ./= T
 julia_times_big = [46.400777, 47.218013, 46.981572, 46.532327, 46.232614]
@@ -74,7 +72,7 @@ julia_stime_big = std(julia_times_big)
 
 julia_times_small_multi = zeros(n_runs)
 for i in 1:5
-    julia_times_small_multi[i] = @elapsed run(parameters, initial_conditions, T; parallel = true)
+    julia_times_small_multi[i] = @elapsed run(Bit.AUSTRIA2010Q1, T; parallel = true)
 end
 julia_times_small_multi ./= T
 julia_times_big_multi = [21.683823, 21.517169, 21.923911, 21.53007, 21.283416]

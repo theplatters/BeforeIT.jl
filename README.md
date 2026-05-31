@@ -66,11 +66,8 @@ Now you should be able to run the the following code
 ```julia
 import BeforeIT as Bit
 
-parameters = Bit.AUSTRIA2010Q1.parameters
-initial_conditions = Bit.AUSTRIA2010Q1.initial_conditions
-
 T = 20
-model = Bit.Model(parameters, initial_conditions)
+model = Bit.Model(Bit.AUSTRIA2010Q1)
 Bit.run!(model, T)
 ```
 

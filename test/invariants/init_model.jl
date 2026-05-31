@@ -6,7 +6,6 @@ model = Bit.ECSModel(Bit.STEADY_STATE2010Q1)
 world = model.world
 properties = Bit.properties(model)
 
-
 @testset "Population accounting" begin
     employed_count = Ark.count_entities(Ark.Query(world, (Bit.Employed,)))
     inactive_count = Ark.count_entities(Ark.Query(world, (Bit.Inactive,)))

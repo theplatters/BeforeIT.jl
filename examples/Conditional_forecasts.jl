@@ -1,6 +1,7 @@
 # Forecasts conditional on the REALISED path of Government expenditure, Exports and Imports
 
 import BeforeIT as Bit
+import JLD2
 using Plots
 
 Bit.@object struct NewModel(Bit.Model) <: Bit.AbstractModel end
@@ -51,7 +52,8 @@ function Bit.rotw_import_export(model::NewModel)
 end
 
 # Load parameters and initial conditions
-p, ic = Bit.AUSTRIA2010Q1.parameters, Bit.AUSTRIA2010Q1.initial_conditions
+p = JLD2.load(joinpath(dirname(pathof(Bit)), "..", "data", "austria", "parameters", "2010Q1.jld2"))
+ic = Bit.AUSTRIA2010Q1.initial_conditions
 
 firms = Bit.Firms(p, ic)
 w_act, w_inact = Bit.Workers(p, ic)

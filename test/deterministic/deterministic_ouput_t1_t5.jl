@@ -2,10 +2,7 @@ using MAT: matread
 
 @testset "time 1 and 5 deterministic" begin
     dir = @__DIR__
-    parameters = Bit.AUSTRIA2010Q1.parameters
-    initial_conditions = Bit.AUSTRIA2010Q1.initial_conditions
-
-    model = Bit.Model(parameters, initial_conditions)
+    model = Bit.Model(Bit.AUSTRIA2010Q1)
     Bit.step!(model; parallel = false)
     Bit.collect_data!(model)
 
@@ -26,7 +23,7 @@ using MAT: matread
         end
     end
 
-    model = Bit.Model(parameters, initial_conditions)
+    model = Bit.Model(Bit.AUSTRIA2010Q1)
     for _ in 1:5
         Bit.step!(model; parallel = false)
         Bit.collect_data!(model)

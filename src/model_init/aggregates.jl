@@ -78,8 +78,8 @@ function setup_aggregates!(world::Ark.World, properties::Properties)
     Ark.add_resource!(
         world,
         MacroeconomicState(
-            economy.total_output,                          # gross_domestic_product_history
-            economy.inflation,                             # inflation_history
+            copy(economy.total_output),                    # gross_domestic_product_history
+            copy(economy.inflation),                       # inflation_history
         )
     )
     return nothing

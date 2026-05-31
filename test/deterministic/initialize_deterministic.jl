@@ -4,7 +4,7 @@ include("ecs_reference_helpers.jl")
 
 @testset "initialize deterministic" begin
     dir = @__DIR__
-    model = Bit.Model(Bit.AUSTRIA2010Q1.parameters, Bit.AUSTRIA2010Q1.initial_conditions)
+    model = Bit.Model(Bit.AUSTRIA2010Q1)
     props = Bit.properties(model)
     total_firms = props.dimensions.total_firms
     inactive = props.population.inactive

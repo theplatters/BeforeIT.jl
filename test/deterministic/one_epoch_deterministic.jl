@@ -1,5 +1,5 @@
 @testset "one epoch deterministic" begin
-    model = Bit.Model(Bit.AUSTRIA2010Q1.parameters, Bit.AUSTRIA2010Q1.initial_conditions)
+    model = Bit.Model(Bit.AUSTRIA2010Q1)
     world = model.world
 
     initial_cb_equity = _single_component_value(world, Bit.Equity; with = (Bit.CentralBank,))

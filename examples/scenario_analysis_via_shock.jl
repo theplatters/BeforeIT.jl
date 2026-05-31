@@ -8,11 +8,8 @@ import BeforeIT as Bit
 import StatsBase: mean, std
 using Plots
 
-parameters = Bit.AUSTRIA2010Q1.parameters;
-initial_conditions = Bit.AUSTRIA2010Q1.initial_conditions;
-
 # Initialise the model
-model = Bit.Model(parameters, initial_conditions);
+model = Bit.Model(Bit.AUSTRIA2010Q1);
 
 # Simulate the baseline model for T quarters, N_reps times, and collect the data
 T = 16

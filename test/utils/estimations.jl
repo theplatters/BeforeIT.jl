@@ -4,9 +4,7 @@ import Ark
 using Random
 
 @testset "estimation functions" begin
-    parameters = Bit.AUSTRIA2010Q1.parameters
-    initial_conditions = Bit.AUSTRIA2010Q1.initial_conditions
-    world = Bit.Model(parameters, initial_conditions).world
+    world = Bit.Model(Bit.AUSTRIA2010Q1).world
     expectations = Bit.expectations(world)
     macroeconomic_state = Ark.get_resource(world, Bit.MacroeconomicState)
     properties = Ark.get_resource(world, Bit.Properties)

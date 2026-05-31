@@ -179,9 +179,6 @@ end
 
 
 struct Properties
-    # Preserve the legacy dictionary-style parameter access used by tests and examples.
-    parameters::Dict{String, Any}
-
     # Core dimensions and demographics
     dimensions::Dimensions
     population::Population
@@ -363,7 +360,6 @@ function Properties(parameters::Dict{String, Any}, initial_conditions::Dict{Stri
     )
 
     return Properties(
-        parameters,
         dimensions,
         population,
         tax_rates,

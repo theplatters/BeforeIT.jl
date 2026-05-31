@@ -32,7 +32,7 @@ Or interactively in the REPL:
 
 ```julia
 import BeforeIT as Bit
-model = Bit.Model(Bit.AUSTRIA2010Q1.parameters, Bit.AUSTRIA2010Q1.initial_conditions)
+model = Bit.Model(Bit.AUSTRIA2010Q1)
 Bit.run!(model, 20)
 ```
 

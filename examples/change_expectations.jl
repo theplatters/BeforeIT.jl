@@ -6,13 +6,9 @@
 import BeforeIT as Bit
 using Random, Plots
 
-# Import standard parameters and initial conditions
-par = Bit.AUSTRIA2010Q1.parameters;
-init = Bit.AUSTRIA2010Q1.initial_conditions;
-
 # Set the seed, initialise the model and run one simulation
 Random.seed!(1234);
-model = Bit.Model(par, init);
+model = Bit.Model(Bit.AUSTRIA2010Q1);
 Bit.run!(model, 40);
 
 # Now we can experiment with changing expectations of the agents in the model.
@@ -24,7 +20,7 @@ end
 
 # Run the model again, with the same seed
 Random.seed!(1234);
-model2 = Bit.Model(par, init);
+model2 = Bit.Model(Bit.AUSTRIA2010Q1);
 Bit.run!(model2, 40);
 
 # Plot the results, comparing the two cases as different lines

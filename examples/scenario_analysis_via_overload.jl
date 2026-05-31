@@ -7,11 +7,8 @@
 import BeforeIT as Bit
 using Plots, StatsPlots
 
-parameters = Bit.AUSTRIA2010Q1.parameters;
-initial_conditions = Bit.AUSTRIA2010Q1.initial_conditions;
-
 # Initialise the model
-model = Bit.Model(parameters, initial_conditions);
+model = Bit.Model(Bit.AUSTRIA2010Q1);
 
 # Simulate the model for T quarters
 T = 20

@@ -16,9 +16,7 @@ The function iteratively updates the model and data for each step using `Bit.ste
 
 # Example
 ```julia
-parameters = Bit.AUSTRIA2010Q1.parameters
-initial_conditions = Bit.AUSTRIA2010Q1.initial_conditions
-model = Bit.Model(parameters, initial_conditions)
+model = Bit.Model(Bit.AUSTRIA2010Q1)
 Bit.run!(model, 2)
 ```
 """
@@ -58,9 +56,7 @@ A function that runs the models simulations for `T` steps on each of them.
 
 # Example
 ```julia
-parameters = Bit.AUSTRIA2010Q1.parameters
-initial_conditions = Bit.AUSTRIA2010Q1.initial_conditions
-models = (Bit.Model(parameters, initial_conditions) for _ in 1:10)
+models = (Bit.Model(Bit.AUSTRIA2010Q1) for _ in 1:10)
 Bit.ensemblerun!(models, 2)
 ```
 """
@@ -104,9 +100,7 @@ A function that creates `n_sims` copies of a model and runs simulations for `T` 
 
 # Example
 ```julia
-parameters = Bit.AUSTRIA2010Q1.parameters
-initial_conditions = Bit.AUSTRIA2010Q1.initial_conditions
-model = Bit.Model(parameters, initial_conditions)
+model = Bit.Model(Bit.AUSTRIA2010Q1)
 models = Bit.ensemblerun(model, 2, 10)  # Create 10 copies and run for 2 steps
 ```
 """
