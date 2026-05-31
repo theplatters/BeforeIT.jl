@@ -39,6 +39,14 @@ function setup_aggregates!(world::Ark.World, properties::Properties)
         world, consumption_cache
     )
     Ark.add_resource!(
+        world,
+        RetailRealisationCache(
+            properties.population.total,
+            properties.dimensions.foreign_consumers + properties.dimensions.local_governments,
+            properties.dimensions.sectors,
+        )
+    )
+    Ark.add_resource!(
         world, SerialActiveCache(intermediate_cache, consumption_cache)
     )
 
@@ -48,7 +56,6 @@ function setup_aggregates!(world::Ark.World, properties::Properties)
 
     Ark.add_resource!(
         world, StockCache(
-            properties.dimensions.total_firms + properties.dimensions.sectors,
             properties.dimensions.sectors,
             properties.dimensions.firms_per_sector
         )

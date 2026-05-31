@@ -20,7 +20,7 @@ function HouseholdConsumptionDemandEntityBuffer(size::Int64)
     return HouseholdConsumptionDemandEntityBuffer(entities)
 end
 
-function reserve_row!(entity, cache::T) where {T <: AbstractDemandCache}
+function reserve_row!(cache::T) where {T <: AbstractDemandCache}
     row = cache.current_index
     cache.current_index += 1
     return row
@@ -40,6 +40,32 @@ function (::Type{T})(values::Int64, sectors::Int64) where {T <: AbstractDemandCa
     )
 end
 
+struct RetailRealisationCache
+    consumption_budget::Vector{Float64}
+    investment_budget::Vector{Float64}
+    final_demand_amount::Vector{Float64}
+    government_consumption::Vector{Float64}
+    government_price::Vector{Float64}
+    foreign_consumption::Vector{Float64}
+    export_price::Vector{Float64}
+    household_consumption_price::Vector{Float64}
+    household_investment_price::Vector{Float64}
+end
+
+function RetailRealisationCache(households::Int64, final_demands::Int64, sectors::Int64)
+    return RetailRealisationCache(
+        zeros(households),
+        zeros(households),
+        zeros(final_demands),
+        zeros(sectors),
+        zeros(sectors),
+        zeros(sectors),
+        zeros(sectors),
+        zeros(sectors),
+        zeros(sectors),
+    )
+end
+
 
 struct StockCache
     available_stocks::Vector{Vector{Float64}}
@@ -50,7 +76,7 @@ struct StockCache
     current_indices::Vector{Int64}
 end
 
-function StockCache(size::Int64, sectors::Int64, firms_per_sector)
+function StockCache(sectors::Int64, firms_per_sector)
     available_stocks = [Vector{Float64}(undef, firms_per_sector[g] + 1) for g in 1:sectors]
     stock_capacity = [Vector{Float64}(undef, firms_per_sector[g] + 1) for g in 1:sectors]
     prices = [Vector{Float64}(undef, firms_per_sector[g] + 1) for g in 1:sectors]
@@ -68,7 +94,7 @@ function StockCache(size::Int64, sectors::Int64, firms_per_sector)
     )
 end
 
-function emblace!(available, stock_capacity, price, sector, entity, cache::StockCache)
+function append_stock!(available, stock_capacity, price, sector, cache::StockCache)
     idx = cache.current_indices[sector]
     cache.available_stocks[sector][idx] = available
     cache.stock_capacity[sector][idx] = stock_capacity
@@ -84,7 +110,7 @@ function reset_cache!(cache::StockCache)
 end
 
 
-function finalize_stock_cache!(cache::StockCache, world::Ark.World)
+function finalize_stock_cache!(cache::StockCache)
     @inbounds for g in eachindex(cache.available_stocks)
         build_sampling_weights!(
             cache.weights[g],
@@ -101,10 +127,6 @@ end
 
 function get_stock_capacity(cache::StockCache, sector::Int64)
     return cache.stock_capacity[sector]
-end
-
-function get_prices(cache::StockCache, sector::Int64)
-    return cache.prices[sector]
 end
 
 function get_weights(cache::StockCache, sector::Int64)
@@ -153,6 +175,6 @@ function build_sampling_weights!(
     return weights
 end
 
-function choose_random_firm(cache::StockCache, sector, weights)
+function choose_random_firm(weights)
     return rand(weights)
 end
