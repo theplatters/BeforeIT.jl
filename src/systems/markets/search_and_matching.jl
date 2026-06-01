@@ -322,19 +322,11 @@ end
 
 function zero_out_components_for_search_and_match!(world::Ark.World)
     zero_out_query!(world, (MaterialsStockChange, Investment, PriceIndex, CFPriceIndex))
-    zero_out_query!(world, (ForeignConsumption, ExportPriceInflation))
-    zero_out_query!(world, (Sales, GoodsDemand))
-    zero_out_query!(world, (ImportSales, ImportDemand))
-    zero_out_query!(world, (RealisedConsumption, PriceInflationGovernmentGoods); with = (Government,))
-    zero_out_query!(world, (RealisedConsumption, RealisedInvestment); with = (Household,))
-
-    price_indices = BeforeIT.price_indices(world)
-    price_indices.household_consumption = 0.0
-    price_indices.capital_formation_households = 0.0
+    zero_out_query!(world, (GoodsDemand,))
+    zero_out_query!(world, (ImportDemand,))
 
     return nothing
 end
-
 
 function rebuild_active_buyers!(active, demand_col)
     nactive = 0
