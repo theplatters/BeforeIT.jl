@@ -79,51 +79,62 @@ function fill_intermediate_demand_row!(
     return nothing
 end
 
-function fill_household_consumption_demand_row!(
-        demand_row,
-        household_consumption,
-        household_investment,
-        consumption_budget,
-        investment_budget,
+function fill_retail_demand_column!(
+        sector::Int64,
+        demand_cache,
+        realisation_cache,
+        properties,
     )
-    @inbounds for g in eachindex(demand_row, household_consumption, household_investment)
-        demand_row[g] =
-            household_consumption[g] * consumption_budget +
-            household_investment[g] * investment_budget
-    end
-    return nothing
-end
+    (; household_consumption, household_investment, government_consumption, exports) =
+        properties.product_coeffs
+    (; total) = properties.population
+    (; foreign_consumers, local_governments) = properties.dimensions
 
-function fill_scaled_demand_row!(demand_row, demand_coefficients, amount)
-    @inbounds for g in eachindex(demand_row, demand_coefficients)
-        demand_row[g] = demand_coefficients[g] * amount
+    demand_col = @view demand_cache.vals[:, sector]
+    consumption_budget = realisation_cache.consumption_budget
+    investment_budget = realisation_cache.investment_budget
+    final_demand_amount = realisation_cache.final_demand_amount
+
+    household_consumption_coeff = household_consumption[sector]
+    household_investment_coeff = household_investment[sector]
+    @inbounds for row in 1:total
+        demand_col[row] =
+            household_consumption_coeff * consumption_budget[row] +
+            household_investment_coeff * investment_budget[row]
     end
+
+    foreign_rows = (total + 1):(total + foreign_consumers)
+    @inbounds for row in foreign_rows
+        demand_col[row] = exports[sector] * final_demand_amount[row - total]
+    end
+
+    government_rows = (total + foreign_consumers + 1):(total + foreign_consumers + local_governments)
+    @inbounds for row in government_rows
+        demand_col[row] = government_consumption[sector] * final_demand_amount[row - total]
+    end
+
     return nothing
 end
 
 function build_consumption_demand_cache!(world::Ark.World)
-    properties = BeforeIT.properties(world)
     demand_cache = Ark.get_resource(world, DesiredHouseholdConsumptionCache)
     realisation_cache = Ark.get_resource(world, RetailRealisationCache)
     BeforeIT.reset_cache!(demand_cache)
 
-    coeffs = properties.product_coeffs
-    build_household_consumption_demand_cache!(world, demand_cache, realisation_cache, coeffs)
-    append_scaled_final_demand!(world, demand_cache, realisation_cache, ForeignConsumptionDemand, coeffs.exports)
+    build_household_consumption_demand_cache!(world, demand_cache, realisation_cache)
+    append_scaled_final_demand!(world, demand_cache, realisation_cache, ForeignConsumptionDemand)
     append_scaled_final_demand!(
         world,
         demand_cache,
         realisation_cache,
-        ConsumptionDemand,
-        coeffs.government_consumption;
+        ConsumptionDemand;
         with = (LocalGovernment,),
     )
 
     return nothing
 end
 
-function build_household_consumption_demand_cache!(world::Ark.World, demand_cache, realisation_cache, coeffs)
-    (; household_consumption, household_investment) = coeffs
+function build_household_consumption_demand_cache!(world::Ark.World, demand_cache, realisation_cache)
     entities = Ark.get_resource(world, HouseholdConsumptionDemandEntityBuffer).entities
 
     household_groups = (
@@ -140,8 +151,6 @@ function build_household_consumption_demand_cache!(world::Ark.World, demand_cach
             demand_cache,
             realisation_cache,
             entities,
-            household_consumption,
-            household_investment;
             group.with,
             group.without,
         )
@@ -155,8 +164,6 @@ end
         demand_cache,
         realisation_cache,
         entities,
-        household_consumption,
-        household_investment;
         with,
         without,
     )
@@ -170,7 +177,7 @@ end
         append!(entities, e)
     end
 
-    sort!(entities; alg=Base.Sort.QuickSort)
+    sort!(entities; alg = Base.Sort.QuickSort)
 
     for entity in entities
         cb, ib = Ark.get_components(world, entity, (ConsumptionBudget, InvestmentBudget))
@@ -178,14 +185,6 @@ end
         Ark.set_components!(world, entity, (FinalDemandCacheIndex(row),))
         realisation_cache.consumption_budget[row] = cb.amount
         realisation_cache.investment_budget[row] = ib.amount
-        demand_row = @view demand_cache.vals[row, :]
-        fill_household_consumption_demand_row!(
-            demand_row,
-            household_consumption,
-            household_investment,
-            cb.amount,
-            ib.amount,
-        )
     end
 
     return nothing
@@ -196,7 +195,7 @@ end
         demand_cache,
         realisation_cache,
         ::Type{DemandType},
-        demand_coefficients;
+        ;
         with = (),
     ) where {DemandType}
     for (e, demand, cache_index) in
@@ -206,8 +205,6 @@ end
             cache_index[i] = FinalDemandCacheIndex(row)
             final_demand_row = row - length(realisation_cache.consumption_budget)
             realisation_cache.final_demand_amount[final_demand_row] = demand[i].amount
-            demand_row = @view demand_cache.vals[row, :]
-            fill_scaled_demand_row!(demand_row, demand_coefficients, demand[i].amount)
         end
     end
 
@@ -322,15 +319,8 @@ end
 
 function zero_out_components_for_search_and_match!(world::Ark.World)
     zero_out_query!(world, (MaterialsStockChange, Investment, PriceIndex, CFPriceIndex))
-    zero_out_query!(world, (ForeignConsumption, ExportPriceInflation))
-    zero_out_query!(world, (Sales, GoodsDemand))
-    zero_out_query!(world, (ImportSales, ImportDemand))
-    zero_out_query!(world, (RealisedConsumption, PriceInflationGovernmentGoods); with = (Government,))
-    zero_out_query!(world, (RealisedConsumption, RealisedInvestment); with = (Household,))
-
-    price_indices = BeforeIT.price_indices(world)
-    price_indices.household_consumption = 0.0
-    price_indices.capital_formation_households = 0.0
+    zero_out_query!(world, (GoodsDemand,))
+    zero_out_query!(world, (ImportDemand,))
 
     return nothing
 end
@@ -452,7 +442,9 @@ function _allocate(demand_cache, stock_cache, active, sector, weights, market::M
             reduce_stocks_by_sold_amount!(sector_available_stocks, sector_stock_capacity, firm_index, sold_amount, stock_source)
             reduce_demand_by_sold_amount!(demand_vals_sector, demand_nominal_sector, sold_amount, buyer, price, market, stock_source)
 
-            adjust_weights!(sector_available_stocks, sector_stock_capacity, weights, firm_index, stock_source)  && iszero(weights) && break
+            if adjust_weights!(sector_available_stocks, sector_stock_capacity, weights, firm_index, stock_source) && iszero(weights)
+                return new_nactive > 0 || demand_vals_sector[buyer] > 0.0 || i < nactive
+            end
 
             if demand_vals_sector[buyer] > 0.0
                 new_nactive += 1
@@ -463,7 +455,7 @@ function _allocate(demand_cache, stock_cache, active, sector, weights, market::M
         nactive = new_nactive
     end
 
-    return nothing
+    return nactive > 0
 end
 
 allocate_intermediate_from_available_stocks!(
@@ -636,7 +628,7 @@ function perform_firm_market!(world::Ark.World, sector::Int64, active)
 
     weights = BeforeIT.get_weight_vector(stock_cache, sector)
 
-    allocate_intermediate_from_available_stocks!(
+    has_residual_demand = allocate_intermediate_from_available_stocks!(
         demand_cache,
         stock_cache,
         active,
@@ -648,6 +640,8 @@ function perform_firm_market!(world::Ark.World, sector::Int64, active)
         @view(demand_cache.first_pass_vals[:, sector]),
         @view(demand_cache.vals[:, sector]),
     )
+
+    has_residual_demand || return nothing
 
     weights = BeforeIT.get_weight_vector(stock_cache, sector)
     allocate_intermediate_from_stock_capacity!(
@@ -665,12 +659,11 @@ end
 # Demand rows are no longer needed after allocation. Reuse household rows to stage
 # realized consumption and investment before the serial ECS writeback.
 function stage_retail_realisations!(
-        world::Ark.World,
         sector::Int64,
         demand_cache,
         realisation_cache,
+        properties,
     )
-    properties = BeforeIT.properties(world)
     (; household_consumption, household_investment, government_consumption, exports) =
         properties.product_coeffs
     (; total) = properties.population
@@ -824,7 +817,9 @@ function perform_retail_market!(world::Ark.World, sector::Int64, active)
     demand_cache = Ark.get_resource(world, DesiredHouseholdConsumptionCache)
     realisation_cache = Ark.get_resource(world, RetailRealisationCache)
     stock_cache = Ark.get_resource(world, BeforeIT.StockCache)
+    properties = BeforeIT.properties(world)
 
+    fill_retail_demand_column!(sector, demand_cache, realisation_cache, properties)
     demand_cache.nominal[:, sector] .= 0.0
 
     sector_weights = BeforeIT.get_weight_vector(stock_cache, sector)
@@ -834,7 +829,7 @@ function perform_retail_market!(world::Ark.World, sector::Int64, active)
         sector_weights,
         sector_available_stocks,
     )
-    allocate_retail_from_available_stocks!(
+    has_residual_demand = allocate_retail_from_available_stocks!(
         demand_cache,
         stock_cache,
         active,
@@ -847,21 +842,23 @@ function perform_retail_market!(world::Ark.World, sector::Int64, active)
         @view(demand_cache.vals[:, sector]),
     )
 
-    sector_weights = BeforeIT.get_weight_vector(stock_cache, sector)
-    sector_stock_capacity = BeforeIT.get_stock_capacity(stock_cache, sector)
-    zero_inactive_retail_weights!(
-        sector_weights,
-        sector_stock_capacity,
-    )
-    allocate_retail_from_stock_capacity!(
-        demand_cache,
-        stock_cache,
-        active,
-        sector,
-        sector_weights,
-    )
+    if has_residual_demand
+        sector_weights = BeforeIT.get_weight_vector(stock_cache, sector)
+        sector_stock_capacity = BeforeIT.get_stock_capacity(stock_cache, sector)
+        zero_inactive_retail_weights!(
+            sector_weights,
+            sector_stock_capacity,
+        )
+        allocate_retail_from_stock_capacity!(
+            demand_cache,
+            stock_cache,
+            active,
+            sector,
+            sector_weights,
+        )
+    end
 
-    stage_retail_realisations!(world, sector, demand_cache, realisation_cache)
+    stage_retail_realisations!(sector, demand_cache, realisation_cache, properties)
 
     return nothing
 end
