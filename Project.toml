@@ -35,6 +35,7 @@ BeforeITPlots = ["Plots", "StatsPlots"]
 
 [compat]
 Aqua = "0.8"
+Ark = "0.5"
 BenchmarkTools = "1.7.0"
 CommonSolve = "0.2"
 Dates = "1"
