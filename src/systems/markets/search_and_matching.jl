@@ -170,7 +170,7 @@ end
         append!(entities, e)
     end
 
-    sort!(entities; alg=Base.Sort.QuickSort)
+    sort!(entities; alg = Base.Sort.QuickSort)
 
     for entity in entities
         cb, ib = Ark.get_components(world, entity, (ConsumptionBudget, InvestmentBudget))
@@ -331,7 +331,7 @@ end
 function rebuild_active_buyers!(active, demand_col)
     nactive = 0
     @inbounds for i in eachindex(demand_col)
-        if demand_col[i] > 0.0
+        if demand_col[i] > 1.0e-10
             nactive += 1
             active[nactive] = i
         end
@@ -431,22 +431,22 @@ function _allocate(demand_cache, stock_cache, active, sector, weights, market::M
 
         new_nactive = 0
         for i in 1:nactive
-
             buyer = active[i]
             firm_index = BeforeIT.choose_random_firm(weights)
 
             price = sector_prices[firm_index]
             available_stock = sector_available_stocks[firm_index]
             stock_capacity = sector_stock_capacity[firm_index]
+
             sold_amount = calc_sold_amount(available_stock, stock_capacity, price, demand_vals_sector[buyer], firm_index, buyer, market, stock_source)
 
 
             reduce_stocks_by_sold_amount!(sector_available_stocks, sector_stock_capacity, firm_index, sold_amount, stock_source)
             reduce_demand_by_sold_amount!(demand_vals_sector, demand_nominal_sector, sold_amount, buyer, price, market, stock_source)
 
-            adjust_weights!(sector_available_stocks, sector_stock_capacity, weights, firm_index, stock_source)  && iszero(weights) && break
+            adjust_weights!(sector_available_stocks, sector_stock_capacity, weights, firm_index, stock_source) && iszero(weights) && break
 
-            if demand_vals_sector[buyer] > 0.0
+            if demand_vals_sector[buyer] > 1.0e-10
                 new_nactive += 1
                 active[new_nactive] = buyer
             end

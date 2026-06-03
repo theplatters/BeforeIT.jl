@@ -44,7 +44,7 @@ function build_worker_cache!(world)
         append!(unemployed_workers, worker_e)
     end
 
-    sort!(unemployed_workers; alg=Base.Sort.QuickSort)
+    sort!(unemployed_workers; alg = Base.Sort.QuickSort)
     for worker_e in unemployed_workers
         BeforeIT.emblace_unemployed!(worker_e, cache)
     end
@@ -64,7 +64,7 @@ function fire_employed_workers!(world::Ark.World)
         end
     end
 
-    sort!(employed_workers; by = first, alg=Base.Sort.QuickSort)
+    sort!(employed_workers; by = first, alg = Base.Sort.QuickSort)
     shuffle!(employed_workers)
     for (worker_e, firm_e) in employed_workers
         vacancies, employment = Ark.get_components(world, firm_e, (Vacancies, Employment))

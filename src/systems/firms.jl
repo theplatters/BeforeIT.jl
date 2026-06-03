@@ -452,9 +452,11 @@ const FIRM_PRODUCTION_COMPONENTS = (
 )
 
 function set_firms_production!(world::Ark.World)
-    for (e, expected_sales, production, employment,
-        labor_productivity, capital, capital_productivity,
-        intermediates, intermediate_productivity) in Ark.Query(world, FIRM_PRODUCTION_COMPONENTS)
+    for (
+            e, expected_sales, production, employment,
+            labor_productivity, capital, capital_productivity,
+            intermediates, intermediate_productivity,
+        ) in Ark.Query(world, FIRM_PRODUCTION_COMPONENTS)
 
         for i in eachindex(e)
             effective_labor_productivity = firm_labor_productivity(
