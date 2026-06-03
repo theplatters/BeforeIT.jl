@@ -1,6 +1,3 @@
-using Pkg
-
-Pkg.develop("Ark")
 
 import BeforeIT as Bit
 import Ark
