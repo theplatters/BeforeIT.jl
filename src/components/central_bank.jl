@@ -10,9 +10,6 @@ end
     rate::FloatType
 end
 
-@register struct EquilibriumInterestRate <: AbstractComponent
-    rate::FloatType
-end
 
 @register struct InflationTargetingWeight <: AbstractComponent
     weight::FloatType
