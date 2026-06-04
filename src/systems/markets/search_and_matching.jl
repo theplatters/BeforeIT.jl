@@ -742,21 +742,25 @@ function update_retail_realisations!(world::Ark.World, demand_cache, realisation
     total_foreign_consumption = sum(realisation_cache.foreign_consumption)
     total_export_price = sum(realisation_cache.export_price)
 
+    sectors = properties.dimensions.sectors
+
     for (e, realised_consumption, realised_investment, cache_index) in
         Ark.Query(
             world, (RealisedConsumption, RealisedInvestment, FinalDemandCacheIndex),
             with = (Household,),
         )
-        @inbounds for i in eachindex(e)
+        @inbounds @simd for i in eachindex(e)
             household_index = cache_index[i].id
-            consumption = 0.0
-            investment = 0.0
-            for sector in 1:properties.dimensions.sectors
-                consumption += demand_cache.first_pass_vals[household_index, sector]
-                investment += demand_cache.vals[household_index, sector]
+            realised_consumption[i] = RealisedConsumption(demand_cache.first_pass_vals[household_index, 1])
+            realised_investment[i] = RealisedInvestment(demand_cache.vals[household_index, 1])
+        end
+
+        for sector in 2:sectors
+            @inbounds @simd for i in eachindex(e)
+                household_index = cache_index[i].id
+                realised_consumption[i] = RealisedConsumption(realised_consumption[i].amount + demand_cache.first_pass_vals[household_index, sector])
+                realised_investment[i] = RealisedInvestment(realised_investment[i].amount + demand_cache.vals[household_index, sector])
             end
-            realised_consumption[i] = RealisedConsumption(consumption)
-            realised_investment[i] = RealisedInvestment(investment)
         end
     end
 
