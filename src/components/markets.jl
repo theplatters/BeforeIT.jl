@@ -14,20 +14,16 @@ end
     amount::Vector{Float64}
 end
 
-@register struct MarketSupplyPool <: AbstractComponent
+@register struct FirstPassIntermediateDemand <: AbstractComponent
     amount::Vector{Float64}
 end
 
-@register struct FinalDemandCursor <: AbstractComponent
-    position::Float64
+@register struct FirstPassFinalDemand <: AbstractComponent
+    amount::Vector{Float64}
 end
 
-@register struct IntermediateDemandCursor <: AbstractComponent
-    position::Float64
-end
-
-@register struct SupplyCursor <: AbstractComponent
-    position::Float64
+@register struct MarketSupplyPool <: AbstractComponent
+    amount::Vector{Float64}
 end
 
 @register struct MarketCapacityPool <: AbstractComponent
@@ -35,7 +31,7 @@ end
 end
 
 @register struct MarketPricePool <: AbstractComponent
-    amount::Vector{Float64}
+    value::Vector{Float64}
 end
 
 @register struct MarketWeights <: AbstractComponent

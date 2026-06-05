@@ -30,8 +30,44 @@ function search_and_matching!(world::Ark.World; parallel = false)
 end
 
 function perform_sector_markets!(world::Ark.World, sector::Int64, active)
-    perform_firm_market!(world, sector, active)
-    perform_retail_market!(world, sector, active)
+    perform_firm_market!(world, active)
+    perform_retail_market!(world, active)
+    return nothing
+end
+
+function perform_search_and_matching(world::Ark.World)
+    for (e, demand_book, demand_clearing, sector_available_stocks, sector_stock_capacity, sector_prices, first_pass) in Ark.Query(world, (IntermediateMarketDemandBook, IntermediateMarketDemandClearing, MarketSupplyPool, MarketCapacityPool, MarketPricePool, FirstPassIntermediateDemand))
+        for i in eachindex(e)
+            perform_firm_market!(
+                sector_available_stocks[i].amount,
+                sector_stock_capacity[i].amount,
+                sector_prices[i].value,
+                demand_book[i].amount,
+                demand_clearing[i].amount,
+                first_pass[i].amount,
+                active
+            )
+
+        end
+    end
+
+    for (e, demand_book, demand_clearing, sector_available_stocks, sector_stock_capacity, sector_prices, first_pass) in Ark.Query(world, (FinalMarketDemandBook, FinalMarketDemandClearing, MarketSupplyPool, MarketCapacityPool, MarketPricePool, FirstPassFinalDemand))
+        for i in eachindex(e)
+            perform_retail_market!(
+                sector_available_stocks[i].amount,
+                sector_stock_capacity[i].amount,
+                sector_prices[i].value,
+                demand_book[i].amount,
+                demand_clearing[i].amount,
+                first_pass[i].amount,
+                active
+            )
+
+        end
+    end
+
+    perform_retail_market!(world, active)
+
     return nothing
 end
 
@@ -39,23 +75,22 @@ function build_intermediate_demand!(world::Ark.World)
 
     (; technology_matrix, capital_formation) = BeforeIT.properties(world).product_coeffs
 
-    for (e_buyer, principal_product, desired_investment, desired_materials) in
-        Ark.Query(world, (PrincipalProduct, DesiredInvestment, DesiredMaterials))
+    for (e_buyer, principal_product, desired_investment, desired_materials, index) in
+        Ark.Query(world, (PrincipalProduct, DesiredInvestment, DesiredMaterials, IntermediaryDemandCacheIndex))
         for i in eachindex(e_buyer)
-
-            for (e_market, sector, market_book, market_clearing, cursor) in
-                Ark.Query(world, (PrincipalProduct, IntermediateMarketDemandBook, IntermediateMarketDemandClearing, IntermediateDemandCursor))
+            index[i] = IntermediaryDemandCacheIndex(i)
+            for (e_market, sector, market_book, market_clearing) in
+                Ark.Query(world, (PrincipalProduct, IntermediateMarketDemandBook, IntermediateMarketDemandClearing))
 
                 for j in eachindex(e_market)
                     product_id = principal_product[i].id
                     desired_materials_amount = desired_materials[i].amount
                     desired_investment_amount = desired_investment[i].amount
                     g = sector[j].id
-                    market_book[j].amount[cursor[j].position] =
+                    market_book[j].amount[i] =
                         technology_matrix[g, product_id] * desired_materials_amount +
                         capital_formation[g] * desired_investment_amount
-                    market_clearing[j].amount[cursor[j].position] = 0.0
-                    cursor[j] = IntermediateDemandCursor(cursor[j].position + 1)
+                    market_clearing[j].amount[i] = 0.0
                 end
             end
 
@@ -80,26 +115,28 @@ function build_consumption_demand!(world::Ark.World)
         (; with = (Banker,), without = ()),
     )
 
+    last_pos = 1
     Base.Cartesian.@nexprs 4 i -> begin
         group = household_groups[i]
-        append_household_consumption_demand!(
+        last_pos = append_household_consumption_demand!(
             world,
-
             realisation_cache,
             entities,
             household_consumption,
-            household_investment;
+            household_investment,
+            last_pos;
             group.with,
             group.without,
         )
     end
 
-    append_scaled_final_demand!(world, realisation_cache, ForeignConsumptionDemand, coeffs.exports)
+    last_pos = append_scaled_final_demand!(world, realisation_cache, ForeignConsumptionDemand, coeffs.exports, last_pos)
     append_scaled_final_demand!(
         world,
         realisation_cache,
         ConsumptionDemand,
-        coeffs.government_consumption;
+        coeffs.government_consumption,
+        last_pos;
         with = (LocalGovernment,),
     )
 
@@ -112,14 +149,15 @@ end
         realisation_cache,
         entities,
         household_consumption,
-        household_investment;
+        household_investment,
+        last_pos;
         with,
         without,
     )
     empty!(entities)
     for (e,) in Ark.Query(
             world,
-            (FinalDemandCacheIndex,),
+            (),
             with = (Household, with...),
             without = without,
         )
@@ -131,49 +169,53 @@ end
     for entity in entities
         cb, ib = Ark.get_components(world, entity, (ConsumptionBudget, InvestmentBudget))
 
-        for (e_market, sector, market_book, market_clearing, cursor) in
-            Ark.Query(world, (PrincipalProduct, FinalMarketDemandBook, FinalMarketDemandClearing, FinalDemandCursor))
+        Ark.set_components(world, entity, (FinalDemandCacheIndex(last_pos)))
+        for (e_market, sector, market_book, market_clearing) in
+            Ark.Query(world, (PrincipalProduct, FinalMarketDemandBook, FinalMarketDemandClearing))
 
             for j in eachindex(e_market)
                 g = sector[j].id
-                market_book[j].amount[cursor[j].position] =
+                market_book[j].amount[last_pos] =
                     household_consumption[g] * cb.amount +
                     household_investment[g] * ib.amount
-                market_clearing[j].amount[cursor[j].position] = 0.0
-                cursor[j] = FinalDemandCursor(cursor[j].position + 1)
+                market_clearing[j].amount[last_pos] = 0.0
             end
         end
+
+        last_pos += 1
     end
 
 
-    return nothing
+    return last_pos
 end
 
 @inline function append_scaled_final_demand!(
         world::Ark.World,
         realisation_cache,
         ::Type{DemandType},
-        demand_coefficients;
+        demand_coefficients,
+        last_pos;
         with = (),
     ) where {DemandType}
     for (e, demand, cache_index) in
-        Ark.Query(world, (DemandType,), with = with)
+        Ark.Query(world, (DemandType, FinalDemandCacheIndex), with = with)
         for i in eachindex(e)
+            cache_index[i] = FinalDemandCacheIndex(last_pos)
             for (e_market, sector, market_book, market_clearing, cursor) in
-                Ark.Query(world, (PrincipalProduct, FinalMarketDemandBook, FinalMarketDemandClearing, FinalDemandCursor))
+                Ark.Query(world, (PrincipalProduct, FinalMarketDemandBook, FinalMarketDemandClearing))
                 for j in eachindex(e_market)
                     g = sector[j].id
-                    market_book[j].amount[cursor[j].position] =
+                    market_book[j].amount[last_pos] =
                         demand_coefficients[g] * demand[i].amount
-                    market_clearing[j].amount[cursor[j].position] = 0.0
-                    cursor[j] = FinalDemandCursor(cursor[j].position + 1)
+                    market_clearing[j].amount[last_pos] = 0.0
                 end
             end
 
+            last_pos += 1
         end
     end
 
-    return nothing
+    return last_pos
 end
 
 function build_stock_pool!(world::Ark.World)
@@ -186,10 +228,10 @@ function build_stock_pool!(world::Ark.World)
 end
 
 function build_domestic_stock_pool!(world::Ark.World)
-    for (e_market, sector, supply, capacity, price, cursor) in
-        Ark.Query(world, (PrincipalProduct, MarketSupplyPool, MarketCapacityPool, MarketPricePool, SupplyCursor))
+    for (e_market, supply, capacity, price) in
+        Ark.Query(world, (MarketSupplyPool, MarketCapacityPool, MarketPricePool))
         for i in eachindex(e_market)
-            for (e, output, stocks, capital, capital_productivity, firm_price, _) in
+            for (e, output, stocks, capital, capital_productivity, firm_price, index, _) in
                 Ark.Query(
                     world,
                     (
@@ -198,19 +240,18 @@ function build_domestic_stock_pool!(world::Ark.World)
                         CapitalStock,
                         CapitalProductivity,
                         Price,
-                        Market => e_market,
+                        StockCacheIndex,
                     ),
+                    with = (Market => e_market)
                 )
                 @inbounds for j in eachindex(e)
                     available_stock = output[j].amount + stocks[j].amount
                     stock_capacity = capital[j].amount * capital_productivity[j].value - output[j].amount
 
-
-                    pos = cursor[i].position
-                    supply[i].amount[pos] = available_stock
-                    capacity[i].amount[pos] = stock_capacity
-                    price[i].amount[pos] = firm_price[j].value
-                    cursor[i] = SuppplyCursor(pos + 1)
+                    index[j] = StockCacheIndex(j)
+                    supply[i].amount[j] = available_stock
+                    capacity[i].amount[j] = stock_capacity
+                    price[i].amount[j] = firm_price[j].value
                 end
             end
 
@@ -222,21 +263,24 @@ function build_domestic_stock_pool!(world::Ark.World)
 end
 
 function build_import_stock_pool!(world::Ark.World)
-    for (e_market, sector, supply, capacity, price, cursor) in
-        Ark.Query(world, (PrincipalProduct, MarketSupplyPool, MarketCapacityPool, MarketPricePool, SupplyCursor))
+    properties = BeforeIT.properties(world)
+    for (e_market, sector, supply, capacity, price) in
+        Ark.Query(world, (PrincipalProduct, MarketSupplyPool, MarketCapacityPool, MarketPricePool))
         for i in eachindex(e_market)
-            for (e, import_supply, firm_price, _) in
+            for (e, import_supply, firm_price, index) in
                 Ark.Query(
                     world, (
-                        ImportSupply, ImportPrice, Market => e_market,
-                    )
+                        ImportSupply, ImportPrice, StockCacheIndex,
+                    ),
+                    with = (Market => e_market,)
+
                 )
                 @inbounds for j in eachindex(e)
-                    pos = cursor[i].position
+                    pos = properties.dimensions.firms_per_sector[j] + j
                     supply[i].amount[pos] = import_supply[j].amount
                     capacity[i].amount[pos] = Inf
                     price[i].amount[pos] = firm_price[j].value
-                    cursor[i] = SuppplyCursor(pos + 1)
+                    index[j] = StockCacheIndex(pos)
                 end
             end
 
@@ -419,14 +463,9 @@ function adjust_weights!(available_stocks, stock_capacity, weights, firm_index, 
     return false
 end
 
-function _allocate(demand_cache, stock_cache, active, sector, weights, market::M, stock_source::S) where {M <: ProductType, S <: StockType}
-    sector_available_stocks = stock_cache.available_stocks[sector]
-    sector_stock_capacity = stock_cache.stock_capacity[sector]
-    sector_prices = stock_cache.prices[sector]
-    demand_vals_sector = @view demand_cache.vals[:, sector]
-    demand_nominal_sector = @view demand_cache.nominal[:, sector]
+function _allocate(sector_available_stocks, sector_stock_capacity, sector_prices, demand_book, demand_clearing, active, weights, market::M, stock_source::S) where {M <: ProductType, S <: StockType}
 
-    nactive = rebuild_active_buyers!(active, demand_vals_sector)
+    nactive = rebuild_active_buyers!(active, demand_book)
 
     @inbounds while nactive > 0 && !iszero(weights)
         shuffle!(view(active, 1:nactive))
@@ -440,15 +479,15 @@ function _allocate(demand_cache, stock_cache, active, sector, weights, market::M
             available_stock = sector_available_stocks[firm_index]
             stock_capacity = sector_stock_capacity[firm_index]
 
-            sold_amount = calc_sold_amount(available_stock, stock_capacity, price, demand_vals_sector[buyer], firm_index, buyer, market, stock_source)
+            sold_amount = calc_sold_amount(available_stock, stock_capacity, price, demand_book[buyer], firm_index, buyer, market, stock_source)
 
 
             reduce_stocks_by_sold_amount!(sector_available_stocks, sector_stock_capacity, firm_index, sold_amount, stock_source)
-            reduce_demand_by_sold_amount!(demand_vals_sector, demand_nominal_sector, sold_amount, buyer, price, market, stock_source)
+            reduce_demand_by_sold_amount!(demand_book, demand_clearing, sold_amount, buyer, price, market, stock_source)
 
             adjust_weights!(sector_available_stocks, sector_stock_capacity, weights, firm_index, stock_source) && iszero(weights) && break
 
-            if demand_vals_sector[buyer] > 1.0e-10
+            if demand_book[buyer] > 1.0e-10
                 new_nactive += 1
                 active[new_nactive] = buyer
             end
@@ -461,14 +500,12 @@ function _allocate(demand_cache, stock_cache, active, sector, weights, market::M
 end
 
 allocate_intermediate_from_available_stocks!(
-    demand_cache,
-    stock_cache,
+    sector_available_stocks, sector_stock_capacity, sector_prices, demand_book, demand_clearing,
     active,
     sector,
     weights,
 ) = _allocate(
-    demand_cache,
-    stock_cache,
+    sector_available_stocks, sector_stock_capacity, sector_prices, demand_book, demand_clearing,
     active,
     sector,
     weights,
@@ -477,14 +514,12 @@ allocate_intermediate_from_available_stocks!(
 )
 
 allocate_intermediate_from_stock_capacity!(
-    demand_cache,
-    stock_cache,
+    sector_available_stocks, sector_stock_capacity, sector_prices, demand_book, demand_clearing,
     active,
     sector,
     weights,
 ) = _allocate(
-    demand_cache,
-    stock_cache,
+    sector_available_stocks, sector_stock_capacity, sector_prices, demand_book, demand_clearing,
     active,
     sector,
     weights,
@@ -493,14 +528,12 @@ allocate_intermediate_from_stock_capacity!(
 )
 
 allocate_retail_from_available_stocks!(
-    demand_cache,
-    stock_cache,
+    sector_available_stocks, sector_stock_capacity, sector_prices, demand_book, demand_clearing,
     active,
     sector,
     weights,
 ) = _allocate(
-    demand_cache,
-    stock_cache,
+    sector_available_stocks, sector_stock_capacity, sector_prices, demand_book, demand_clearing,
     active,
     sector,
     weights,
@@ -509,14 +542,12 @@ allocate_retail_from_available_stocks!(
 )
 
 allocate_retail_from_stock_capacity!(
-    demand_cache,
-    stock_cache,
+    sector_available_stocks, sector_stock_capacity, sector_prices, demand_book, demand_clearing,
     active,
     sector,
     weights,
 ) = _allocate(
-    demand_cache,
-    stock_cache,
+    sector_available_stocks, sector_stock_capacity, sector_prices, demand_book, demand_clearing,
     active,
     sector,
     weights,
@@ -622,31 +653,28 @@ end
     return nothing
 end
 
-function perform_firm_market!(world::Ark.World, sector::Int64, active)
-    demand_cache = Ark.get_resource(world, BeforeIT.DesiredIntermediatesCache)
-    stock_cache = Ark.get_resource(world, BeforeIT.StockCache)
+function perform_firm_market!(
+        sector_available_stocks, sector_stock_capacity, sector_prices, demand_book, demand_clearing, first_pass, active
+    )
 
-    demand_cache.nominal[:, sector] .= 0.0
 
     weights = BeforeIT.get_weight_vector(stock_cache, sector)
 
     allocate_intermediate_from_available_stocks!(
-        demand_cache,
-        stock_cache,
+        sector_available_stocks, sector_stock_capacity, sector_prices, demand_book, demand_clearing,
         active,
         sector,
         weights,
     )
 
     copyto!(
-        @view(demand_cache.first_pass_vals[:, sector]),
-        @view(demand_cache.vals[:, sector]),
+        first_pass,
+        demand_book,
     )
 
     weights = BeforeIT.get_weight_vector(stock_cache, sector)
     allocate_intermediate_from_stock_capacity!(
-        demand_cache,
-        stock_cache,
+        sector_available_stocks, sector_stock_capacity, sector_prices, demand_book, demand_clearing,
         active,
         sector,
         weights,
@@ -818,22 +846,20 @@ function update_import_demand_from_remaining_stocks!(world::Ark.World, stock_cac
     return nothing
 end
 
-function perform_retail_market!(world::Ark.World, sector::Int64, active)
-    demand_cache = Ark.get_resource(world, DesiredHouseholdConsumptionCache)
+function perform_retail_market!(
+        sector_available_stocks, sector_stock_capacity, sector_prices, demand_book, demand_clearing, first_pass, active
+    )
     realisation_cache = Ark.get_resource(world, RetailRealisationCache)
-    stock_cache = Ark.get_resource(world, BeforeIT.StockCache)
 
-    demand_cache.nominal[:, sector] .= 0.0
 
     sector_weights = BeforeIT.get_weight_vector(stock_cache, sector)
 
-    sector_available_stocks = BeforeIT.get_available_stocks(stock_cache, sector)
     zero_inactive_retail_weights!(
         sector_weights,
         sector_available_stocks,
     )
     allocate_retail_from_available_stocks!(
-        demand_cache,
+        sector_available_stocks, sector_stock_capacity, sector_prices, demand_book, demand_clearing,
         stock_cache,
         active,
         sector,
@@ -846,14 +872,13 @@ function perform_retail_market!(world::Ark.World, sector::Int64, active)
     )
 
     sector_weights = BeforeIT.get_weight_vector(stock_cache, sector)
-    sector_stock_capacity = BeforeIT.get_stock_capacity(stock_cache, sector)
+
     zero_inactive_retail_weights!(
         sector_weights,
         sector_stock_capacity,
     )
     allocate_retail_from_stock_capacity!(
-        demand_cache,
-        stock_cache,
+        sector_available_stocks, sector_stock_capacity, sector_prices, demand_book, demand_clearing,
         active,
         sector,
         sector_weights,
