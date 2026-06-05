@@ -85,6 +85,7 @@ function build_consumption_demand!(world::Ark.World)
     coeffs = properties.product_coeffs
     (; household_consumption, household_investment) = coeffs
     entities = Ark.get_resource(world, HouseholdConsumptionDemandEntityBuffer).entities
+    realisation_cache = Ark.get_resource(world, RetailRealisationCache)
 
 
     household_groups = (
@@ -152,6 +153,9 @@ end
         for (e_market, sector, market_book, market_clearing) in
             Ark.Query(world, (PrincipalProduct, FinalMarketDemandBook, FinalMarketDemandClearing))
 
+            realisation_cache.consumption_budget[last_pos] = cb.amount
+            realisation_cache.investment_budget[last_pos] = ib.amount
+
             for j in eachindex(e_market)
                 g = sector[j].id
                 market_book[j].amount[last_pos] =
@@ -178,7 +182,11 @@ end
     ) where {DemandType}
     for (e, demand, cache_index) in
         Ark.Query(world, (DemandType, FinalDemandCacheIndex), with = with)
+
         for i in eachindex(e)
+
+            final_demand_pos = last_pos - length(realisation_cache.consumption_budget)
+            realisation_cache.final_demand_amount[final_demand_pos] = demand[i].amount
             cache_index[i] = FinalDemandCacheIndex(last_pos)
             for (e_market, sector, market_book, market_clearing, cursor) in
                 Ark.Query(world, (PrincipalProduct, FinalMarketDemandBook, FinalMarketDemandClearing))
