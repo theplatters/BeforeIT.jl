@@ -810,37 +810,47 @@ function update_retail_realisations!(world::Ark.World, realisation_cache)
     return nothing
 end
 
-function update_goods_demand_from_remaining_stocks!(world::Ark.World, stock_cache)
-    for (e, principal_product, good_demand, output, inventories, cache_index) in
-        Ark.Query(world, (PrincipalProduct, GoodsDemand, Output, Inventories, StockCacheIndex))
-        @inbounds for i in eachindex(e)
-            sector = principal_product[i].id
-            firm_index = cache_index[i].id
-            good_demand[i] = GoodsDemand(
-                good_demand[i].amount +
-                    output[i].amount + inventories[i].amount -
-                    stock_cache.available_stocks[sector][firm_index],
-            )
-        end
-    end
+function update_goods_demand_from_remaining_stocks!(world::Ark.World)
+    for (e_market, supply) in Ark.Query(world, (MarketSupplyPool,))
+        for j in eachindex(e_market)
 
-    return nothing
+            for (e, good_demand, output, inventories, cache_index) in
+                Ark.Query(world, (GoodsDemand, Output, Inventories, StockCacheIndex), with = (Market = e_market[j],))
+                @inbounds for i in eachindex(e)
+                    firm_index = cache_index[i].id
+                    good_demand[i] = GoodsDemand(
+                        good_demand[i].amount +
+                            output[i].amount + inventories[i].amount -
+                            supply[j].amount[firm_index],
+                    )
+                end
+            end
+
+        end
+
+    end
+    return
 end
 
-function update_import_demand_from_remaining_stocks!(world::Ark.World, stock_cache)
-    for (e, principal_product, good_demand, good_supply, cache_index) in
-        Ark.Query(world, (PrincipalProduct, ImportDemand, ImportSupply, StockCacheIndex))
-        @inbounds for i in eachindex(e)
-            sector = principal_product[i].id
-            rotw_index = cache_index[i].id
+function update_import_demand_from_remaining_stocks!(world::Ark.World)
 
-            good_demand[i] = ImportDemand(
-                good_demand[i].amount +
-                    good_supply[i].amount - stock_cache.available_stocks[sector][rotw_index],
-            )
+    for (e_market, supply) in Ark.Query(world, (MarketSupplyPool,))
+        for j in eachindex(e_market)
+
+            for (e, good_demand, good_supply, cache_index) in
+                Ark.Query(world, (ImportDemand, ImportSupply, StockCacheIndex), with = (Market => e_market[j],))
+                @inbounds for i in eachindex(e)
+                    rotw_index = cache_index[i].id
+
+                    good_demand[i] = ImportDemand(
+                        good_demand[i].amount +
+                            good_supply[i].amount - supply[j].amount[rotw_index],
+                    )
+                end
+            end
+
         end
     end
-
     return nothing
 end
 
@@ -908,8 +918,8 @@ function update_search_and_match_realisations!(world::Ark.World)
     )
 
     update_retail_realisations!(world, retail_realisation_cache)
-    update_goods_demand_from_remaining_stocks!(world, stock_cache)
-    update_import_demand_from_remaining_stocks!(world, stock_cache)
+    update_goods_demand_from_remaining_stocks!(world)
+    update_import_demand_from_remaining_stocks!(world)
 
     return nothing
 end
