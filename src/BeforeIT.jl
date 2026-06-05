@@ -46,6 +46,7 @@ include("model_init/workers.jl")
 include("model_init/bank.jl")
 include("model_init/government.jl")
 include("model_init/rotw.jl")
+include("model_init/markets.jl")
 include("model_init/aggregates.jl")
 
 include("utils/randpl.jl")

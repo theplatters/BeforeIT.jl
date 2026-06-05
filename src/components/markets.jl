@@ -1,8 +1,16 @@
-@register struct MarketDemandBook <: AbstractComponent
+@register struct FinalMarketDemandBook <: AbstractComponent
     amount::Vector{Float64}
 end
 
-@register struct MarketDemandClearing <: AbstractComponent
+@register struct FinalMarketDemandClearing <: AbstractComponent
+    amount::Vector{Float64}
+end
+
+@register struct IntermediateMarketDemandBook <: AbstractComponent
+    amount::Vector{Float64}
+end
+
+@register struct IntermediateMarketDemandClearing <: AbstractComponent
     amount::Vector{Float64}
 end
 

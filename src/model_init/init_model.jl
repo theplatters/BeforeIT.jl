@@ -22,6 +22,7 @@ function ECSModel(properties::Properties)
     setup_central_bank!(world, properties)
     setup_government!(world, properties)
     setup_rotw!(world, properties)
+    setup_markets!(world, properties)
     setup_aggregates!(world, properties)
 
     seed_initial_employment!(world, properties)
