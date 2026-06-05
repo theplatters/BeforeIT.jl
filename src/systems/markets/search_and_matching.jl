@@ -543,7 +543,7 @@ allocate_retail_from_stock_capacity!(
 )
 
 
-function update_firm_realisations!(world::Ark.World, demand_cache, technology_matrix, capital_formation)
+function update_firm_realisations!(world::Ark.World, technology_matrix, capital_formation)
     for (e, material_stock_change, investment, principal_product, desired_materials, desired_investment, price_index, cf_price_index, entity_index) in
         Ark.Query(
             world,
@@ -558,27 +558,29 @@ function update_firm_realisations!(world::Ark.World, demand_cache, technology_ma
                 IntermediaryDemandCacheIndex,
             ),
         )
-        for sector in axes(demand_cache.first_pass_vals, 2)
-            demand_vals_sector = @view demand_cache.first_pass_vals[:, sector]
-            demand_nominal_sector = @view demand_cache.nominal[:, sector]
 
-            @inbounds for i in eachindex(e)
-                update_firm_realisation_components!(
-                    i,
-                    sector,
-                    demand_vals_sector,
-                    demand_nominal_sector,
-                    technology_matrix,
-                    capital_formation,
-                    material_stock_change,
-                    investment,
-                    principal_product,
-                    desired_materials,
-                    desired_investment,
-                    price_index,
-                    cf_price_index,
-                    entity_index[i].id
-                )
+        @inbounds for i in eachindex(e)
+            for (e_market, sector, demand_book, demand_clearing) in Ark.Query(world, (PrincipalProduct, IntermediateMarketDemandBook, IntermediateMarketDemandClearing))
+                @inbounds for j in eachindex(e_market)
+
+                    update_firm_realisation_components!(
+                        i,
+                        sector[j].id,
+                        demand_book[j].amount,
+                        demand_clearing[j].amount,
+                        technology_matrix,
+                        capital_formation,
+                        material_stock_change,
+                        investment,
+                        principal_product,
+                        desired_materials,
+                        desired_investment,
+                        price_index,
+                        cf_price_index,
+                        entity_index[i].id
+                    )
+                end
+
             end
         end
     end
@@ -676,7 +678,9 @@ end
 function stage_retail_realisations!(
         world::Ark.World,
         sector::Int64,
-        demand_cache,
+        first_pass_vals,
+        second_pass_vals,
+        demand_clearing_sector,
         realisation_cache,
     )
     properties = BeforeIT.properties(world)
@@ -685,9 +689,6 @@ function stage_retail_realisations!(
     (; total) = properties.population
     (; foreign_consumers, local_governments) = properties.dimensions
 
-    demand_nominal_sector = @view demand_cache.nominal[:, sector]
-    first_pass_vals = @view demand_cache.first_pass_vals[:, sector]
-    second_pass_vals = @view demand_cache.vals[:, sector]
     consumption_budget = realisation_cache.consumption_budget
     investment_budget = realisation_cache.investment_budget
 
@@ -699,7 +700,7 @@ function stage_retail_realisations!(
     total_expenditure = 0.0
 
     @inbounds for row in 1:total
-        total_real_demand += demand_nominal_sector[row]
+        total_real_demand += demand_clearing_sector[row]
 
         residual = household_investment_coeff * investment_budget[row] - first_pass_vals[row]
         sector_consumption_demand = household_consumption_coeff * consumption_budget[row]
@@ -728,7 +729,7 @@ function stage_retail_realisations!(
     export_price = 0.0
     @inbounds for row in foreign_rows
         foreign_consumption += exports[sector] * final_demand_amount[row - total] - first_pass_vals[row]
-        export_price += demand_nominal_sector[row]
+        export_price += demand_clearing_sector[row]
     end
     realisation_cache.foreign_consumption[sector] = foreign_consumption
     realisation_cache.export_price[sector] = export_price
@@ -738,7 +739,7 @@ function stage_retail_realisations!(
     @inbounds for row in government_rows
         realised_government_consumption +=
             government_consumption[sector] * final_demand_amount[row - total] - first_pass_vals[row]
-        government_price += demand_nominal_sector[row]
+        government_price += demand_clearing_sector[row]
     end
     realisation_cache.government_consumption[sector] = realised_government_consumption
     realisation_cache.government_price[sector] = government_price
@@ -746,8 +747,7 @@ function stage_retail_realisations!(
     return nothing
 end
 
-function update_retail_realisations!(world::Ark.World, demand_cache, realisation_cache)
-    properties = BeforeIT.properties(world)
+function update_retail_realisations!(world::Ark.World, realisation_cache)
     household_consumption = realisation_cache.household_consumption_price
     household_investment = realisation_cache.household_investment_price
     price_indices = BeforeIT.price_indices(world)
@@ -759,7 +759,6 @@ function update_retail_realisations!(world::Ark.World, demand_cache, realisation
     total_foreign_consumption = sum(realisation_cache.foreign_consumption)
     total_export_price = sum(realisation_cache.export_price)
 
-    sectors = properties.dimensions.sectors
 
     for (e, realised_consumption, realised_investment, cache_index) in
         Ark.Query(
@@ -768,15 +767,27 @@ function update_retail_realisations!(world::Ark.World, demand_cache, realisation
         )
         @inbounds @simd for i in eachindex(e)
             household_index = cache_index[i].id
-            realised_consumption[i] = RealisedConsumption(demand_cache.first_pass_vals[household_index, 1])
-            realised_investment[i] = RealisedInvestment(demand_cache.vals[household_index, 1])
+            realised_consumption[i] = RealisedConsumption(0.0)
+            realised_investment[i] = RealisedInvestment(0.0)
         end
+    end
 
-        for sector in 2:sectors
-            @inbounds @simd for i in eachindex(e)
-                household_index = cache_index[i].id
-                realised_consumption[i] = RealisedConsumption(realised_consumption[i].amount + demand_cache.first_pass_vals[household_index, sector])
-                realised_investment[i] = RealisedInvestment(realised_investment[i].amount + demand_cache.vals[household_index, sector])
+    for (e, realised_consumption, realised_investment, cache_index) in
+        Ark.Query(
+            world, (RealisedConsumption, RealisedInvestment, FinalDemandCacheIndex),
+            with = (Household,),
+        )
+
+        @inbounds for i in eachindex(e)
+
+            household_index = cache_index[i].id
+            for (e_market, sector, demand_book, first_pass) in
+                Ark.Query(world, (PrincipalProduct, FinalMarketDemandBook, FirstPassFinalDemand))
+
+                for j in eachindex(e_market)
+                    realised_consumption[i] = RealisedConsumption(realised_consumption[i].amount + first_pass[j].amount[household_index])
+                    realised_investment[i] = RealisedInvestment(realised_investment[i].amount + demand_book[j].amount[household_index])
+                end
             end
         end
     end
@@ -871,30 +882,7 @@ function perform_retail_market!(
         sector_weights,
     )
 
-    stage_retail_realisations!(world, sector, demand_cache, realisation_cache)
-
-    return nothing
-end
-
-function update_search_and_match_realisations!(world::Ark.World)
-    intermediate_cache = Ark.get_resource(world, BeforeIT.DesiredIntermediatesCache)
-    consumption_cache = Ark.get_resource(world, DesiredHouseholdConsumptionCache)
-    retail_realisation_cache = Ark.get_resource(world, RetailRealisationCache)
-    stock_cache = Ark.get_resource(world, BeforeIT.StockCache)
-
-    (; technology_matrix, capital_formation) =
-        BeforeIT.properties(world).product_coeffs
-
-    update_firm_realisations!(
-        world,
-        intermediate_cache,
-        technology_matrix,
-        capital_formation,
-    )
-
-    update_retail_realisations!(world, consumption_cache, retail_realisation_cache)
-    update_goods_demand_from_remaining_stocks!(world, stock_cache)
-    update_import_demand_from_remaining_stocks!(world, stock_cache)
+    stage_retail_realisations!(world, sector, first_pass, demand_book, demand_clearing, realisation_cache)
 
     return nothing
 end
@@ -905,6 +893,27 @@ function zero_inactive_retail_weights!(weights, live_stocks)
     end
     return nothing
 end
+
+function update_search_and_match_realisations!(world::Ark.World)
+    retail_realisation_cache = Ark.get_resource(world, RetailRealisationCache)
+    stock_cache = Ark.get_resource(world, BeforeIT.StockCache)
+
+    (; technology_matrix, capital_formation) =
+        BeforeIT.properties(world).product_coeffs
+
+    update_firm_realisations!(
+        world,
+        technology_matrix,
+        capital_formation,
+    )
+
+    update_retail_realisations!(world, retail_realisation_cache)
+    update_goods_demand_from_remaining_stocks!(world, stock_cache)
+    update_import_demand_from_remaining_stocks!(world, stock_cache)
+
+    return nothing
+end
+
 
 function finalize_search_and_match!(world::Ark.World)
     price_indices = BeforeIT.price_indices(world)
