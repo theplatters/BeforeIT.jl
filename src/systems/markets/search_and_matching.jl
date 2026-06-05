@@ -7,33 +7,13 @@ function search_and_matching!(world::Ark.World; parallel = false)
     props = BeforeIT.properties(world)
     sectors = props.dimensions.sectors
 
-    if parallel
-        t_active_buffer = Ark.get_resource(world, ParallelActiveCache).active
-        tasks = map(t_active_buffer) do (sector_range, t_active)
-            Threads.@spawn for g in sector_range
-                perform_sector_markets!(world, g, t_active)
-            end
-        end
-        fetch.(tasks)
-
-    else
-
-        active = Ark.get_resource(world, SerialActiveCache).active
-        for g in 1:sectors
-            perform_sector_markets!(world, g, active)
-        end
-    end
+    perform_search_and_matching!(world)
 
     update_search_and_match_realisations!(world)
     finalize_search_and_match!(world)
     return nothing
 end
 
-function perform_sector_markets!(world::Ark.World, sector::Int64, active)
-    perform_firm_market!(world, active)
-    perform_retail_market!(world, active)
-    return nothing
-end
 
 function perform_search_and_matching(world::Ark.World)
     for (e, demand_book, demand_clearing, sector_available_stocks, sector_stock_capacity, sector_prices, first_pass) in Ark.Query(world, (IntermediateMarketDemandBook, IntermediateMarketDemandClearing, MarketSupplyPool, MarketCapacityPool, MarketPricePool, FirstPassIntermediateDemand))
@@ -66,7 +46,6 @@ function perform_search_and_matching(world::Ark.World)
         end
     end
 
-    perform_retail_market!(world, active)
 
     return nothing
 end
@@ -867,8 +846,8 @@ function perform_retail_market!(
     )
 
     copyto!(
-        @view(demand_cache.first_pass_vals[:, sector]),
-        @view(demand_cache.vals[:, sector]),
+        first_pass,
+        demand_book,
     )
 
     sector_weights = BeforeIT.get_weight_vector(stock_cache, sector)
