@@ -1,7 +1,7 @@
 function search_and_matching!(world::Ark.World; parallel = false)
-    build_intermediate_demand_cache!(world)
-    build_consumption_demand_cache!(world)
-    build_stock_cache!(world)
+    build_intermediate_demand!(world)
+    build_consumption_demand!(world)
+    build_stock_pool!(world)
     zero_out_components_for_search_and_match!(world)
 
     props = BeforeIT.properties(world)
@@ -35,96 +35,43 @@ function perform_sector_markets!(world::Ark.World, sector::Int64, active)
     return nothing
 end
 
+function build_intermediate_demand!(world::Ark.World)
 
-function build_intermediate_demand_cache!(world::Ark.World)
-    properties = BeforeIT.properties(world)
-    demand_cache = Ark.get_resource(world, DesiredIntermediatesCache)
-    BeforeIT.reset_cache!(demand_cache)
+    (; technology_matrix, capital_formation) = BeforeIT.properties(world).product_coeffs
 
-    (; technology_matrix, capital_formation) = properties.product_coeffs
+    for (e_buyer, principal_product, desired_investment, desired_materials) in
+        Ark.Query(world, (PrincipalProduct, DesiredInvestment, DesiredMaterials))
+        for i in eachindex(e_buyer)
 
-    for (e, principal_product, desired_investment, desired_materials, cache_index) in
-        Ark.Query(world, (PrincipalProduct, DesiredInvestment, DesiredMaterials, IntermediaryDemandCacheIndex))
-        for i in eachindex(e)
-            row = BeforeIT.reserve_row!(demand_cache)
-            cache_index[i] = IntermediaryDemandCacheIndex(row)
-            demand_row = @view demand_cache.vals[row, :]
-            fill_intermediate_demand_row!(
-                demand_row,
-                technology_matrix,
-                capital_formation,
-                principal_product[i].id,
-                desired_materials[i].amount,
-                desired_investment[i].amount,
-            )
+            for (e_market, sector, market_book, market_clearing, cursor) in
+                Ark.Query(world, (PrincipalProduct, IntermediateMarketDemandBook, IntermediateMarketDemandClearing, IntermediateDemandCursor))
+
+                for j in eachindex(e_market)
+                    product_id = principal_product[i].id
+                    desired_materials_amount = desired_materials[i].amount
+                    desired_investment_amount = desired_investment[i].amount
+                    g = sector[j].id
+                    market_book[j].amount[cursor[j].position] =
+                        technology_matrix[g, product_id] * desired_materials_amount +
+                        capital_formation[g] * desired_investment_amount
+                    market_clearing[j].amount[cursor[j].position] = 0.0
+                    cursor[j] = IntermediateDemandCursor(cursor[j].position + 1)
+                end
+            end
+
+
         end
     end
-
     return nothing
 end
 
-function fill_intermediate_demand_row!(
-        demand_row,
-        technology_matrix,
-        capital_formation,
-        product_id,
-        desired_materials_amount,
-        desired_investment_amount,
-    )
-    @inbounds for g in eachindex(demand_row, capital_formation)
-        demand_row[g] =
-            technology_matrix[g, product_id] * desired_materials_amount +
-            capital_formation[g] * desired_investment_amount
-    end
-    return nothing
-end
+function build_consumption_demand!(world::Ark.World)
 
-function fill_household_consumption_demand_row!(
-        demand_row,
-        household_consumption,
-        household_investment,
-        consumption_budget,
-        investment_budget,
-    )
-    @inbounds for g in eachindex(demand_row, household_consumption, household_investment)
-        demand_row[g] =
-            household_consumption[g] * consumption_budget +
-            household_investment[g] * investment_budget
-    end
-    return nothing
-end
-
-function fill_scaled_demand_row!(demand_row, demand_coefficients, amount)
-    @inbounds for g in eachindex(demand_row, demand_coefficients)
-        demand_row[g] = demand_coefficients[g] * amount
-    end
-    return nothing
-end
-
-function build_consumption_demand_cache!(world::Ark.World)
     properties = BeforeIT.properties(world)
-    demand_cache = Ark.get_resource(world, DesiredHouseholdConsumptionCache)
-    realisation_cache = Ark.get_resource(world, RetailRealisationCache)
-    BeforeIT.reset_cache!(demand_cache)
-
     coeffs = properties.product_coeffs
-    build_household_consumption_demand_cache!(world, demand_cache, realisation_cache, coeffs)
-    append_scaled_final_demand!(world, demand_cache, realisation_cache, ForeignConsumptionDemand, coeffs.exports)
-    append_scaled_final_demand!(
-        world,
-        demand_cache,
-        realisation_cache,
-        ConsumptionDemand,
-        coeffs.government_consumption;
-        with = (LocalGovernment,),
-    )
-
-    return nothing
-end
-
-function build_household_consumption_demand_cache!(world::Ark.World, demand_cache, realisation_cache, coeffs)
     (; household_consumption, household_investment) = coeffs
     entities = Ark.get_resource(world, HouseholdConsumptionDemandEntityBuffer).entities
+
 
     household_groups = (
         (; with = (), without = (Inactive, Capitalist, Banker)),
@@ -137,7 +84,7 @@ function build_household_consumption_demand_cache!(world::Ark.World, demand_cach
         group = household_groups[i]
         append_household_consumption_demand!(
             world,
-            demand_cache,
+
             realisation_cache,
             entities,
             household_consumption,
@@ -147,12 +94,21 @@ function build_household_consumption_demand_cache!(world::Ark.World, demand_cach
         )
     end
 
+    append_scaled_final_demand!(world, realisation_cache, ForeignConsumptionDemand, coeffs.exports)
+    append_scaled_final_demand!(
+        world,
+        realisation_cache,
+        ConsumptionDemand,
+        coeffs.government_consumption;
+        with = (LocalGovernment,),
+    )
+
+
     return nothing
 end
 
 @inline function append_household_consumption_demand!(
         world::Ark.World,
-        demand_cache,
         realisation_cache,
         entities,
         household_consumption,
@@ -174,115 +130,161 @@ end
 
     for entity in entities
         cb, ib = Ark.get_components(world, entity, (ConsumptionBudget, InvestmentBudget))
-        row = BeforeIT.reserve_row!(demand_cache)
-        Ark.set_components!(world, entity, (FinalDemandCacheIndex(row),))
-        realisation_cache.consumption_budget[row] = cb.amount
-        realisation_cache.investment_budget[row] = ib.amount
-        demand_row = @view demand_cache.vals[row, :]
-        fill_household_consumption_demand_row!(
-            demand_row,
-            household_consumption,
-            household_investment,
-            cb.amount,
-            ib.amount,
-        )
+
+        for (e_market, sector, market_book, market_clearing, cursor) in
+            Ark.Query(world, (PrincipalProduct, FinalMarketDemandBook, FinalMarketDemandClearing, FinalDemandCursor))
+
+            for j in eachindex(e_market)
+                g = sector[j].id
+                market_book[j].amount[cursor[j].position] =
+                    household_consumption[g] * cb.amount +
+                    household_investment[g] * ib.amount
+                market_clearing[j].amount[cursor[j].position] = 0.0
+                cursor[j] = FinalDemandCursor(cursor[j].position + 1)
+            end
+        end
     end
+
 
     return nothing
 end
 
 @inline function append_scaled_final_demand!(
         world::Ark.World,
-        demand_cache,
         realisation_cache,
         ::Type{DemandType},
         demand_coefficients;
         with = (),
     ) where {DemandType}
     for (e, demand, cache_index) in
-        Ark.Query(world, (DemandType, FinalDemandCacheIndex), with = with)
+        Ark.Query(world, (DemandType,), with = with)
         for i in eachindex(e)
-            row = BeforeIT.reserve_row!(demand_cache)
-            cache_index[i] = FinalDemandCacheIndex(row)
-            final_demand_row = row - length(realisation_cache.consumption_budget)
-            realisation_cache.final_demand_amount[final_demand_row] = demand[i].amount
-            demand_row = @view demand_cache.vals[row, :]
-            fill_scaled_demand_row!(demand_row, demand_coefficients, demand[i].amount)
+            for (e_market, sector, market_book, market_clearing, cursor) in
+                Ark.Query(world, (PrincipalProduct, FinalMarketDemandBook, FinalMarketDemandClearing, FinalDemandCursor))
+                for j in eachindex(e_market)
+                    g = sector[j].id
+                    market_book[j].amount[cursor[j].position] =
+                        demand_coefficients[g] * demand[i].amount
+                    market_clearing[j].amount[cursor[j].position] = 0.0
+                    cursor[j] = FinalDemandCursor(cursor[j].position + 1)
+                end
+            end
+
         end
     end
 
     return nothing
 end
 
-function build_stock_cache!(world::Ark.World)
-    stock_cache = Ark.get_resource(world, BeforeIT.StockCache)
-    BeforeIT.reset_cache!(stock_cache)
+function build_stock_pool!(world::Ark.World)
 
-    build_domestic_stock_cache!(world, stock_cache)
-    build_import_stock_cache!(world, stock_cache)
-    BeforeIT.finalize_stock_cache!(stock_cache)
+    build_domestic_stock_pool!(world)
+    build_import_stock_pool!(world)
+    build_stock_weights!(world)
 
     return nothing
 end
 
-function build_domestic_stock_cache!(world::Ark.World, stock_cache)
-    for (e, pp, output, stocks, capital, capital_productivity, price, cache_index) in
-        Ark.Query(
-            world,
-            (
-                PrincipalProduct,
-                Output,
-                Inventories,
-                CapitalStock,
-                CapitalProductivity,
-                Price,
-                StockCacheIndex,
-            ),
-        )
-        @inbounds for i in eachindex(e)
-            available_stock = output[i].amount + stocks[i].amount
-            stock_capacity = capital[i].amount * capital_productivity[i].value - output[i].amount
-            sector = pp[i].id
+function build_domestic_stock_pool!(world::Ark.World)
+    for (e_market, sector, supply, capacity, price, cursor) in
+        Ark.Query(world, (PrincipalProduct, MarketSupplyPool, MarketCapacityPool, MarketPricePool, SupplyCursor))
+        for i in eachindex(e_market)
+            for (e, output, stocks, capital, capital_productivity, firm_price, _) in
+                Ark.Query(
+                    world,
+                    (
+                        Output,
+                        Inventories,
+                        CapitalStock,
+                        CapitalProductivity,
+                        Price,
+                        Market => e_market,
+                    ),
+                )
+                @inbounds for j in eachindex(e)
+                    available_stock = output[j].amount + stocks[j].amount
+                    stock_capacity = capital[j].amount * capital_productivity[j].value - output[j].amount
 
-            cache_index[i] = StockCacheIndex(stock_cache.current_indices[sector])
-            BeforeIT.append_stock!(
-                available_stock,
-                stock_capacity,
-                price[i].value,
-                sector,
-                stock_cache,
-            )
+
+                    pos = cursor[i].position
+                    supply[i].amount[pos] = available_stock
+                    capacity[i].amount[pos] = stock_capacity
+                    price[i].amount[pos] = firm_price[j].value
+                    cursor[i] = SuppplyCursor(pos + 1)
+                end
+            end
+
+
         end
     end
 
     return nothing
 end
 
-function build_import_stock_cache!(world::Ark.World, stock_cache)
-    for (e, pp, import_supply, price, cache_index) in
-        Ark.Query(
-            world, (
-                PrincipalProduct,
-                ImportSupply, ImportPrice,
-                StockCacheIndex,
-            )
-        )
-        @inbounds for i in eachindex(e)
-            sector = pp[i].id
+function build_import_stock_pool!(world::Ark.World)
+    for (e_market, sector, supply, capacity, price, cursor) in
+        Ark.Query(world, (PrincipalProduct, MarketSupplyPool, MarketCapacityPool, MarketPricePool, SupplyCursor))
+        for i in eachindex(e_market)
+            for (e, import_supply, firm_price, _) in
+                Ark.Query(
+                    world, (
+                        ImportSupply, ImportPrice, Market => e_market,
+                    )
+                )
+                @inbounds for j in eachindex(e)
+                    pos = cursor[i].position
+                    supply[i].amount[pos] = import_supply[j].amount
+                    capacity[i].amount[pos] = Inf
+                    price[i].amount[pos] = firm_price[j].value
+                    cursor[i] = SuppplyCursor(pos + 1)
+                end
+            end
 
-            cache_index[i] = StockCacheIndex(stock_cache.current_indices[sector])
-            BeforeIT.append_stock!(
-                import_supply[i].amount,
-                Inf,
-                price[i].value,
-                sector,
-                stock_cache,
-            )
+
         end
     end
 
     return nothing
 end
+
+function build_stock_weights!(world::Ark.World)
+
+    @assert length(weights) == length(price) == length(stock)
+    for (e_market, stocks, prices, weights) in
+        Ark.Query(world, (MarketSupplyPool, MarketPricePool, MarketWeights))
+
+        @inbounds for m in eachindex(e_market)
+            price_sum = 0.0
+            size_sum = 0.0
+
+            stock = stocks[m].amount
+            price = prices[m].amount
+            weight = weights[m].amount
+            for i in eachindex(stock)
+                if stock[i] > 0.0
+                    wp = exp(-2.0 * price[i])
+                    ws = stock[i]
+                    weight[i] = wp
+                    price_sum += wp
+                    size_sum += ws
+                else
+                    weights[i] = 0.0
+                end
+            end
+            inv_price_sum = price_sum > 0 ? inv(price_sum) : 0.0
+            inv_size_sum = size_sum > 0 ? inv(size_sum) : 0.0
+            @inbounds for i in eachindex(weight, price, stock)
+                if weight[i] > 0.0
+                    weight[i] = weight[i] * inv_price_sum + stock[i] * inv_size_sum
+                end
+            end
+        end
+    end
+
+
+    return nothing
+end
+
 
 @generated function _zero_arrays_unrolled!(arrays::Tuple)
     N = length(arrays.parameters)
