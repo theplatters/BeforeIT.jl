@@ -1,4 +1,4 @@
-function setup_rotw!(world::Ark.World, properties::Properties)
+function setup_rotw!(world::Ark.World, properties::Properties, markets)
     L = properties.dimensions.foreign_consumers
     G = properties.dimensions.sectors
     T_prime = properties.dimensions.interval_for_expectation_estimation
@@ -30,35 +30,26 @@ function setup_rotw!(world::Ark.World, properties::Properties)
     )
 
 
-    Ark.new_entities!(
-        world, G,
-        (
+    for g in 1:G
 
-            ForeignSector,
-            PrincipalProduct,
-            ImportSupply,
-            ImportSales,
-            ImportDemand,
-            ImportPrice,
-            ExportPriceInflation,
-            RestOfWorldEntity,
-            IntermediaryDemandCacheIndex,
-            StockCacheIndex,
+        Ark.new_entity!(
+            world,
+            (
+
+                ForeignSector(),
+                PrincipalProduct(g),
+                ImportSupply(0.0),
+                ImportSales(0.0),
+                ImportDemand(0.0),
+                ImportPrice(0.0),
+                ExportPriceInflation(0.0),
+                RestOfWorldEntity(rotw),
+                IntermediaryDemandCacheIndex(0),
+                StockCacheIndex(0),
+                Market() => markets[g],
+            )
         )
-    ) do (entities, fs, pp, isupply, isales, idemand, iprice, epi, rowe, intermediary_cache_index, stock_cache_index)
-        for (g, i) in enumerate(eachindex(entities))
-            fs[i] = ForeignSector()
-            pp[i] = PrincipalProduct(g)
-            isupply[i] = ImportSupply(0.0)
-            isales[i] = ImportSales(0.0)
-            idemand[i] = ImportDemand(0.0)
-            iprice[i] = ImportPrice(0.0)
-            epi[i] = ExportPriceInflation(0.0)
-            rowe[i] = RestOfWorldEntity(rotw)
-            intermediary_cache_index[i] = IntermediaryDemandCacheIndex(0)
-            stock_cache_index[i] = StockCacheIndex(0)
 
-        end
     end
 
     return nothing

@@ -1,4 +1,4 @@
-function setup_firms!(world::Ark.World, properties::Properties)
+function setup_firms!(world::Ark.World, properties::Properties, markets)
     (; total_firms, firms_per_sector) = properties.dimensions
 
     tau_SIF = properties.social_insurance.employers_contribution
@@ -119,6 +119,7 @@ function setup_firms!(world::Ark.World, properties::Properties)
                 MaterialsStockChange(0.0),
                 LoanFlow(0.0),
                 Owner() => owner,
+                Market() => markets[principal_product[i]],
                 Firm(),
                 IntermediaryDemandCacheIndex(0),
                 StockCacheIndex(0),

@@ -16,13 +16,14 @@ end
 function ECSModel(properties::Properties)
     world = Ark.World(Tuple(BIT_COMPONENTS)...)
 
-    setup_firms!(world, properties)
+
+    markets = setup_markets!(world, properties)
+    setup_firms!(world, properties, markets)
     setup_workers!(world, properties)
     setup_bank!(world, properties)
     setup_central_bank!(world, properties)
     setup_government!(world, properties)
-    setup_rotw!(world, properties)
-    setup_markets!(world, properties)
+    setup_rotw!(world, properties, markets)
     setup_aggregates!(world, properties)
 
     seed_initial_employment!(world, properties)

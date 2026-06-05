@@ -2,7 +2,7 @@ function setup_markets!(world::Ark.World, properties::Properties)
 
     consumers = properties.population.total + properties.dimensions.local_governments + properties.dimensions.foreign_consumers
     producers = properties.dimensions.firms_per_sector .+ 1
-
+    markets = Ark.Entity[]
     Ark.new_entities!(
         world, properties.dimensions.sectors,
         (
@@ -15,11 +15,8 @@ function setup_markets!(world::Ark.World, properties::Properties)
             MarketCapacityPool,
             MarketPricePool,
             MarketWeights,
-            FinalDemandCursor,
-            IntermediateDemandCursor,
-            SupplyCursor,
         )
-    ) do entities, sector, final_demand_book, final_demand_clearing, intermediate_demand_book, intermediate_demand_clearing, supply_pool, capacity_pool, price_pool, weights, final_demand_cursor, intermediate_demand_cursor, supply_cursor
+    ) do entities, sector, final_demand_book, final_demand_clearing, intermediate_demand_book, intermediate_demand_clearing, supply_pool, capacity_pool, price_pool, weights
         for i in eachindex(entities)
             sector[i] = PrincipalProduct(i)
             final_demand_book[i] = FinalMarketDemandBook(Vector{FloatType}(undef, consumers))
@@ -30,12 +27,11 @@ function setup_markets!(world::Ark.World, properties::Properties)
             capacity_pool[i] = MarketSupplyPool(Vector{FloatType}(undef, producers[i]))
             price_pool[i] = MarketSupplyPool(Vector{FloatType}(undef, producers[i]))
             weights[i] = MarketWeights(Vector{FloatType}(undef, producers[i]))
-            final_demand_cursor[i] = FinalDemandCursor(1)
-            intermediate_demand_cursor[i] = IntermediateDemandCursor(1)
-            supply_cursor[i] = SupplyCursor(1)
+            push!(markets, entities[i])
+
         end
     end
 
 
-    return nothing
+    return markets
 end
