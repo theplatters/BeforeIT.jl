@@ -35,6 +35,7 @@ module Components
     end
 
     include("bank.jl")
+    include("markets.jl")
     include("helper_components.jl")
     include("central_bank.jl")
     include("firms.jl")
