@@ -60,71 +60,131 @@ function setup_firms!(world::Ark.World, properties::Properties, markets)
     D_h = D_H * disposable_income
 
 
-    #TODO: Replace this with a batch entity creation
-    for i in 1:total_firms
-        owner = Ark.new_entity!(
-            world,
-            (
-                NetDisposableIncome(disposable_income[i]),
-                ConsumptionBudget(0.0),
-                InvestmentBudget(0.0),
-                ExpectedIncome(0.0),
-                RealisedConsumption(0.0),
-                RealisedInvestment(0.0),
-                CapitalStock(K_h[i]),
-                Deposits(D_h[i]),
-                Capitalist(),
-                Household(),
+    owners = Vector{Ark.Entity}(undef, total_firms)
+    Ark.new_entities!(
+        world, total_firms,
+        (
+            NetDisposableIncome,
+            ConsumptionBudget,
+            InvestmentBudget,
+            ExpectedIncome,
+            RealisedConsumption,
+            RealisedInvestment,
+            CapitalStock,
+            Deposits,
+            Capitalist,
+            Household,
+            FinalDemandCacheIndex,
+        )
+    ) do (entities, net_inc, cons_b, inv_b, exp_inc, real_cons, real_inv, cap_s, dep, cap_ist, hh, final_cache_index)
+        for i in eachindex(entities)
+            owners[i] = entities[i]
+            net_inc[i] = NetDisposableIncome(disposable_income[i])
+            cons_b[i] = ConsumptionBudget(0.0)
+            inv_b[i] = InvestmentBudget(0.0)
+            exp_inc[i] = ExpectedIncome(0.0)
+            real_cons[i] = RealisedConsumption(0.0)
+            real_inv[i] = RealisedInvestment(0.0)
+            cap_s[i] = CapitalStock(K_h[i])
+            dep[i] = Deposits(D_h[i])
+            cap_ist[i] = Capitalist()
+            hh[i] = Household()
+            final_cache_index[i] = FinalDemandCacheIndex(0)
+        end
+    end
 
-                FinalDemandCacheIndex(0),
-            )
-        )
-        Ark.new_entity!(
-            world,
+    for g in 1:properties.dimensions.sectors
+        Ark.new_entities!(
+            world, firms_per_sector[g],
             (
-                PrincipalProduct(principal_product[i]),
-                LaborProductivity(output_elasticities[i]),
-                IntermediateProductivity(material_coeffs[i]),
-                CapitalProductivity(capital_coeffs[i]),
-                WageBill(0.0),
-                AverageWageRate(wage_rate[i]),
-                CapitalDeprecationRate(deprecation_rate[i]),
-                TaxRates(output_tax_rate[i], capital_tax_rate[i]),
-                Employment(employment[i]),
-                Output(output[i]),
-                Sales(output[i]),
-                GoodsDemand(output[i]),
-                Price(1.0),
-                Inventories(0.0),
-                CapitalStock(capital[i]),
-                Intermediates(intermediates[i]),
-                LoansOutstanding(outstanding_loans[i]),
-                OperatingMargins(operating_margins[i]),
-                Deposits(deposits[i]),
-                Profits(profits[i]),
-                Vacancies(employment[i]),
-                Investment(0.0),
-                Equity(0.0),
-                PriceIndex(0.0),
-                CFPriceIndex(0.0),
-                TargetLoans(0.0),
-                ExpectedCapital(0.0),
-                ExpectedLoans(0.0),
-                ExpectedSales(0.0),
-                DesiredInvestment(0.0),
-                DesiredMaterials(0.0),
-                DesiredEmployment(0.0),
-                ExpectedProfits(0.0),
-                FinalGoodsStockChange(0.0),
-                MaterialsStockChange(0.0),
-                LoanFlow(0.0),
-                Owner() => owner,
-                Market() => markets[principal_product[i]],
-                Firm(),
-                IntermediaryDemandCacheIndex(0),
-                StockCacheIndex(0),
+                PrincipalProduct,
+                LaborProductivity,
+                IntermediateProductivity,
+                CapitalProductivity,
+                WageBill,
+                AverageWageRate,
+                CapitalDeprecationRate,
+                TaxRates,
+                Employment,
+                Output,
+                Sales,
+                GoodsDemand,
+                Price,
+                Inventories,
+                CapitalStock,
+                Intermediates,
+                LoansOutstanding,
+                OperatingMargins,
+                Deposits,
+                Profits,
+                Vacancies,
+                Investment,
+                Equity,
+                PriceIndex,
+                CFPriceIndex,
+                TargetLoans,
+                ExpectedCapital,
+                ExpectedLoans,
+                ExpectedSales,
+                DesiredInvestment,
+                DesiredMaterials,
+                DesiredEmployment,
+                ExpectedProfits,
+                FinalGoodsStockChange,
+                MaterialsStockChange,
+                LoanFlow,
+                Firm,
+                IntermediaryDemandCacheIndex,
+                StockCacheIndex,
+                Owner,
+                Market => markets[g],
             )
-        )
+        ) do (entities, pp, lp, ip, cp, wb, awr, cdr, tr, emp, out, sal, gd, pr, inv, cs, interm, lo, om, dep, prof, vac, invst, eq, pi, cfpi, tl, ec, el, es, di, dm, de, ep, fgsc, msc, lf, firm, intermediary_cache_index, stock_cache_index, owner, market)
+            for i in eachindex(entities)
+                firms[i] = entities[i]
+                pp[i] = PrincipalProduct(principal_product[i])
+                lp[i] = LaborProductivity(output_elasticities[i])
+                ip[i] = IntermediateProductivity(material_coeffs[i])
+                cp[i] = CapitalProductivity(capital_coeffs[i])
+                wb[i] = WageBill(0.0)
+                awr[i] = AverageWageRate(wage_rate[i])
+                cdr[i] = CapitalDeprecationRate(deprecation_rate[i])
+                tr[i] = TaxRates(output_tax_rate[i], capital_tax_rate[i])
+                emp[i] = Employment(employment[i])
+                out[i] = Output(output[i])
+                sal[i] = Sales(output[i])
+                gd[i] = GoodsDemand(output[i])
+                pr[i] = Price(1.0)
+                inv[i] = Inventories(0.0)
+                cs[i] = CapitalStock(capital[i])
+                interm[i] = Intermediates(intermediates[i])
+                lo[i] = LoansOutstanding(outstanding_loans[i])
+                om[i] = OperatingMargins(operating_margins[i])
+                dep[i] = Deposits(deposits[i])
+                prof[i] = Profits(profits[i])
+                vac[i] = Vacancies(employment[i])
+                invst[i] = Investment(0.0)
+                eq[i] = Equity(0.0)
+                pi[i] = PriceIndex(0.0)
+                cfpi[i] = CFPriceIndex(0.0)
+                tl[i] = TargetLoans(0.0)
+                ec[i] = ExpectedCapital(0.0)
+                el[i] = ExpectedLoans(0.0)
+                es[i] = ExpectedSales(0.0)
+                di[i] = DesiredInvestment(0.0)
+                dm[i] = DesiredMaterials(0.0)
+                de[i] = DesiredEmployment(0.0)
+                ep[i] = ExpectedProfits(0.0)
+                fgsc[i] = FinalGoodsStockChange(0.0)
+                msc[i] = MaterialsStockChange(0.0)
+                lf[i] = LoanFlow(0.0)
+                firm[i] = Firm()
+                intermediary_cache_index[i] = IntermediaryDemandCacheIndex(0)
+                stock_cache_index[i] = StockCacheIndex(0)
+                owner[i] = Owner(owners[i])
+                market[i] = Market()
+            end
+        end
     end
 
     return nothing

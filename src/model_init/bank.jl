@@ -30,7 +30,7 @@ function setup_bank!(world::Ark.World, properties::Properties)
             Profits(initial_profits),
             ExpectedProfits(initial_profits),
             LendingRate(policy_rate + risk_premium),
-            Owner() => owner,
+            Owner(owner),
             Bank(),
         )
     )
