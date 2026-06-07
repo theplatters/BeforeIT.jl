@@ -35,7 +35,16 @@ end
 end
 
 @register struct MarketWeights <: AbstractComponent
-    amount::Vector{Float64}
+    value::Vector{Float64}
+end
+
+@register struct ActiveBuyers <: AbstractComponent
+    ids::Vector{Int}
+end
+
+
+@register struct MarketWeightVector <: AbstractComponent
+    value::FixedSizeWeightVector
 end
 
 @register :relation struct Market <: AbstractComponent

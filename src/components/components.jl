@@ -7,6 +7,8 @@ module Components
     using Ark
     import BeforeIT: AbstractComponent, FloatType, IntType
 
+    using WeightVectors
+
     const BIT_COMPONENTS = DataType[]
 
     macro register(type, def)
