@@ -141,7 +141,6 @@ function setup_firms!(world::Ark.World, properties::Properties, markets)
             )
         ) do (entities, pp, lp, ip, cp, wb, awr, cdr, tr, emp, out, sal, gd, pr, inv, cs, interm, lo, om, dep, prof, vac, invst, eq, pi, cfpi, tl, ec, el, es, di, dm, de, ep, fgsc, msc, lf, firm, intermediary_cache_index, stock_cache_index, owner, market)
             for i in eachindex(entities)
-                firms[i] = entities[i]
                 pp[i] = PrincipalProduct(principal_product[i])
                 lp[i] = LaborProductivity(output_elasticities[i])
                 ip[i] = IntermediateProductivity(material_coeffs[i])
