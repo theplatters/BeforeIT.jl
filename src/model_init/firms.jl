@@ -136,9 +136,9 @@ function setup_firms!(world::Ark.World, properties::Properties)
             Firm,
             IntermediaryDemandCacheIndex,
             StockCacheIndex,
-            Owner => Ark.zero_entity,
+            Owner,
         )
-    ) do (entities, pp, lp, ip, cp, wb, awr, cdr, tr, emp, out, sal, gd, pr, inv, cs, interm, lo, om, dep, prof, vac, invst, eq, pi, cfpi, tl, ec, el, es, di, dm, de, ep, fgsc, msc, lf, firm, intermediary_cache_index, stock_cache_index)
+    ) do (entities, pp, lp, ip, cp, wb, awr, cdr, tr, emp, out, sal, gd, pr, inv, cs, interm, lo, om, dep, prof, vac, invst, eq, pi, cfpi, tl, ec, el, es, di, dm, de, ep, fgsc, msc, lf, firm, intermediary_cache_index, stock_cache_index, owner)
         for i in eachindex(entities)
             firms[i] = entities[i]
             pp[i] = PrincipalProduct(principal_product[i])
@@ -180,11 +180,8 @@ function setup_firms!(world::Ark.World, properties::Properties)
             firm[i] = Firm()
             intermediary_cache_index[i] = IntermediaryDemandCacheIndex(0)
             stock_cache_index[i] = StockCacheIndex(0)
+            owner[i] = Owner(owners[i])
         end
-    end
-
-    for i in 1:total_firms
-        Ark.set_relations!(world, firms[i], (Owner => owners[i],))
     end
 
     return nothing
