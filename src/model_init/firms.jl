@@ -93,6 +93,7 @@ function setup_firms!(world::Ark.World, properties::Properties, markets)
         end
     end
 
+    firm_offset = 0
     for g in 1:properties.dimensions.sectors
         Ark.new_entities!(
             world, firms_per_sector[g],
@@ -141,27 +142,28 @@ function setup_firms!(world::Ark.World, properties::Properties, markets)
             )
         ) do (entities, pp, lp, ip, cp, wb, awr, cdr, tr, emp, out, sal, gd, pr, inv, cs, interm, lo, om, dep, prof, vac, invst, eq, pi, cfpi, tl, ec, el, es, di, dm, de, ep, fgsc, msc, lf, intermediary_cache_index, stock_cache_index, firm, owner, market)
             for i in eachindex(entities)
-                pp[i] = PrincipalProduct(principal_product[i])
-                lp[i] = LaborProductivity(output_elasticities[i])
-                ip[i] = IntermediateProductivity(material_coeffs[i])
-                cp[i] = CapitalProductivity(capital_coeffs[i])
+                firm_index = firm_offset + i
+                pp[i] = PrincipalProduct(principal_product[firm_index])
+                lp[i] = LaborProductivity(output_elasticities[firm_index])
+                ip[i] = IntermediateProductivity(material_coeffs[firm_index])
+                cp[i] = CapitalProductivity(capital_coeffs[firm_index])
                 wb[i] = WageBill(0.0)
-                awr[i] = AverageWageRate(wage_rate[i])
-                cdr[i] = CapitalDeprecationRate(deprecation_rate[i])
-                tr[i] = TaxRates(output_tax_rate[i], capital_tax_rate[i])
-                emp[i] = Employment(employment[i])
-                out[i] = Output(output[i])
-                sal[i] = Sales(output[i])
-                gd[i] = GoodsDemand(output[i])
+                awr[i] = AverageWageRate(wage_rate[firm_index])
+                cdr[i] = CapitalDeprecationRate(deprecation_rate[firm_index])
+                tr[i] = TaxRates(output_tax_rate[firm_index], capital_tax_rate[firm_index])
+                emp[i] = Employment(employment[firm_index])
+                out[i] = Output(output[firm_index])
+                sal[i] = Sales(output[firm_index])
+                gd[i] = GoodsDemand(output[firm_index])
                 pr[i] = Price(1.0)
                 inv[i] = Inventories(0.0)
-                cs[i] = CapitalStock(capital[i])
-                interm[i] = Intermediates(intermediates[i])
-                lo[i] = LoansOutstanding(outstanding_loans[i])
-                om[i] = OperatingMargins(operating_margins[i])
-                dep[i] = Deposits(deposits[i])
-                prof[i] = Profits(profits[i])
-                vac[i] = Vacancies(employment[i])
+                cs[i] = CapitalStock(capital[firm_index])
+                interm[i] = Intermediates(intermediates[firm_index])
+                lo[i] = LoansOutstanding(outstanding_loans[firm_index])
+                om[i] = OperatingMargins(operating_margins[firm_index])
+                dep[i] = Deposits(deposits[firm_index])
+                prof[i] = Profits(profits[firm_index])
+                vac[i] = Vacancies(employment[firm_index])
                 invst[i] = Investment(0.0)
                 eq[i] = Equity(0.0)
                 pi[i] = PriceIndex(0.0)
@@ -180,10 +182,11 @@ function setup_firms!(world::Ark.World, properties::Properties, markets)
                 intermediary_cache_index[i] = IntermediaryDemandCacheIndex(0)
                 stock_cache_index[i] = StockCacheIndex(0)
                 firm[i] = Firm()
-                owner[i] = Owner(owners[i])
+                owner[i] = Owner(owners[firm_index])
                 market[i] = Market()
             end
         end
+        firm_offset += firms_per_sector[g]
     end
 
     return nothing

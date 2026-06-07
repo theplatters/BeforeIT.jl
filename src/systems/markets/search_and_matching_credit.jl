@@ -9,40 +9,47 @@ function search_and_matching_credit!(world::Ark.World)
     end
 
     cache = Ark.get_resource(world, CreditMatchingCache)
+    active_firms = cache.active_firms
 
     n_active = 0
-    for (e, loan_flow, target_loan, expected_loan, expected_capital) in Ark.Query(
+    for (e, target_loan) in Ark.Query(
             world,
-            (LoanFlow, TargetLoans, ExpectedLoans, ExpectedCapital),
+            (TargetLoans,),
+            with = (Firm,),
         )
         for i in eachindex(e)
             if target_loan[i].amount > 0.0
                 n_active += 1
-                cache.active_rows[n_active] = i
+                active_firms[n_active] = e[i]
             end
         end
     end
 
-    active_view = @view cache.active_rows[1:n_active]
+    active_view = @view active_firms[1:n_active]
     shuffle!(active_view)
 
-    for (e, loan_flow, target_loan, expected_loan, expected_capital) in Ark.Query(
+    for firm in active_view
+        target_loan, expected_loan, expected_capital = Ark.get_components(
             world,
-            (LoanFlow, TargetLoans, ExpectedLoans, ExpectedCapital),
+            firm,
+            (TargetLoans, ExpectedLoans, ExpectedCapital),
         )
-        for i in active_view
-            loan_flow[i] = LoanFlow(
-                max(
-                    0.0,
-                    min(
-                        target_loan[i].amount,
-                        loan_to_value_ratio * expected_capital[i].amount - expected_loan[i].amount,
-                        E_k.amount / capital_requirement - total_expected_loans - total_loans
-                    )
-                )
+        amount = max(
+            0.0,
+            min(
+                target_loan.amount,
+                loan_to_value_ratio * expected_capital.amount - expected_loan.amount,
+                E_k.amount / capital_requirement - total_expected_loans - total_loans
             )
-            total_loans += loan_flow[i].amount
-        end
+        )
+        Ark.set_components!(
+            world,
+            firm,
+            (
+                LoanFlow(amount),
+            )
+        )
+        total_loans += amount
     end
 
     return nothing

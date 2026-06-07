@@ -1,9 +1,9 @@
 struct CreditMatchingCache
-    active_rows::Vector{Int}
+    active_firms::Vector{Ark.Entity}
 end
 
 function CreditMatchingCache(size::Int)
     return CreditMatchingCache(
-        Vector{Int}(undef, size),
+        Vector{Ark.Entity}(undef, size),
     )
 end

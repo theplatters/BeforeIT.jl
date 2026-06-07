@@ -16,15 +16,19 @@ end
 function perform_search_and_matching!(world::Ark.World)
     realisation_cache = Ark.get_resource(world, RetailRealisationCache)
     properties = BeforeIT.properties(world)
-    for (e, demand_book, demand_clearing, sector_available_stocks, sector_stock_capacity, sector_prices, first_pass, weights, weight_vector, active) in Ark.Query(
+    for (e, sector, intermediate_demand_book, intermediate_demand_clearing, final_demand_book, final_demand_clearing, sector_available_stocks, sector_stock_capacity, sector_prices, first_pass_intermediate, first_pass_final, weights, weight_vector, active) in Ark.Query(
             world,
             (
+                PrincipalProduct,
                 IntermediateMarketDemandBook,
                 IntermediateMarketDemandClearing,
+                FinalMarketDemandBook,
+                FinalMarketDemandClearing,
                 MarketSupplyPool,
                 MarketCapacityPool,
                 MarketPricePool,
                 FirstPassIntermediateDemand,
+                FirstPassFinalDemand,
                 MarketWeights,
                 MarketWeightVector,
                 ActiveBuyers,
@@ -35,46 +39,34 @@ function perform_search_and_matching!(world::Ark.World)
                 sector_available_stocks[i].amount,
                 sector_stock_capacity[i].amount,
                 sector_prices[i].value,
-                demand_book[i].amount,
-                demand_clearing[i].amount,
-                first_pass[i].amount,
+                intermediate_demand_book[i].amount,
+                intermediate_demand_clearing[i].amount,
+                first_pass_intermediate[i].amount,
                 active[i].ids,
                 weights[i].value,
                 weight_vector[i].value
             )
 
-        end
-    end
-
-    for (e, sector, demand_book, demand_clearing, sector_available_stocks, sector_stock_capacity, sector_prices, first_pass, weights, weight_vector, active) in Ark.Query(
-            world,
-            (
-                PrincipalProduct,
-                FinalMarketDemandBook,
-                FinalMarketDemandClearing,
-                MarketSupplyPool,
-                MarketCapacityPool,
-                MarketPricePool,
-                FirstPassFinalDemand,
-                MarketWeights,
-                MarketWeightVector,
-                ActiveBuyers,
-            )
-        )
-        for i in eachindex(e)
             perform_retail_market!(
                 sector_available_stocks[i].amount,
                 sector_stock_capacity[i].amount,
                 sector_prices[i].value,
-                demand_book[i].amount,
-                demand_clearing[i].amount,
-                first_pass[i].amount,
+                final_demand_book[i].amount,
+                final_demand_clearing[i].amount,
+                first_pass_final[i].amount,
                 active[i].ids,
                 weights[i].value,
                 weight_vector[i].value
             )
 
-            stage_retail_realisations!(properties, sector[i].id, first_pass[i].amount, demand_book[i].amount, demand_clearing[i].amount, realisation_cache)
+            stage_retail_realisations!(
+                properties,
+                sector[i].id,
+                first_pass_final[i].amount,
+                final_demand_book[i].amount,
+                final_demand_clearing[i].amount,
+                realisation_cache,
+            )
         end
     end
 
@@ -91,8 +83,8 @@ function build_intermediate_demand!(world::Ark.World)
             (PrincipalProduct, DesiredInvestment, DesiredMaterials, IntermediaryDemandCacheIndex)
         )
         @inbounds for i in eachindex(e_buyer)
-            index[i] = IntermediaryDemandCacheIndex(last_pos)
-            last_pos += 1
+            demand_pos = last_pos
+            index[i] = IntermediaryDemandCacheIndex(demand_pos)
             for (e_market, sector, market_book, market_clearing) in Ark.Query(
                     world,
                     (PrincipalProduct, IntermediateMarketDemandBook, IntermediateMarketDemandClearing)
@@ -103,12 +95,13 @@ function build_intermediate_demand!(world::Ark.World)
                     desired_materials_amount = desired_materials[i].amount
                     desired_investment_amount = desired_investment[i].amount
                     g = sector[j].id
-                    market_book[j].amount[i] =
+                    market_book[j].amount[demand_pos] =
                         technology_matrix[g, product_id] * desired_materials_amount +
                         capital_formation[g] * desired_investment_amount
-                    market_clearing[j].amount[i] = 0.0
+                    market_clearing[j].amount[demand_pos] = 0.0
                 end
             end
+            last_pos += 1
         end
     end
     return nothing
@@ -586,13 +579,13 @@ function update_firm_realisations!(world::Ark.World, technology_matrix, capital_
         )
 
         @inbounds for i in eachindex(e)
-            for (e_market, sector, demand_book, demand_clearing) in Ark.Query(world, (PrincipalProduct, IntermediateMarketDemandBook, IntermediateMarketDemandClearing))
+            for (e_market, sector, first_pass, demand_clearing) in Ark.Query(world, (PrincipalProduct, FirstPassIntermediateDemand, IntermediateMarketDemandClearing))
                 @inbounds for j in eachindex(e_market)
 
                     update_firm_realisation_components!(
                         i,
                         sector[j].id,
-                        demand_book[j].amount,
+                        first_pass[j].amount,
                         demand_clearing[j].amount,
                         technology_matrix,
                         capital_formation,
