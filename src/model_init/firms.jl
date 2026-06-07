@@ -133,13 +133,13 @@ function setup_firms!(world::Ark.World, properties::Properties, markets)
                 FinalGoodsStockChange,
                 MaterialsStockChange,
                 LoanFlow,
-                Firm,
                 IntermediaryDemandCacheIndex,
                 StockCacheIndex,
+                Firm,
                 Owner,
                 Market => markets[g],
             )
-        ) do (entities, pp, lp, ip, cp, wb, awr, cdr, tr, emp, out, sal, gd, pr, inv, cs, interm, lo, om, dep, prof, vac, invst, eq, pi, cfpi, tl, ec, el, es, di, dm, de, ep, fgsc, msc, lf, firm, intermediary_cache_index, stock_cache_index, owner, market)
+        ) do (entities, pp, lp, ip, cp, wb, awr, cdr, tr, emp, out, sal, gd, pr, inv, cs, interm, lo, om, dep, prof, vac, invst, eq, pi, cfpi, tl, ec, el, es, di, dm, de, ep, fgsc, msc, lf, intermediary_cache_index, stock_cache_index, firm, owner, market)
             for i in eachindex(entities)
                 pp[i] = PrincipalProduct(principal_product[i])
                 lp[i] = LaborProductivity(output_elasticities[i])
@@ -177,9 +177,9 @@ function setup_firms!(world::Ark.World, properties::Properties, markets)
                 fgsc[i] = FinalGoodsStockChange(0.0)
                 msc[i] = MaterialsStockChange(0.0)
                 lf[i] = LoanFlow(0.0)
-                firm[i] = Firm()
                 intermediary_cache_index[i] = IntermediaryDemandCacheIndex(0)
                 stock_cache_index[i] = StockCacheIndex(0)
+                firm[i] = Firm()
                 owner[i] = Owner(owners[i])
                 market[i] = Market()
             end
