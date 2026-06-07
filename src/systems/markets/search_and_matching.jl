@@ -14,6 +14,7 @@ end
 
 
 function perform_search_and_matching!(world::Ark.World)
+    realisation_cache = Ark.get_resource(world, RetailRealisationCache)
     for (e, demand_book, demand_clearing, sector_available_stocks, sector_stock_capacity, sector_prices, first_pass, weights, weight_vector, active) in Ark.Query(
             world,
             (
@@ -84,11 +85,12 @@ end
 function build_intermediate_demand!(world::Ark.World)
 
     (; technology_matrix, capital_formation) = BeforeIT.properties(world).product_coeffs
-
+    last_pos = 1
     for (e_buyer, principal_product, desired_investment, desired_materials, index) in
         Ark.Query(world, (PrincipalProduct, DesiredInvestment, DesiredMaterials, IntermediaryDemandCacheIndex))
         for i in eachindex(e_buyer)
-            index[i] = IntermediaryDemandCacheIndex(i)
+            index[i] = IntermediaryDemandCacheIndex(last_pos)
+            last_pos += 1
             for (e_market, sector, market_book, market_clearing) in
                 Ark.Query(world, (PrincipalProduct, IntermediateMarketDemandBook, IntermediateMarketDemandClearing))
 
@@ -294,7 +296,7 @@ function build_import_stock_pool!(world::Ark.World)
 
                 )
                 @inbounds for j in eachindex(e)
-                    pos = properties.dimensions.firms_per_sector[j] + j
+                    pos = properties.dimensions.firms_per_sector[i] + j
                     supply[i].amount[pos] = import_supply[j].amount
                     capacity[i].amount[pos] = Inf
                     price[i].value[pos] = firm_price[j].value
@@ -723,7 +725,6 @@ function stage_retail_realisations!(
         demand_clearing_sector,
         realisation_cache,
     )
-    properties = BeforeIT.properties(world)
     (; household_consumption, household_investment, government_consumption, exports) =
         properties.product_coeffs
     (; total) = properties.population
@@ -897,7 +898,6 @@ end
 function perform_retail_market!(
         sector_available_stocks, sector_stock_capacity, sector_prices, demand_book, demand_clearing, first_pass, active, weights, weight_vector
     )
-    realisation_cache = Ark.get_resource(world, RetailRealisationCache)
 
 
     sector_weights = BeforeIT.rebuild_weight_vector(weights, weight_vector)
