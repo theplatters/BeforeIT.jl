@@ -252,7 +252,7 @@ end
 function build_domestic_stock_pool!(world::Ark.World)
     for (e_market, supply, capacity, price) in
         Ark.Query(world, (MarketSupplyPool, MarketCapacityPool, MarketPricePool))
-        for i in eachindex(e_market)
+        @inbounds for i in eachindex(e_market)
             for (e, output, stocks, capital, capital_productivity, firm_price, index) in
                 Ark.Query(
                     world,
@@ -266,7 +266,7 @@ function build_domestic_stock_pool!(world::Ark.World)
                     );
                     with = (Market => e_market[i],)
                 )
-                @inbounds for j in eachindex(e)
+                for j in eachindex(e)
                     available_stock = output[j].amount + stocks[j].amount
                     stock_capacity = capital[j].amount * capital_productivity[j].value - output[j].amount
 
@@ -288,7 +288,7 @@ function build_import_stock_pool!(world::Ark.World)
     properties = BeforeIT.properties(world)
     for (e_market, sector, supply, capacity, price) in
         Ark.Query(world, (PrincipalProduct, MarketSupplyPool, MarketCapacityPool, MarketPricePool))
-        for i in eachindex(e_market)
+        @inbounds for i in eachindex(e_market)
             for (e, import_supply, firm_price, index) in
                 Ark.Query(
                     world, (
@@ -297,8 +297,8 @@ function build_import_stock_pool!(world::Ark.World)
                     with = (Market => e_market[i],)
 
                 )
-                @inbounds for j in eachindex(e)
-                    pos = properties.dimensions.firms_per_sector[i] + j
+                for j in eachindex(e)
+                    pos = properties.dimensions.firms_per_sector[sector[i].id] + j
                     supply[i].amount[pos] = import_supply[j].amount
                     capacity[i].amount[pos] = Inf
                     price[i].value[pos] = firm_price[j].value
