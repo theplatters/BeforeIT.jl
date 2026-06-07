@@ -58,17 +58,17 @@ function set_households_income!(world::Ark.World)
         end
     end
 
-    for (e_owner, net_disposable_income) in Ark.Query(world, (NetDisposableIncome,), with = (Capitalist,))
-        for i in eachindex(e_owner)
-            _, profits = single(Ark.Query(world, (Profits,), with = (Owner => e_owner[i], Firm)))
-            net_disposable_income[i] = NetDisposableIncome(firm_owner_disposable_income(θ_DIV, τ_INC, τ_FIRM, cpi, sb_other.amount, profits.amount, 0.0))
+    for (e, owner, profits) in Ark.Query(world, (Owner, Profits), with = (Firm,))
+        for i in eachindex(e)
+            new_income = firm_owner_disposable_income(θ_DIV, τ_INC, τ_FIRM, cpi, sb_other.amount, profits[i].amount, 0.0)
+            Ark.set_components!(world, owner[i].entity, (NetDisposableIncome(new_income),))
         end
     end
 
-    for (e_owner, net_disposable_income) in Ark.Query(world, (NetDisposableIncome,), with = (Banker,))
-        for i in eachindex(e_owner)
-            _, profits = single(Ark.Query(world, (Profits,), with = (Owner => e_owner[i], Bank)))
-            net_disposable_income[i] = NetDisposableIncome(firm_owner_disposable_income(θ_DIV, τ_INC, τ_FIRM, cpi, sb_other.amount, profits.amount, 0.0))
+    for (e, owner, profits) in Ark.Query(world, (Owner, Profits), with = (Bank,))
+        for i in eachindex(e)
+            new_income = firm_owner_disposable_income(θ_DIV, τ_INC, τ_FIRM, cpi, sb_other.amount, profits[i].amount, 0.0)
+            Ark.set_components!(world, owner[i].entity, (NetDisposableIncome(new_income),))
         end
     end
 
@@ -107,17 +107,17 @@ function set_households_expected_income!(world::Ark.World)
         end
     end
 
-    for (e_owner, expected_income) in Ark.Query(world, (ExpectedIncome,), with = (Capitalist,))
-        for i in eachindex(e_owner)
-            _, expected_profits = single(Ark.Query(world, (ExpectedProfits,), with = (Owner => e_owner[i], Firm)))
-            expected_income[i] = firm_owner_disposable_income(θ_DIV, τ_INC, τ_FIRM, cpi, sb_other.amount, expected_profits.amount, expected_inflation) |> ExpectedIncome
+    for (e, owner, expected_profits) in Ark.Query(world, (Owner, ExpectedProfits), with = (Firm,))
+        for i in eachindex(e)
+            new_expected_income = firm_owner_disposable_income(θ_DIV, τ_INC, τ_FIRM, cpi, sb_other.amount, expected_profits[i].amount, expected_inflation)
+            Ark.set_components!(world, owner[i].entity, (ExpectedIncome(new_expected_income),))
         end
     end
 
-    for (e_owner, expected_income) in Ark.Query(world, (ExpectedIncome,), with = (Banker,))
-        for i in eachindex(e_owner)
-            _, expected_profits = single(Ark.Query(world, (ExpectedProfits,), with = (Owner => e_owner[i], Bank)))
-            expected_income[i] = firm_owner_disposable_income(θ_DIV, τ_INC, τ_FIRM, cpi, sb_other.amount, expected_profits.amount, expected_inflation) |> ExpectedIncome
+    for (e, owner, expected_profits) in Ark.Query(world, (Owner, ExpectedProfits), with = (Bank,))
+        for i in eachindex(e)
+            new_expected_income = firm_owner_disposable_income(θ_DIV, τ_INC, τ_FIRM, cpi, sb_other.amount, expected_profits[i].amount, expected_inflation)
+            Ark.set_components!(world, owner[i].entity, (ExpectedIncome(new_expected_income),))
         end
     end
 

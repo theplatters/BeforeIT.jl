@@ -128,7 +128,9 @@ end
     amount::FloatType
 end
 
-@register :relation struct Owner end
+@register struct Owner <: AbstractComponent
+    entity::Ark.Entity
+end
 
 @register struct Capitalist <: FirmComponent end
 
