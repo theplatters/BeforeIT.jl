@@ -29,9 +29,9 @@ function setup_rotw!(world::Ark.World, properties::Properties, markets)
         )
     ) do (entities, foreign_consumption_demand, rest_of_world_entity, final_cache_index)
         for i in eachindex(entities)
-            foreign_consumption_demand[i] = ForeignConsumptionDemand(0.0)
-            rest_of_world_entity[i] = RestOfWorldEntity(rotw)
-            final_cache_index[i] = FinalDemandCacheIndex(properties.population.total + i)
+            foreign_consumption_demand[i] = 0.0 |> ForeignConsumptionDemand
+            rest_of_world_entity[i] = rotw |> RestOfWorldEntity
+            final_cache_index[i] = properties.population.total + i |> FinalDemandCacheIndex
         end
     end
 

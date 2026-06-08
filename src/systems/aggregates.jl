@@ -4,9 +4,8 @@ function set_gross_domestic_product!(world::Ark.World)
     properties = BeforeIT.properties(world)
     T_prime = properties.dimensions.interval_for_expectation_estimation
 
-
     push!(macro_state.gross_domestic_product_history, 0.0)
-    macro_state.gross_domestic_product_history[T_prime + t.step] = @sum_over (c.amount for c in Ark.Query(world, (Output,)))
+    macro_state.gross_domestic_product_history[T_prime + t.step] = sum_amount(world, Output)
     return nothing
 end
 

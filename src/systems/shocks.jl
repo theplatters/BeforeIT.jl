@@ -7,14 +7,13 @@ end
 
 function apply_interest_rate_shock!(world)
     time = Ark.get_resource(world, TimeIndex)
-    for (e, interest_rate_shock) in Ark.Query(world, (InterestRateShock,))
+    @dub for t in Ark.Query(world, (InterestRateShock,))
+        for i in eachindex(t.e)
 
-        for i in eachindex(e)
-
-            if (time.step <= interest_rate_shock[i].final_time)
-                for (e_cb, cb_rate) in Ark.Query(world, (NominalInterestRate,))
-                    for j in eachindex(e_cb)
-                        cb_rate[j] = NominalInterestRate(interest_rate_shock[i].rate)
+            if (time.step <= t.interest_rate_shock[i].final_time)
+                for t2 in Ark.Query(world, (NominalInterestRate,))
+                    for j in eachindex(t2.e)
+                        t2.nominal_interest_rate[j] = t.interest_rate_shock[i].rate |> NominalInterestRate
                     end
                 end
 
@@ -27,12 +26,14 @@ end
 
 function apply_productitvity_shock!(world)
 
-    for (e, productivity_shock) in Ark.Query(world, (ProductivityShock,))
-
-        for i in eachindex(e)
-            for (e_firm, labor_productivity) in Ark.Query(world, (LaborProductivity,))
-                for j in eachindex(e_firm)
-                    labor_productivity[j] = LaborProductivity(productivity_shock[i].productivity_multiplier * labor_productivity[j].rate)
+    @dub for t in Ark.Query(world, (ProductivityShock,))
+        for i in eachindex(t.e)
+            for t2 in Ark.Query(world, (LaborProductivity,))
+                for j in eachindex(t2.e)
+                    t2.labor_productivity[j] = (
+                        t.productivity_shock[i].productivity_multiplier *
+                            t2.labor_productivity[j].rate
+                    ) |> LaborProductivity
                 end
             end
 
@@ -46,14 +47,13 @@ function apply_consumption_shock!(world)
     time = Ark.get_resource(world, TimeIndex)
     properties = BeforeIT.properties(world)
     rate = properties.household_params.consumption_share
-    for (e, consumption_shock) in Ark.Query(world, (ConsumptionShock,))
-
-        for i in eachindex(e)
+    @dub for t in Ark.Query(world, (ConsumptionShock,))
+        for i in eachindex(t.e)
 
             if (time == 1)
-                rate = rate * consumption_shock[i].consumption_multiplier
+                rate = rate * t.consumption_shock[i].consumption_multiplier
             elseif (time == 1)
-                rate = rate * consumption_shock[i].consumption_multiplier
+                rate = rate * t.consumption_shock[i].consumption_multiplier
             end
         end
     end

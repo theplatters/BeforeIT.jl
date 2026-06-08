@@ -24,17 +24,17 @@ function setup_workers!(world::Ark.World, properties::Properties)
         )
     ) do (entities, income, deposits, expected_income, capital_stock, unemployed, consumption_budget, investment_budget, realised_consumption, realised_investment, household, final_cache_index)
         for i in eachindex(entities)
-            income[i] = NetDisposableIncome(0.0)
-            deposits[i] = Deposits(0.0)
-            expected_income[i] = ExpectedIncome(0.0)
-            capital_stock[i] = CapitalStock(0.0)
-            unemployed[i] = Unemployed(unemployment_benefit / unemployment_benefit_rate)
-            consumption_budget[i] = ConsumptionBudget(0.0)
-            investment_budget[i] = InvestmentBudget(0.0)
-            realised_consumption[i] = RealisedConsumption(0.0)
-            realised_investment[i] = RealisedInvestment(0.0)
+            income[i] = 0.0 |> NetDisposableIncome
+            deposits[i] = 0.0 |> Deposits
+            expected_income[i] = 0.0 |> ExpectedIncome
+            capital_stock[i] = 0.0 |> CapitalStock
+            unemployed[i] = unemployment_benefit / unemployment_benefit_rate |> Unemployed
+            consumption_budget[i] = 0.0 |> ConsumptionBudget
+            investment_budget[i] = 0.0 |> InvestmentBudget
+            realised_consumption[i] = 0.0 |> RealisedConsumption
+            realised_investment[i] = 0.0 |> RealisedInvestment
             household[i] = Household()
-            final_cache_index[i] = FinalDemandCacheIndex(i)
+            final_cache_index[i] = i |> FinalDemandCacheIndex
         end
     end
 
@@ -55,17 +55,17 @@ function setup_workers!(world::Ark.World, properties::Properties)
         )
     ) do (entities, income, deposits, expected_income, capital_stock, inactive_component, consumption_budget, investment_budget, realised_consumption, realised_investment, household, final_cache_index)
         for i in eachindex(entities)
-            income[i] = NetDisposableIncome(disposable_income)
-            deposits[i] = Deposits(debt * disposable_income)
-            expected_income[i] = ExpectedIncome(0.0)
-            capital_stock[i] = CapitalStock(capital * disposable_income)
+            income[i] = disposable_income |> NetDisposableIncome
+            deposits[i] = debt * disposable_income |> Deposits
+            expected_income[i] = 0.0 |> ExpectedIncome
+            capital_stock[i] = capital * disposable_income |> CapitalStock
             inactive_component[i] = Inactive()
-            consumption_budget[i] = ConsumptionBudget(0.0)
-            investment_budget[i] = InvestmentBudget(0.0)
-            realised_consumption[i] = RealisedConsumption(0.0)
-            realised_investment[i] = RealisedInvestment(0.0)
+            consumption_budget[i] = 0.0 |> ConsumptionBudget
+            investment_budget[i] = 0.0 |> InvestmentBudget
+            realised_consumption[i] = 0.0 |> RealisedConsumption
+            realised_investment[i] = 0.0 |> RealisedInvestment
             household[i] = Household()
-            final_cache_index[i] = FinalDemandCacheIndex(employable + i)
+            final_cache_index[i] = employable + i |> FinalDemandCacheIndex
         end
     end
 

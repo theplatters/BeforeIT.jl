@@ -8,9 +8,9 @@ function search_and_matching_labor!(world::Ark.World)
 end
 
 function calculate_initial_vacancies!(world::Ark.World)
-    for (e, vacancies, desired_employment, employment) in Ark.Query(world, (Vacancies, DesiredEmployment, Employment))
-        for i in eachindex(e)
-            vacancies[i] = Vacancies(desired_employment[i].amount - employment[i].amount)
+    @dub for t in Ark.Query(world, (Vacancies, DesiredEmployment, Employment))
+        for i in eachindex(t.e)
+            t.vacancies[i] = t.desired_employment[i].amount - t.employment[i].amount |> Vacancies
         end
     end
     return nothing
@@ -20,9 +20,11 @@ function build_hiring_firms_cache!(world)
     cache = Ark.get_resource(world, HiringFirmsCache)
     reset_cache!(cache)
 
-    for (e, desired_employment, employment) in Ark.Query(world, (DesiredEmployment, Employment))
-        for i in eachindex(e)
-            BeforeIT.emblace!(desired_employment[i].amount - employment[i].amount, e[i], cache)
+    @dub for t in Ark.Query(world, (DesiredEmployment, Employment))
+        for i in eachindex(t.e)
+            BeforeIT.emblace!(
+                t.desired_employment[i].amount - t.employment[i].amount, t.e[i], cache
+            )
         end
     end
 
@@ -35,8 +37,8 @@ function build_worker_cache!(world)
     BeforeIT.reset_cache!(cache)
 
     unemployed_workers = cache.unemployed_workers
-    for (worker_e, _) in Ark.Query(world, (Unemployed,))
-        append!(unemployed_workers, worker_e)
+    @dub for t in Ark.Query(world, (Unemployed,))
+        append!(unemployed_workers, t.e)
     end
 
     sort!(unemployed_workers; alg = Base.Sort.QuickSort)
@@ -53,9 +55,9 @@ function fire_employed_workers!(world::Ark.World)
     remove_employment = cache.remove_employment
     employed_workers = cache.employed_workers
 
-    for (worker_e, employed, employed_at) in Ark.Query(world, (Employed, EmployedAt))
-        for j in eachindex(worker_e)
-            push!(employed_workers, (worker_e[j], employed_at[j].entity))
+    @dub for t in Ark.Query(world, (Employed, EmployedAt))
+        for j in eachindex(t.e)
+            push!(employed_workers, (t.e[j], t.employed_at[j].entity))
         end
     end
 
@@ -66,17 +68,14 @@ function fire_employed_workers!(world::Ark.World)
         vacancies.amount >= 0 && continue
         push!(remove_employment, worker_e)
         Ark.set_components!(
-            world, firm_e,
-            (Vacancies(vacancies.amount + 1), Employment(employment.amount - 1))
+            world, firm_e, (Vacancies(vacancies.amount + 1), Employment(employment.amount - 1))
         )
     end
 
     for now_unemployed in remove_employment
         unemployment_benefit, = Ark.get_components(world, now_unemployed, (Employed,))
         Ark.exchange_components!(
-            world, now_unemployed,
-            remove = (Employed, EmployedAt),
-            add = (Unemployed(unemployment_benefit.rate),)
+            world, now_unemployed, remove = (Employed, EmployedAt), add = (Unemployed(unemployment_benefit.rate),)
         )
     end
 
@@ -126,17 +125,15 @@ function hire_workers!(world::Ark.World)
 
     for (worker_e, firm_e) in add_employment
         Ark.exchange_components!(
-            world, worker_e,
-            remove = (Unemployed,),
-            add = (Employed(0.0), EmployedAt(firm_e) => firm_e)
+            world, worker_e, remove = (Unemployed,), add = (Employed(0.0), EmployedAt(firm_e) => firm_e)
         )
     end
 
-    for (firm_e, employment) in Ark.Query(world, (Employment,))
-        for i in eachindex(firm_e)
-            hired = get(hired_workers, firm_e[i], 0)
+    @dub for t in Ark.Query(world, (Employment,))
+        for i in eachindex(t.e)
+            hired = get(hired_workers, t.e[i], 0)
             hired == 0 && continue
-            employment[i] = Employment(employment[i].amount + hired)
+            t.employment[i] = t.employment[i].amount + hired |> Employment
         end
     end
 
