@@ -112,53 +112,52 @@ function build_consumption_demand!(world::Ark.World)
     coeffs = properties.product_coeffs
     (; household_consumption, household_investment) = coeffs
     realisation_cache = Ark.get_resource(world, RetailRealisationCache)
+    total_households = properties.population.total
+    foreign_consumers = properties.dimensions.foreign_consumers
+    local_governments = properties.dimensions.local_governments
 
-
-    household_groups = (
-        (; with = (), without = (Inactive, Capitalist, Banker)),
-        (; with = (Inactive,), without = ()),
-        (; with = (Capitalist,), without = ()),
-        (; with = (Banker,), without = ()),
-    )
-
-    Base.Cartesian.@nexprs 4 i -> begin
-        group = household_groups[i]
-        append_household_consumption_demand!(
-            world,
-            realisation_cache,
-            household_consumption,
-            household_investment;
-            group.with,
-            group.without,
-        )
-    end
-
-    append_scaled_final_demand!(world, realisation_cache, ForeignConsumptionDemand, coeffs.exports)
-    append_scaled_final_demand!(
+    stage_household_consumption_budgets!(world, realisation_cache)
+    stage_final_demand_amount!(world, realisation_cache, ForeignConsumptionDemand)
+    stage_final_demand_amount!(
         world,
         realisation_cache,
         ConsumptionDemand,
-        coeffs.government_consumption,
         with = (LocalGovernment,),
+    )
+
+    fill_household_consumption_market_books!(
+        world,
+        realisation_cache,
+        household_consumption,
+        household_investment,
+        total_households,
+    )
+
+    fill_scaled_final_demand_market_books!(
+        world,
+        realisation_cache,
+        coeffs.exports,
+        (total_households + 1):(total_households + foreign_consumers),
+    )
+    fill_scaled_final_demand_market_books!(
+        world,
+        realisation_cache,
+        coeffs.government_consumption,
+        (total_households + foreign_consumers + 1):(total_households + foreign_consumers + local_governments),
     )
 
 
     return nothing
 end
 
-@inline function append_household_consumption_demand!(
+@inline function stage_household_consumption_budgets!(
         world::Ark.World,
         realisation_cache,
-        household_consumption,
-        household_investment;
-        with,
-        without,
     )
     for (e, consumption_budget, investment_budget, cache_index) in Ark.Query(
             world,
             (ConsumptionBudget, InvestmentBudget, FinalDemandCacheIndex),
-            with = (Household, with...),
-            without = without,
+            with = (Household,),
         )
         @inbounds for i in eachindex(e)
             row = cache_index[i].id
@@ -166,6 +165,19 @@ end
             realisation_cache.investment_budget[row] = investment_budget[i].amount
         end
     end
+
+    return nothing
+end
+
+@inline function fill_household_consumption_market_books!(
+        world::Ark.World,
+        realisation_cache,
+        household_consumption,
+        household_investment,
+        total_households,
+    )
+    consumption_budget = realisation_cache.consumption_budget
+    investment_budget = realisation_cache.investment_budget
 
     for (e_market, sector, market_book, market_clearing) in
         Ark.Query(world, (PrincipalProduct, FinalMarketDemandBook, FinalMarketDemandClearing))
@@ -175,32 +187,23 @@ end
             market_clearing_amount = market_clearing[j].amount
             household_consumption_coeff = household_consumption[g]
             household_investment_coeff = household_investment[g]
-            for (e, cache_index) in Ark.Query(
-                    world,
-                    (FinalDemandCacheIndex,),
-                    with = (Household, with...),
-                    without = without,
-                )
-                @inbounds for i in eachindex(e)
-                    row = cache_index[i].id
-                    market_book_amount[row] =
-                        household_consumption_coeff * realisation_cache.consumption_budget[row] +
-                        household_investment_coeff * realisation_cache.investment_budget[row]
-                    market_clearing_amount[row] = 0.0
-                end
+            for row in 1:total_households
+                market_book_amount[row] =
+                    household_consumption_coeff * consumption_budget[row] +
+                    household_investment_coeff * investment_budget[row]
+                market_clearing_amount[row] = 0.0
             end
         end
     end
 
-
     return nothing
 end
 
-@inline function append_scaled_final_demand!(
+@inline function stage_final_demand_amount!(
         world::Ark.World,
         realisation_cache,
         ::Type{DemandType},
-        demand_coefficients;
+        ;
         with = (),
     ) where {DemandType}
     for (e, demand, cache_index) in
@@ -213,6 +216,18 @@ end
         end
     end
 
+    return nothing
+end
+
+@inline function fill_scaled_final_demand_market_books!(
+        world::Ark.World,
+        realisation_cache,
+        demand_coefficients,
+        demand_rows,
+    )
+    final_demand_offset = length(realisation_cache.consumption_budget)
+    final_demand_amount = realisation_cache.final_demand_amount
+
     for (e_market, sector, market_book, market_clearing) in
         Ark.Query(world, (PrincipalProduct, FinalMarketDemandBook, FinalMarketDemandClearing))
         @inbounds for j in eachindex(e_market)
@@ -220,13 +235,9 @@ end
             market_book_amount = market_book[j].amount
             market_clearing_amount = market_clearing[j].amount
             demand_coeff = demand_coefficients[g]
-            for (e, demand, cache_index) in
-                Ark.Query(world, (DemandType, FinalDemandCacheIndex), with = with)
-                for i in eachindex(e)
-                    row = cache_index[i].id
-                    market_book_amount[row] = demand_coeff * demand[i].amount
-                    market_clearing_amount[row] = 0.0
-                end
+            for row in demand_rows
+                market_book_amount[row] = demand_coeff * final_demand_amount[row - final_demand_offset]
+                market_clearing_amount[row] = 0.0
             end
         end
     end
@@ -244,34 +255,31 @@ function build_stock_pool!(world::Ark.World)
 end
 
 function build_domestic_stock_pool!(world::Ark.World)
-    for (e_market, supply, capacity, price) in
+    for (_, supply, capacity, price) in
         Ark.Query(world, (MarketSupplyPool, MarketCapacityPool, MarketPricePool))
-        @inbounds for i in eachindex(e_market)
-            for (e, output, stocks, capital, capital_productivity, firm_price, index) in
-                Ark.Query(
-                    world,
-                    (
-                        Output,
-                        Inventories,
-                        CapitalStock,
-                        CapitalProductivity,
-                        Price,
-                        StockCacheIndex,
-                    );
-                    with = (Market => e_market[i],)
+        for (e, product, output, stocks, capital, capital_productivity, firm_price, index) in
+            Ark.Query(
+                world,
+                (
+                    PrincipalProduct,
+                    Output,
+                    Inventories,
+                    CapitalStock,
+                    CapitalProductivity,
+                    Price,
+                    StockCacheIndex,
                 )
-                for j in eachindex(e)
-                    available_stock = output[j].amount + stocks[j].amount
-                    stock_capacity = capital[j].amount * capital_productivity[j].value - output[j].amount
+            )
+            @inbounds for j in eachindex(e)
+                market_pos = product[j].id
+                available_stock = output[j].amount + stocks[j].amount
+                stock_capacity = capital[j].amount * capital_productivity[j].value - output[j].amount
+                stock_pos = index[j].id
 
-                    stock_pos = index[j].id
-                    supply[i].amount[stock_pos] = available_stock
-                    capacity[i].amount[stock_pos] = stock_capacity
-                    price[i].value[stock_pos] = firm_price[j].value
-                end
+                supply[market_pos].amount[stock_pos] = available_stock
+                capacity[market_pos].amount[stock_pos] = stock_capacity
+                price[market_pos].value[stock_pos] = firm_price[j].value
             end
-
-
         end
     end
 
@@ -279,26 +287,24 @@ function build_domestic_stock_pool!(world::Ark.World)
 end
 
 function build_import_stock_pool!(world::Ark.World)
-    for (e_market, supply, capacity, price) in
+    for (_, supply, capacity, price) in
         Ark.Query(world, (MarketSupplyPool, MarketCapacityPool, MarketPricePool))
-        @inbounds for i in eachindex(e_market)
-            for (e, import_supply, firm_price, index) in
-                Ark.Query(
-                    world, (
-                        ImportSupply, ImportPrice, StockCacheIndex,
-                    ),
-                    with = (Market => e_market[i],)
-
+        for (e, product, import_supply, firm_price, index) in
+            Ark.Query(
+                world, (
+                    PrincipalProduct,
+                    ImportSupply,
+                    ImportPrice,
+                    StockCacheIndex,
                 )
-                for j in eachindex(e)
-                    pos = index[j].id
-                    supply[i].amount[pos] = import_supply[j].amount
-                    capacity[i].amount[pos] = Inf
-                    price[i].value[pos] = firm_price[j].value
-                end
+            )
+            @inbounds for j in eachindex(e)
+                market_pos = product[j].id
+                pos = index[j].id
+                supply[market_pos].amount[pos] = import_supply[j].amount
+                capacity[market_pos].amount[pos] = Inf
+                price[market_pos].value[pos] = firm_price[j].value
             end
-
-
         end
     end
 
