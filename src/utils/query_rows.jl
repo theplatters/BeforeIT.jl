@@ -120,30 +120,64 @@ end
     return :(NamedTuple{$(QuoteNode(Tuple(names)))}(comps))
 end
 
+@inline function _sum_values(values)
+    total = zero(eltype(values))
+    @inbounds for i in eachindex(values)
+        total += values[i]
+    end
+    return total
+end
+
+@inline function _sum_positive_values(values)
+    total = zero(eltype(values))
+    @inbounds for i in eachindex(values)
+        value = values[i]
+        if value > zero(value)
+            total += value
+        end
+    end
+    return total
+end
+
+@inline function _sum_negative_values(values)
+    total = zero(eltype(values))
+    @inbounds for i in eachindex(values)
+        value = values[i]
+        if value < zero(value)
+            total -= value
+        end
+    end
+    return total
+end
+
 function sum_component_field(world::Ark.World, ::Type{T}, field::Symbol; kwargs...) where {T}
+    return sum_component_field(world, T, Val(field); kwargs...)
+end
+
+function sum_component_field(world::Ark.World, ::Type{T}, ::Val{field}; kwargs...) where {T, field}
     total = 0.0
     for comps in Ark.Query(world, (T,); kwargs...)
         row = query_row(comps)
-        total += sum(getproperty(query_component(row, T), field))
+        total += _sum_values(getproperty(query_component(row, T), field))
     end
     return total
 end
 
 sum_amount(world::Ark.World, ::Type{T}; kwargs...) where {T} =
-    sum_component_field(world, T, :amount; kwargs...)
+    sum_component_field(world, T, Val(:amount); kwargs...)
 
 sum_rate(world::Ark.World, ::Type{T}; kwargs...) where {T} =
-    sum_component_field(world, T, :rate; kwargs...)
+    sum_component_field(world, T, Val(:rate); kwargs...)
 
 sum_value(world::Ark.World, ::Type{T}; kwargs...) where {T} =
-    sum_component_field(world, T, :value; kwargs...)
+    sum_component_field(world, T, Val(:value); kwargs...)
 
 function sum_positive_amount(world::Ark.World, ::Type{T}; kwargs...) where {T}
     total = 0.0
     for comps in Ark.Query(world, (T,); kwargs...)
         row = query_row(comps)
         amount = query_component(row, T).amount
-        total += sum(max.(zero(eltype(amount)), amount))
+        total += _sum_positive_values(amount)
     end
     return total
 end
@@ -153,7 +187,7 @@ function sum_negative_amount(world::Ark.World, ::Type{T}; kwargs...) where {T}
     for comps in Ark.Query(world, (T,); kwargs...)
         row = query_row(comps)
         amount = query_component(row, T).amount
-        total += sum(max.(zero(eltype(amount)), .-amount))
+        total += _sum_negative_values(amount)
     end
     return total
 end

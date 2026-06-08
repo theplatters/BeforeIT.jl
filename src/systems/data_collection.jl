@@ -51,21 +51,39 @@ function collect_data!(world::Ark.World)
 
     # Firms
     nominal_output_tax = sum_query(world, (TaxRates, Output, Price)) do row
-        sum(row.tax_rates.output .* row.output.amount .* row.price.value)
+        total = 0.0
+        @inbounds for i in eachindex(row.output.amount)
+            total += row.tax_rates.output[i] * row.output.amount[i] * row.price.value[i]
+        end
+        total
     end
     real_output_tax = sum_query(world, (TaxRates, Output, Price)) do row
-        sum(row.tax_rates.output .* row.output.amount)
+        total = 0.0
+        @inbounds for i in eachindex(row.output.amount)
+            total += row.tax_rates.output[i] * row.output.amount[i]
+        end
+        total
     end
 
     nominal_gva_at_basic_prices = sum_query(world, (TaxRates, Price, Output, IntermediateProductivity, PriceIndex)) do row
-        sum(
-            (1.0 .- row.tax_rates.output) .* row.price.value .* row.output.amount .-
-                1.0 ./ row.intermediate_productivity.value .* row.price_index.value .* row.output.amount
-        )
+        total = 0.0
+        @inbounds for i in eachindex(row.output.amount)
+            total += (
+                (1.0 - row.tax_rates.output[i]) * row.price.value[i] * row.output.amount[i] -
+                    row.price_index.value[i] * row.output.amount[i] / row.intermediate_productivity.value[i]
+            )
+        end
+        total
     end
 
     real_gva_at_basic_prices = sum_query(world, (Output, TaxRates, IntermediateProductivity)) do row
-        sum(row.output.amount .* ((1.0 .- row.tax_rates.output) .- 1.0 ./ row.intermediate_productivity.value))
+        total = 0.0
+        @inbounds for i in eachindex(row.output.amount)
+            total += row.output.amount[i] * (
+                (1.0 - row.tax_rates.output[i]) - 1.0 / row.intermediate_productivity.value[i]
+            )
+        end
+        total
     end
 
     # GDP
@@ -99,24 +117,41 @@ function collect_data!(world::Ark.World)
 
     # Capital Formation
     nominal_firm_inv = sum_query(world, (CFPriceIndex, Investment)) do row
-        sum(row.cf_price_index.value .* row.investment.amount)
+        total = 0.0
+        @inbounds for i in eachindex(row.investment.amount)
+            total += row.cf_price_index.value[i] * row.investment.amount[i]
+        end
+        total
     end
     real_firm_inv = sum_amount(world, Investment)
 
     nominal_stock_change = sum_query(world, (FinalGoodsStockChange, Price)) do row
-        sum(row.final_goods_stock_change.amount .* row.price.value)
+        total = 0.0
+        @inbounds for i in eachindex(row.final_goods_stock_change.amount)
+            total += row.final_goods_stock_change.amount[i] * row.price.value[i]
+        end
+        total
     end
     nominal_material_stock_adj = sum_query(world, (MaterialsStockChange, PriceIndex, IntermediateProductivity, Output)) do row
-        sum(
-            row.materials_stock_change.amount .* row.price_index.value .-
-                1.0 ./ row.intermediate_productivity.value .* row.price_index.value .* row.output.amount
-        )
+        total = 0.0
+        @inbounds for i in eachindex(row.materials_stock_change.amount)
+            total += (
+                row.materials_stock_change.amount[i] * row.price_index.value[i] -
+                    row.price_index.value[i] * row.output.amount[i] / row.intermediate_productivity.value[i]
+            )
+        end
+        total
     end
 
     push!(history.nominal_capitalformation, nominal_firm_inv + (1.0 + τ_CF) * tot_I_h + nominal_stock_change + nominal_material_stock_adj)
 
     real_material_stock_adj = sum_query(world, (MaterialsStockChange, Output, IntermediateProductivity)) do row
-        sum(row.materials_stock_change.amount .- row.output.amount ./ row.intermediate_productivity.value)
+        total = 0.0
+        @inbounds for i in eachindex(row.materials_stock_change.amount)
+            total += row.materials_stock_change.amount[i] -
+                row.output.amount[i] / row.intermediate_productivity.value[i]
+        end
+        total
     end
     real_final_goods_stock_change = sum_amount(world, FinalGoodsStockChange)
 
@@ -136,7 +171,11 @@ function collect_data!(world::Ark.World)
     push!(history.real_exports, (1.0 + τ_EXPORT) * rotw_C_l / BeforeIT.zero_to_one(rotw_P_l))
 
     nom_imp = sum_query(world, (ImportPrice, ImportSales)) do row
-        sum(row.import_price.value .* row.import_sales.amount)
+        total = 0.0
+        @inbounds for i in eachindex(row.import_sales.amount)
+            total += row.import_price.value[i] * row.import_sales.amount[i]
+        end
+        total
     end
     push!(history.nominal_imports, nom_imp)
 
@@ -145,25 +184,38 @@ function collect_data!(world::Ark.World)
 
     # OS / Wages / Taxes
     wages_val_acc = sum_query(world, (WageBill, Employment)) do row
-        sum(row.wage_bill.amount .* row.employment.amount)
+        total = 0.0
+        @inbounds for i in eachindex(row.wage_bill.amount)
+            total += row.wage_bill.amount[i] * row.employment.amount[i]
+        end
+        total
     end
     wages_val = wages_val_acc * P_bar_h
     push!(history.wages, wages_val)
     push!(history.compensation_employees, (1.0 + τ_SIF) * wages_val)
 
     taxes_prod = sum_query(world, (TaxRates, Output, Price)) do row
-        sum(row.tax_rates.capital .* row.output.amount .* row.price.value)
+        total = 0.0
+        @inbounds for i in eachindex(row.output.amount)
+            total += row.tax_rates.capital[i] * row.output.amount[i] * row.price.value[i]
+        end
+        total
     end
     push!(history.taxes_production, taxes_prod)
 
     op_surplus = sum_query(world, (Price, Sales, FinalGoodsStockChange, WageBill, Employment, IntermediateProductivity, PriceIndex, TaxRates, Output)) do row
-        sum(
-            row.price.value .* row.sales.amount .+ row.price.value .* row.final_goods_stock_change.amount .-
-                (1.0 + τ_SIF) .* row.wage_bill.amount .* row.employment.amount .* P_bar_h .-
-                1.0 ./ row.intermediate_productivity.value .* row.price_index.value .* row.output.amount .-
-                row.tax_rates.output .* row.price.value .* row.output.amount .-
-                row.tax_rates.capital .* row.price.value .* row.output.amount
-        )
+        total = 0.0
+        @inbounds for i in eachindex(row.output.amount)
+            total += (
+                row.price.value[i] * row.sales.amount[i] +
+                    row.price.value[i] * row.final_goods_stock_change.amount[i] -
+                    (1.0 + τ_SIF) * row.wage_bill.amount[i] * row.employment.amount[i] * P_bar_h -
+                    row.price_index.value[i] * row.output.amount[i] / row.intermediate_productivity.value[i] -
+                    row.tax_rates.output[i] * row.price.value[i] * row.output.amount[i] -
+                    row.tax_rates.capital[i] * row.price.value[i] * row.output.amount[i]
+            )
+        end
+        total
     end
     push!(history.operating_surplus, op_surplus)
 
@@ -183,20 +235,18 @@ function collect_data!(world::Ark.World)
         real_gva_g = 0.0
         for comps in Ark.Query(world, (PrincipalProduct, TaxRates, Price, Output, IntermediateProductivity, PriceIndex))
             row = query_row(comps)
-            mask = row.principal_product.id .== g
-            nom_gva_g += sum(
-                mask .* (
-                    (1.0 .- row.tax_rates.output) .* row.price.value .* row.output.amount .-
-                        1.0 ./ row.intermediate_productivity.value .* row.price_index.value .* row.output.amount
+            @inbounds for i in eachindex(row.principal_product.id)
+                row.principal_product.id[i] == g || continue
+                nom_gva_g += (
+                    (1.0 - row.tax_rates.output[i]) * row.price.value[i] * row.output.amount[i] -
+                        row.price_index.value[i] * row.output.amount[i] / row.intermediate_productivity.value[i]
                 )
-            )
-            real_gva_g += sum(
-                mask .* (
-                    row.output.amount .* (
-                        (1.0 .- row.tax_rates.output) .- 1.0 ./ row.intermediate_productivity.value
+                real_gva_g += (
+                    row.output.amount[i] * (
+                        (1.0 - row.tax_rates.output[i]) - 1.0 / row.intermediate_productivity.value[i]
                     )
                 )
-            )
+            end
         end
         nom_sector_gva[g] = nom_gva_g
         real_sector_gva[g] = real_gva_g
@@ -242,34 +292,34 @@ function collect_data_init!(world::Ark.World, history::DataCollector, props::Pro
             ),
         )
         row = query_row(comps)
-        real_gdp += sum(row.output.amount .* (1.0 .- 1.0 ./ row.intermediate_productivity.value))
-        real_gva += sum(
-            row.output.amount .* (
-                (1.0 .- row.tax_rates.output) .- 1.0 ./ row.intermediate_productivity.value
+        @inbounds for i in eachindex(row.output.amount)
+            real_gdp += row.output.amount[i] * (1.0 - 1.0 / row.intermediate_productivity.value[i])
+            real_gva += row.output.amount[i] * (
+                (1.0 - row.tax_rates.output[i]) - 1.0 / row.intermediate_productivity.value[i]
             )
-        )
-        nominal_gva += sum(
-            row.output.amount .* (
-                (1.0 .- row.tax_rates.output) .- 1.0 ./ row.intermediate_productivity.value
+            nominal_gva += row.output.amount[i] * (
+                (1.0 - row.tax_rates.output[i]) - 1.0 / row.intermediate_productivity.value[i]
             )
-        )
-        capitalformation_firms += sum(
-            row.output.amount .* row.capital_depreciation_rate.rate ./ row.capital_productivity.value
-        )
-        wages += sum(row.average_wage_rate.rate .* row.employment.amount)
-        taxes_production += sum(row.tax_rates.capital .* row.output.amount)
-        operating_surplus += sum(
-            row.output.amount .* (
-                1.0 .- (
-                    (1.0 + τ_SIF) .* row.average_wage_rate.rate ./ row.labor_productivity.value .+
-                        1.0 ./ row.intermediate_productivity.value
-                )
-            ) .-
-                row.tax_rates.capital .* row.output.amount .-
-                row.tax_rates.output .* row.output.amount,
-        )
+            capitalformation_firms += (
+                row.output.amount[i] *
+                    row.capital_depreciation_rate.rate[i] /
+                    row.capital_productivity.value[i]
+            )
+            wages += row.average_wage_rate.rate[i] * row.employment.amount[i]
+            taxes_production += row.tax_rates.capital[i] * row.output.amount[i]
+            operating_surplus += (
+                row.output.amount[i] * (
+                    1.0 - (
+                        (1.0 + τ_SIF) *
+                            row.average_wage_rate.rate[i] /
+                            row.labor_productivity.value[i] +
+                            1.0 / row.intermediate_productivity.value[i]
+                    )
+                ) -
+                    row.tax_rates.capital[i] * row.output.amount[i] -
+                    row.tax_rates.output[i] * row.output.amount[i]
+            )
 
-        for i in eachindex(row.principal_product.id)
             nominal_sector_gva[row.principal_product.id[i]] += row.output.amount[i] * (
                 (1.0 - row.tax_rates.output[i]) - 1.0 / row.intermediate_productivity.value[i]
             )

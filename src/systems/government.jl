@@ -61,10 +61,18 @@ function set_gov_revenues!(world::Ark.World)
     capital_formation = τ_cf * total_investment
 
     products = sum_query(world, (Output, Price, TaxRates)) do row
-        sum(row.output.amount .* row.price.value .* row.tax_rates.output)
+        total = 0.0
+        @inbounds for i in eachindex(row.output.amount)
+            total += row.output.amount[i] * row.price.value[i] * row.tax_rates.output[i]
+        end
+        total
     end
     production = sum_query(world, (Output, Price, TaxRates)) do row
-        sum(row.output.amount .* row.price.value .* row.tax_rates.capital)
+        total = 0.0
+        @inbounds for i in eachindex(row.output.amount)
+            total += row.output.amount[i] * row.price.value[i] * row.tax_rates.capital[i]
+        end
+        total
     end
 
     τ_export = prop.tax_rates.exports # or matching property name
