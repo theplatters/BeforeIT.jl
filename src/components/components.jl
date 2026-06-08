@@ -47,6 +47,7 @@ module Components
     include("profits.jl")
     include("rest_of_world.jl")
     include("workers.jl")
+    include("shocks.jl")
 
 end
 
