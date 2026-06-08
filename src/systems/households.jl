@@ -35,7 +35,6 @@ function set_households_income!(world::Ark.World)
     τ_FIRM = prop.tax_rates.corporate
     θ_DIV = prop.banking_params.dividend_payout_ratio
 
-
     θ_UB = prop.social_insurance.unemployment_benefit
     cpi = price_indices(world).household_consumption
     _, sb_other, sb_inact = single(Ark.Query(world, (SocialBenefitsOther, SocialBenefitsInactive)))
@@ -43,12 +42,7 @@ function set_households_income!(world::Ark.World)
     @dub for t in Ark.Query(world, (Employed, NetDisposableIncome))
         for i in eachindex(t.e)
             t.net_disposable_income[i] = employed_worker_income(
-                t.employed[i].rate,
-                τ_SIW,
-                τ_INC,
-                sb_other.amount,
-                cpi,
-                0.0,
+                t.employed[i].rate, τ_SIW, τ_INC, sb_other.amount, cpi, 0.0,
             ) |> NetDisposableIncome
         end
     end
@@ -56,11 +50,8 @@ function set_households_income!(world::Ark.World)
     @dub for t in Ark.Query(world, (Unemployed, NetDisposableIncome))
         for i in eachindex(t.e)
             t.net_disposable_income[i] = unemployed_worker_income(
-                t.unemployed[i].unemployment_benefits,
-                θ_UB,
-                sb_other.amount,
-                cpi,
-                0.0,
+                t.unemployed[i].unemployment_benefits, θ_UB, sb_other.amount,
+                cpi, 0.0,
             ) |> NetDisposableIncome
         end
     end
@@ -68,10 +59,7 @@ function set_households_income!(world::Ark.World)
     @dub for t in Ark.Query(world, (NetDisposableIncome,), with = (Inactive,))
         for i in eachindex(t.e)
             t.net_disposable_income[i] = inactive_worker_income(
-                sb_inact.amount,
-                sb_other.amount,
-                cpi,
-                0.0,
+                sb_inact.amount, sb_other.amount, cpi, 0.0,
             ) |> NetDisposableIncome
         end
     end
@@ -79,13 +67,7 @@ function set_households_income!(world::Ark.World)
     @dub for t in Ark.Query(world, (Owner, Profits), with = (Firm,))
         for i in eachindex(t.e)
             new_income = firm_owner_disposable_income(
-                θ_DIV,
-                τ_INC,
-                τ_FIRM,
-                cpi,
-                sb_other.amount,
-                t.profits[i].amount,
-                0.0,
+                θ_DIV, τ_INC, τ_FIRM, cpi, sb_other.amount, t.profits[i].amount, 0.0,
             )
             Ark.set_components!(world, t.owner[i].entity, (NetDisposableIncome(new_income),))
         end
@@ -94,13 +76,7 @@ function set_households_income!(world::Ark.World)
     @dub for t in Ark.Query(world, (Owner, Profits), with = (Bank,))
         for i in eachindex(t.e)
             new_income = firm_owner_disposable_income(
-                θ_DIV,
-                τ_INC,
-                τ_FIRM,
-                cpi,
-                sb_other.amount,
-                t.profits[i].amount,
-                0.0,
+                θ_DIV, τ_INC, τ_FIRM, cpi, sb_other.amount, t.profits[i].amount, 0.0,
             )
             Ark.set_components!(world, t.owner[i].entity, (NetDisposableIncome(new_income),))
         end
@@ -116,7 +92,6 @@ function set_households_expected_income!(world::Ark.World)
     τ_FIRM = prop.tax_rates.corporate
     θ_DIV = prop.banking_params.dividend_payout_ratio
 
-
     θ_UB = prop.social_insurance.unemployment_benefit
     cpi = price_indices(world).household_consumption
     _, sb_other, sb_inact = single(Ark.Query(world, (SocialBenefitsOther, SocialBenefitsInactive)))
@@ -126,12 +101,7 @@ function set_households_expected_income!(world::Ark.World)
     @dub for t in Ark.Query(world, (Employed, ExpectedIncome))
         for i in eachindex(t.e)
             t.expected_income[i] = employed_worker_income(
-                t.employed[i].rate,
-                τ_SIW,
-                τ_INC,
-                sb_other.amount,
-                cpi,
-                expected_inflation,
+                t.employed[i].rate, τ_SIW, τ_INC, sb_other.amount, cpi, expected_inflation,
             ) |> ExpectedIncome
         end
     end
@@ -139,11 +109,7 @@ function set_households_expected_income!(world::Ark.World)
     @dub for t in Ark.Query(world, (Unemployed, ExpectedIncome))
         for i in eachindex(t.e)
             t.expected_income[i] = unemployed_worker_income(
-                t.unemployed[i].unemployment_benefits,
-                θ_UB,
-                sb_other.amount,
-                cpi,
-                expected_inflation,
+                t.unemployed[i].unemployment_benefits, θ_UB, sb_other.amount, cpi, expected_inflation,
             ) |> ExpectedIncome
         end
     end
@@ -151,10 +117,7 @@ function set_households_expected_income!(world::Ark.World)
     @dub for t in Ark.Query(world, (ExpectedIncome,), with = (Inactive,))
         for i in eachindex(t.e)
             t.expected_income[i] = inactive_worker_income(
-                sb_inact.amount,
-                sb_other.amount,
-                cpi,
-                expected_inflation,
+                sb_inact.amount, sb_other.amount, cpi, expected_inflation,
             ) |> ExpectedIncome
         end
     end
@@ -162,12 +125,7 @@ function set_households_expected_income!(world::Ark.World)
     @dub for t in Ark.Query(world, (Owner, ExpectedProfits), with = (Firm,))
         for i in eachindex(t.e)
             new_expected_income = firm_owner_disposable_income(
-                θ_DIV,
-                τ_INC,
-                τ_FIRM,
-                cpi,
-                sb_other.amount,
-                t.expected_profits[i].amount,
+                θ_DIV, τ_INC, τ_FIRM, cpi, sb_other.amount, t.expected_profits[i].amount,
                 expected_inflation,
             )
             Ark.set_components!(world, t.owner[i].entity, (ExpectedIncome(new_expected_income),))
@@ -177,12 +135,7 @@ function set_households_expected_income!(world::Ark.World)
     @dub for t in Ark.Query(world, (Owner, ExpectedProfits), with = (Bank,))
         for i in eachindex(t.e)
             new_expected_income = firm_owner_disposable_income(
-                θ_DIV,
-                τ_INC,
-                τ_FIRM,
-                cpi,
-                sb_other.amount,
-                t.expected_profits[i].amount,
+                θ_DIV, τ_INC, τ_FIRM, cpi, sb_other.amount, t.expected_profits[i].amount,
                 expected_inflation,
             )
             Ark.set_components!(world, t.owner[i].entity, (ExpectedIncome(new_expected_income),))
@@ -220,15 +173,13 @@ function set_households_deposit!(world::Ark.World)
     @dub for t in Ark.Query(world, (NetDisposableIncome, RealisedConsumption, RealisedInvestment, Deposits))
         for i in eachindex(t.e)
             previous_deposits = t.deposits[i].amount
-            updated_deposits = (
-                previous_deposits
-                    + t.net_disposable_income[i].amount
+            t.deposits[i] = (
+                previous_deposits + t.net_disposable_income[i].amount
                     - (1 + τ_VAT) * t.realised_consumption[i].amount
                     - (1 + τ_CF) * t.realised_investment[i].amount
                     + r_bar.rate * max(0.0, previous_deposits)
                     + r.rate * min(0.0, previous_deposits)
-            )
-            t.deposits[i] = updated_deposits |> Deposits
+            ) |> Deposits
         end
     end
 

@@ -14,9 +14,9 @@ function set_gov_expenditure!(world::Ark.World)
     nominal_sector_demand = dot(P_bar_g, c_G_g)
     @dub for t in Ark.Query(world, (ConsumptionDemand,), with = (Government,))
         for i in eachindex(t.e)
-
-            t.consumption_demand[i] = (
-                exp(consumption_autoregression .* log(t.consumption_demand[i].amount) + consumption_autoregression_scalar + epsilon_G)
+            t.consumption_demand[i] = exp(
+                consumption_autoregression .* log(t.consumption_demand[i].amount) +
+                    consumption_autoregression_scalar + epsilon_G
             ) |> ConsumptionDemand
             @dub for t2 in Ark.Query(world, (ConsumptionDemand,), with = (LocalGovernment => t.e[i],))
                 t2.consumption_demand.amount .= t.consumption_demand[i].amount ./ local_governments .* nominal_sector_demand .* (1 .+ pi_e)
@@ -79,7 +79,6 @@ function set_gov_revenues!(world::Ark.World)
 
     export_tax = τ_export * exports
 
-
     @dub for t in Ark.Query(world, (GovernmentRevenues,))
         for i in eachindex(t.e)
             t.government_revenues[i] = (
@@ -112,7 +111,6 @@ function set_gov_loans!(world::Ark.World)
             t.government_debt[i] = (t.government_debt[i].amount + social_benefits + t.realised_consumption[i].amount + r_g * t.government_debt[i].amount - t.government_revenues[i].amount) |> GovernmentDebt
         end
     end
-
 
     return nothing
 end

@@ -256,13 +256,8 @@ function set_firms_wages!(world::Ark.World)
 end
 
 @inline function firm_labor_productivity(
-        baseline_labor_productivity,
-        expected_sales,
-        capital_stock,
-        capital_productivity,
-        materials,
-        intermediate_productivity,
-        employment,
+        baseline_labor_productivity, expected_sales, capital_stock, capital_productivity,
+        materials, intermediate_productivity, employment,
     )
     constrained_output = min(
         expected_sales,
@@ -273,13 +268,8 @@ end
 end
 
 @inline function firm_production(
-        expected_sales,
-        employment,
-        labor_productivity,
-        capital_stock,
-        capital_productivity,
-        materials,
-        intermediate_productivity,
+        expected_sales, employment, labor_productivity, capital_stock, capital_productivity,
+        materials, intermediate_productivity,
     )
     return min(
         expected_sales,
@@ -317,12 +307,11 @@ end
 
 
 @inline function firm_profit(
-        price::T, quantity::T, excess_sales::T, deposits::T, wage::T,
-        employment::V, household_price_index::T, employer_contribution::T,
-        intermediate_productivity::T, intermediate_price::T, output::T,
-        depreciation_rate::T, capital_productivity::T, capital_goods_price::T,
-        product_tax_rate::T, capital_tax_rate::T, loans::T, lending_rate::T,
-        deposit_rate::T,
+        price::T, quantity::T, excess_sales::T, deposits::T, wage::T, employment::V,
+        household_price_index::T, employer_contribution::T, intermediate_productivity::T,
+        intermediate_price::T, output::T, depreciation_rate::T, capital_productivity::T,
+        capital_goods_price::T, product_tax_rate::T, capital_tax_rate::T, loans::T,
+        lending_rate::T, deposit_rate::T,
     ) where {T <: Real, V <: Real}
     in_sales = price * quantity + price * excess_sales
     in_deposits = deposit_rate * pos(deposits)
@@ -372,28 +361,10 @@ end
 @inline pos(x) = max(zero(x), x)
 
 @inline function firm_deposits(
-        deposits,
-        price,
-        sales,
-        wage_bill,
-        employment,
-        household_price_index,
-        employer_contribution,
-        materials_stock_change,
-        intermediate_price_index,
-        output_tax_rate,
-        output,
-        capital_tax_rate,
-        profits,
-        corporate_tax_rate,
-        dividend_payout_ratio,
-        loans,
-        lending_rate,
-        deposit_rate,
-        capital_goods_price_index,
-        investment,
-        loan_flow,
-        debt_installment_rate,
+        deposits, price, sales, wage_bill, employment, household_price_index, employer_contribution,
+        materials_stock_change, intermediate_price_index, output_tax_rate, output, capital_tax_rate,
+        profits, corporate_tax_rate, dividend_payout_ratio, loans, lending_rate, deposit_rate,
+        capital_goods_price_index, investment, loan_flow, debt_installment_rate,
     )
     sales_income = price * sales
     labour_cost = -(1.0 + employer_contribution) * wage_bill * employment * household_price_index
@@ -415,8 +386,8 @@ end
 end
 
 @inline function firm_equity(
-        deposits, intermediates, sector_production_cost, price, inventories,
-        capital_goods_price_index, capital_stock, loans,
+        deposits, intermediates, sector_production_cost, price, inventories, capital_goods_price_index,
+        capital_stock, loans,
     )
     return deposits +
         intermediates * sector_production_cost +
@@ -507,10 +478,7 @@ function set_firms_equity!(world::Ark.World)
     return nothing
 end
 
-const FIRM_LOAN_COMPONENTS = (
-    LoansOutstanding,
-    LoanFlow,
-)
+const FIRM_LOAN_COMPONENTS = (LoansOutstanding, LoanFlow)
 
 function set_firms_loans!(world::Ark.World)
     debt_installment_rate = Ark.get_resource(world, Properties).banking_params.debt_installment_rate
