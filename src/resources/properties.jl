@@ -205,6 +205,26 @@ struct Properties
     initial_conditions::InitialConditions
 end
 
+
+function update_household_consumption(prop::Properties, new_consumption)
+    household_params = HouseholdParams(new_consumption, prop.household_params.housing_investment_share)
+
+    return Properties(
+        prop.dimensions,
+        prop.population,
+        prop.tax_rates,
+        prop.sector_tax_rates,
+        prop.social_insurance,
+        prop.monetary_policy,
+        prop.fiscal_policy,
+        household_params,
+        prop.banking_params,
+        prop.product_coeffs,
+        prop.sectoral_params,
+        prop.external_params,
+        prop.init_conds
+    )
+end
 function Properties(parameters::Dict{String, Any}, initial_conditions::Dict{String, Any})
 
     # === DIMENSIONS ===

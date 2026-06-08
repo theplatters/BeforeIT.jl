@@ -31,7 +31,6 @@ include("components/components.jl")
 
 include("resources/aggregates.jl")
 include("resources/properties.jl")
-include("resources/shocks.jl")
 include("resources/epsilons.jl")
 include("resources/data_collector.jl")
 

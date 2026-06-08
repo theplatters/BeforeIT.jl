@@ -10,14 +10,6 @@ function setup_aggregates!(world::Ark.World, properties::Properties)
     Ark.add_resource!(
         world, properties
     )
-    Ark.add_resource!(
-        world,
-        Shocks(
-            0.0,                    # foreign_output_shock
-            0.0,                    # export_demand_shock
-            0.0
-        )
-    )
 
     Ark.add_resource!(world, FirmTmpBuffers{Float64}(zeros(properties.dimensions.sectors)))
     Ark.add_resource!(world, HiringFirmsCache(properties.dimensions.total_firms))

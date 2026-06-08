@@ -1,6 +1,7 @@
 function apply_shocks!(world)
     apply_interest_rate_shock!(world)
     apply_productitvity_shock!(world)
+    apply_consumption_shock!(world)
     return nothing
 end
 
@@ -37,6 +38,26 @@ function apply_productitvity_shock!(world)
 
         end
     end
+
+    return nothing
+end
+
+function apply_consumption_shock!(world)
+    time = Ark.get_resource(world, TimeIndex)
+    properties = BeforeIT.properties(world)
+    rate = properties.household_params.consumption_share
+    for (e, interest_rate_shock) in Ark.Query(world, (ConsumptionShock,))
+
+        for i in eachindex(e)
+
+            if (time == 1)
+                rate = rate * interest_rate_shock.consumption_multiplier
+            elseif (time == 1)
+                rate = rate * interest_rate_shock.consumption_multiplier
+            end
+        end
+    end
+    Ark.set_resource!(world, update_household_consumption(properties, rate))
 
     return nothing
 end
