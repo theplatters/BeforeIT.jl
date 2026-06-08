@@ -12,33 +12,22 @@ function set_rotw_import_export!(world::Ark.World)
     @dub for t in Ark.Query(world, (TotalExportDemand, TotalImportSupply))
         t.total_export_demand.amount .= exp.(
             exports_response_to_foreign_output .* log.(t.total_export_demand.amount) .+
-                exports_autoregression .+
-                E
+                exports_autoregression .+ E
         )
         t.total_import_supply.amount .= exp.(
             investment_autoregression .* log.(t.total_import_supply.amount) .+
-                investment_response_to_utilization .+
-                I
+                investment_response_to_utilization .+ I
         )
 
         @dub for t2 in Ark.Query(world, (ForeignConsumptionDemand,))
             t2.foreign_consumption_demand.amount .= (
                 only(t.total_export_demand.amount) / foreign_consumers *
-                    dot(exports, sector_price_index) *
-                    (1 + expected_inflation)
+                    dot(exports, sector_price_index) * (1 + expected_inflation)
             )
 
         end
 
-        @dub for t2 in Ark.Query(
-                world,
-                (
-                    PrincipalProduct,
-                    ImportSupply,
-                    ImportPrice,
-                ),
-                with = (ForeignSector,),
-            )
+        @dub for t2 in Ark.Query(world, (PrincipalProduct, ImportSupply, ImportPrice), with = (ForeignSector,))
             @inbounds for i in eachindex(t2.e)
                 g = t2.principal_product[i].id
                 t2.import_supply[i] = imports[g] * only(t.total_import_supply.amount) |> ImportSupply
