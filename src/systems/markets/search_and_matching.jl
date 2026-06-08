@@ -74,20 +74,20 @@ function build_intermediate_demand!(world::Ark.World)
 
     (; technology_matrix, capital_formation) = BeforeIT.properties(world).product_coeffs
 
-    @dub for market_row in Ark.Query(world, (PrincipalProduct, IntermediateMarketDemandBook, IntermediateMarketDemandClearing))
-        @inbounds for j in eachindex(market_row.e)
-            g = market_row.principal_product[j].id
-            market_book_amount = market_row.intermediate_market_demand_book[j].amount
-            market_clearing_amount = market_row.intermediate_market_demand_clearing[j].amount
-            @dub for buyer_row in Ark.Query(
+    @dub for t in Ark.Query(world, (PrincipalProduct, IntermediateMarketDemandBook, IntermediateMarketDemandClearing))
+        @inbounds for j in eachindex(t.e)
+            g = t.principal_product[j].id
+            market_book_amount = t.intermediate_market_demand_book[j].amount
+            market_clearing_amount = t.intermediate_market_demand_clearing[j].amount
+            @dub for t2 in Ark.Query(
                     world,
                     (PrincipalProduct, DesiredInvestment, DesiredMaterials, IntermediaryDemandCacheIndex)
                 )
-                for i in eachindex(buyer_row.e)
-                    demand_pos = buyer_row.intermediary_demand_cache_index[i].id
-                    product_id = buyer_row.principal_product[i].id
-                    desired_materials_amount = buyer_row.desired_materials[i].amount
-                    desired_investment_amount = buyer_row.desired_investment[i].amount
+                for i in eachindex(t2.e)
+                    demand_pos = t2.intermediary_demand_cache_index[i].id
+                    product_id = t2.principal_product[i].id
+                    desired_materials_amount = t2.desired_materials[i].amount
+                    desired_investment_amount = t2.desired_investment[i].amount
                     market_book_amount[demand_pos] =
                         technology_matrix[g, product_id] * desired_materials_amount +
                         capital_formation[g] * desired_investment_amount
@@ -245,8 +245,8 @@ function build_stock_pool!(world::Ark.World)
 end
 
 function build_domestic_stock_pool!(world::Ark.World)
-    @dub for pool_row in Ark.Query(world, (MarketSupplyPool, MarketCapacityPool, MarketPricePool))
-        @dub for stock_row in Ark.Query(
+    @dub for t in Ark.Query(world, (MarketSupplyPool, MarketCapacityPool, MarketPricePool))
+        @dub for t2 in Ark.Query(
                 world,
                 (
                     PrincipalProduct,
@@ -258,15 +258,15 @@ function build_domestic_stock_pool!(world::Ark.World)
                     StockCacheIndex,
                 )
             )
-            @inbounds for j in eachindex(stock_row.e)
-                market_pos = stock_row.principal_product[j].id
-                available_stock = stock_row.output[j].amount + stock_row.inventories[j].amount
-                stock_capacity = stock_row.capital_stock[j].amount * stock_row.capital_productivity[j].value - stock_row.output[j].amount
-                stock_pos = stock_row.stock_cache_index[j].id
+            @inbounds for j in eachindex(t2.e)
+                market_pos = t2.principal_product[j].id
+                available_stock = t2.output[j].amount + t2.inventories[j].amount
+                stock_capacity = t2.capital_stock[j].amount * t2.capital_productivity[j].value - t2.output[j].amount
+                stock_pos = t2.stock_cache_index[j].id
 
-                pool_row.market_supply_pool[market_pos].amount[stock_pos] = available_stock
-                pool_row.market_capacity_pool[market_pos].amount[stock_pos] = stock_capacity
-                pool_row.market_price_pool[market_pos].value[stock_pos] = stock_row.price[j].value
+                t.market_supply_pool[market_pos].amount[stock_pos] = available_stock
+                t.market_capacity_pool[market_pos].amount[stock_pos] = stock_capacity
+                t.market_price_pool[market_pos].value[stock_pos] = t2.price[j].value
             end
         end
     end
@@ -275,8 +275,8 @@ function build_domestic_stock_pool!(world::Ark.World)
 end
 
 function build_import_stock_pool!(world::Ark.World)
-    @dub for pool_row in Ark.Query(world, (MarketSupplyPool, MarketCapacityPool, MarketPricePool))
-        @dub for stock_row in Ark.Query(
+    @dub for t in Ark.Query(world, (MarketSupplyPool, MarketCapacityPool, MarketPricePool))
+        @dub for t2 in Ark.Query(
                 world, (
                     PrincipalProduct,
                     ImportSupply,
@@ -284,12 +284,12 @@ function build_import_stock_pool!(world::Ark.World)
                     StockCacheIndex,
                 )
             )
-            @inbounds for j in eachindex(stock_row.e)
-                market_pos = stock_row.principal_product[j].id
-                pos = stock_row.stock_cache_index[j].id
-                pool_row.market_supply_pool[market_pos].amount[pos] = stock_row.import_supply[j].amount
-                pool_row.market_capacity_pool[market_pos].amount[pos] = Inf
-                pool_row.market_price_pool[market_pos].value[pos] = stock_row.import_price[j].value
+            @inbounds for j in eachindex(t2.e)
+                market_pos = t2.principal_product[j].id
+                pos = t2.stock_cache_index[j].id
+                t.market_supply_pool[market_pos].amount[pos] = t2.import_supply[j].amount
+                t.market_capacity_pool[market_pos].amount[pos] = Inf
+                t.market_price_pool[market_pos].value[pos] = t2.import_price[j].value
             end
         end
     end
@@ -540,12 +540,12 @@ allocate_retail_from_stock_capacity!(
 
 
 function update_firm_realisations!(world::Ark.World, technology_matrix, capital_formation)
-    @dub for market_row in Ark.Query(world, (PrincipalProduct, FirstPassIntermediateDemand, IntermediateMarketDemandClearing))
-        @inbounds for j in eachindex(market_row.e)
-            sector_id = market_row.principal_product[j].id
-            first_pass_amount = market_row.first_pass_intermediate_demand[j].amount
-            demand_clearing_amount = market_row.intermediate_market_demand_clearing[j].amount
-            @dub for t in Ark.Query(
+    @dub for t in Ark.Query(world, (PrincipalProduct, FirstPassIntermediateDemand, IntermediateMarketDemandClearing))
+        @inbounds for j in eachindex(t.e)
+            sector_id = t.principal_product[j].id
+            first_pass_amount = t.first_pass_intermediate_demand[j].amount
+            demand_clearing_amount = t.intermediate_market_demand_clearing[j].amount
+            @dub for t2 in Ark.Query(
                     world,
                     (
                         MaterialsStockChange,
@@ -559,7 +559,7 @@ function update_firm_realisations!(world::Ark.World, technology_matrix, capital_
                     ),
                 )
 
-                @inbounds for i in eachindex(t.e)
+                @inbounds for i in eachindex(t2.e)
                     update_firm_realisation_components!(
                         i,
                         sector_id,
@@ -567,14 +567,14 @@ function update_firm_realisations!(world::Ark.World, technology_matrix, capital_
                         demand_clearing_amount,
                         technology_matrix,
                         capital_formation,
-                        t.materials_stock_change,
-                        t.investment,
-                        t.principal_product,
-                        t.desired_materials,
-                        t.desired_investment,
-                        t.price_index,
-                        t.cf_price_index,
-                        t.intermediary_demand_cache_index[i].id
+                        t2.materials_stock_change,
+                        t2.investment,
+                        t2.principal_product,
+                        t2.desired_materials,
+                        t2.desired_investment,
+                        t2.price_index,
+                        t2.cf_price_index,
+                        t2.intermediary_demand_cache_index[i].id
                     )
                 end
             end
@@ -780,19 +780,19 @@ function update_retail_realisations!(world::Ark.World, realisation_cache)
         end
     end
 
-    @dub for market_row in Ark.Query(world, (PrincipalProduct, FinalMarketDemandBook, FirstPassFinalDemand))
-        for j in eachindex(market_row.e)
-            demand_book_amount = market_row.final_market_demand_book[j].amount
-            first_pass_amount = market_row.first_pass_final_demand[j].amount
-            @dub for t in Ark.Query(
+    @dub for t in Ark.Query(world, (PrincipalProduct, FinalMarketDemandBook, FirstPassFinalDemand))
+        for j in eachindex(t.e)
+            demand_book_amount = t.final_market_demand_book[j].amount
+            first_pass_amount = t.first_pass_final_demand[j].amount
+            @dub for t2 in Ark.Query(
                     world, (RealisedConsumption, RealisedInvestment, FinalDemandCacheIndex),
                     with = (Household,),
                 )
 
-                @inbounds for i in eachindex(t.e)
-                    household_index = t.final_demand_cache_index[i].id
-                    t.realised_consumption[i] = t.realised_consumption[i].amount + first_pass_amount[household_index] |> RealisedConsumption
-                    t.realised_investment[i] = t.realised_investment[i].amount + demand_book_amount[household_index] |> RealisedInvestment
+                @inbounds for i in eachindex(t2.e)
+                    household_index = t2.final_demand_cache_index[i].id
+                    t2.realised_consumption[i] = t2.realised_consumption[i].amount + first_pass_amount[household_index] |> RealisedConsumption
+                    t2.realised_investment[i] = t2.realised_investment[i].amount + demand_book_amount[household_index] |> RealisedInvestment
                 end
             end
         end
@@ -816,16 +816,16 @@ function update_retail_realisations!(world::Ark.World, realisation_cache)
 end
 
 function update_goods_demand_from_remaining_stocks!(world::Ark.World)
-    @dub for market_row in Ark.Query(world, (MarketSupplyPool,))
-        for j in eachindex(market_row.e)
+    @dub for t in Ark.Query(world, (MarketSupplyPool,))
+        for j in eachindex(t.e)
 
-            @dub for t in Ark.Query(world, (GoodsDemand, Output, Inventories, StockCacheIndex), with = (Market => market_row.e[j],))
-                @inbounds for i in eachindex(t.e)
-                    firm_index = t.stock_cache_index[i].id
-                    t.goods_demand[i] = (
-                        t.goods_demand[i].amount +
-                            t.output[i].amount + t.inventories[i].amount -
-                            market_row.market_supply_pool[j].amount[firm_index]
+            @dub for t2 in Ark.Query(world, (GoodsDemand, Output, Inventories, StockCacheIndex), with = (Market => t.e[j],))
+                @inbounds for i in eachindex(t2.e)
+                    firm_index = t2.stock_cache_index[i].id
+                    t2.goods_demand[i] = (
+                        t2.goods_demand[i].amount +
+                            t2.output[i].amount + t2.inventories[i].amount -
+                            t.market_supply_pool[j].amount[firm_index]
                     ) |> GoodsDemand
                 end
             end
@@ -838,16 +838,16 @@ end
 
 function update_import_demand_from_remaining_stocks!(world::Ark.World)
 
-    @dub for market_row in Ark.Query(world, (MarketSupplyPool,))
-        for j in eachindex(market_row.e)
+    @dub for t in Ark.Query(world, (MarketSupplyPool,))
+        for j in eachindex(t.e)
 
-            @dub for t in Ark.Query(world, (ImportDemand, ImportSupply, StockCacheIndex), with = (Market => market_row.e[j],))
-                @inbounds for i in eachindex(t.e)
-                    rotw_index = t.stock_cache_index[i].id
+            @dub for t2 in Ark.Query(world, (ImportDemand, ImportSupply, StockCacheIndex), with = (Market => t.e[j],))
+                @inbounds for i in eachindex(t2.e)
+                    rotw_index = t2.stock_cache_index[i].id
 
-                    t.import_demand[i] = (
-                        t.import_demand[i].amount +
-                            t.import_supply[i].amount - market_row.market_supply_pool[j].amount[rotw_index]
+                    t2.import_demand[i] = (
+                        t2.import_demand[i].amount +
+                            t2.import_supply[i].amount - t.market_supply_pool[j].amount[rotw_index]
                     ) |> ImportDemand
                 end
             end

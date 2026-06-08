@@ -3,14 +3,14 @@ function set_growth_inflation_expectations!(world::Ark.World)
     properties = BeforeIT.properties(world)
     expectations = BeforeIT.expectations(world)
     interval = properties.dimensions.interval_for_expectation_estimation
-    t = Ark.get_resource(world, TimeIndex).step
+    time = Ark.get_resource(world, TimeIndex).step
 
     (; gross_domestic_product_history, inflation_history) = macro_state
 
 
-    expected_gdp = estimate_next_value(log.(gross_domestic_product_history[1:(interval + t - 1)])) |> exp
-    expected_growth = expected_gdp / gross_domestic_product_history[interval + t - 1] - 1.0
-    expected_inflation = exp(estimate_next_value(inflation_history[1:(interval + t - 1)])) - 1.0
+    expected_gdp = estimate_next_value(log.(gross_domestic_product_history[1:(interval + time - 1)])) |> exp
+    expected_growth = expected_gdp / gross_domestic_product_history[interval + time - 1] - 1.0
+    expected_inflation = exp(estimate_next_value(inflation_history[1:(interval + time - 1)])) - 1.0
 
     expectations.gross_domestic_product = expected_gdp
     expectations.output_growth = expected_growth
@@ -61,7 +61,7 @@ function set_inflation_priceindex!(world::Ark.World)
     properties = Ark.get_resource(world, Properties)
 
     interval = properties.dimensions.interval_for_expectation_estimation
-    t = Ark.get_resource(world, TimeIndex).step
+    time = Ark.get_resource(world, TimeIndex).step
 
     total_monetary_output_value = 0.0
     total_output = 0.0
@@ -76,7 +76,7 @@ function set_inflation_priceindex!(world::Ark.World)
     inflation = log(price_index / price_indices.aggregate)
     price_indices.aggregate = price_index
     push!(macro_state.inflation_history, 0.0)
-    macro_state.inflation_history[interval + t] = inflation
+    macro_state.inflation_history[interval + time] = inflation
 
     return nothing
 end

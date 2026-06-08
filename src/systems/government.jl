@@ -18,8 +18,8 @@ function set_gov_expenditure!(world::Ark.World)
             t.consumption_demand[i] = (
                 exp(consumption_autoregression .* log(t.consumption_demand[i].amount) + consumption_autoregression_scalar + epsilon_G)
             ) |> ConsumptionDemand
-            @dub for local_row in Ark.Query(world, (ConsumptionDemand,), with = (LocalGovernment => t.e[i],))
-                local_row.consumption_demand.amount .= t.consumption_demand[i].amount ./ local_governments .* nominal_sector_demand .* (1 .+ pi_e)
+            @dub for t2 in Ark.Query(world, (ConsumptionDemand,), with = (LocalGovernment => t.e[i],))
+                t2.consumption_demand.amount .= t.consumption_demand[i].amount ./ local_governments .* nominal_sector_demand .* (1 .+ pi_e)
             end
         end
 
