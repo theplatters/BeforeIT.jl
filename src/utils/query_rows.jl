@@ -1,22 +1,5 @@
-component_field_name(::Type{T}) where {T} = _default_component_field_name(T)
+
 component_field_name(::Type{Ark.Relation{T}}) where {T} = component_field_name(T)
-
-function _default_component_field_name(::Type{T}) where {T}
-    name = string(nameof(T))
-    chars = Char[]
-    for (i, char) in enumerate(name)
-        if isuppercase(char)
-            if i > 1
-                push!(chars, '_')
-            end
-            push!(chars, lowercase(char))
-        else
-            push!(chars, char)
-        end
-    end
-    return Symbol(String(chars))
-end
-
 component_field_name(::Type{ActiveBuyers}) = :active_buyers
 component_field_name(::Type{AverageWageRate}) = :average_wage_rate
 component_field_name(::Type{Bank}) = :bank

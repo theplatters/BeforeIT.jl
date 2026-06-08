@@ -61,7 +61,7 @@ function apply_consumption_shock!(world)
     for comps in Ark.Query(world, (ConsumptionShock,))
         row = query_row(comps)
         e = row.e
-        interest_rate_shock = row.consumption_shock
+        consumption_shock = row.consumption_shock
 
         for i in eachindex(e)
 
