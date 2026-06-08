@@ -46,14 +46,14 @@ function apply_consumption_shock!(world)
     time = Ark.get_resource(world, TimeIndex)
     properties = BeforeIT.properties(world)
     rate = properties.household_params.consumption_share
-    for (e, interest_rate_shock) in Ark.Query(world, (ConsumptionShock,))
+    for (e, consumption_shock) in Ark.Query(world, (ConsumptionShock,))
 
         for i in eachindex(e)
 
             if (time == 1)
-                rate = rate * interest_rate_shock[i].consumption_multiplier
+                rate = rate * consumption_shock[i].consumption_multiplier
             elseif (time == 1)
-                rate = rate * interest_rate_shock[i].consumption_multiplier
+                rate = rate * consumption_shock[i].consumption_multiplier
             end
         end
     end
