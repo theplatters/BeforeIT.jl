@@ -1,38 +1,27 @@
 @inline function precompute_sector_production_costs!(
-        sector_production_cost::AbstractVector,
-        technology_matrix::AbstractMatrix,
+        sector_production_cost::AbstractVector, technology_matrix::AbstractMatrix,
         sector_prices::AbstractVector,
     )
     mul!(sector_production_cost, transpose(technology_matrix), sector_prices)
     return nothing
 end
 
-@inline function expected_sales_amount(
-        demand::Float64,
-        growth::Float64,
-    )
+@inline function expected_sales_amount(demand::Float64, growth::Float64)
     return (1.0 + growth) * demand
 end
 
 @inline function desired_investment_amount(
-        depreciation_rate::Float64,
-        capital_productivity::Float64,
+        depreciation_rate::Float64, capital_productivity::Float64,
         expected_sales::Float64,
     )
     return depreciation_rate / capital_productivity * expected_sales
 end
 
-@inline function desired_materials_amount(
-        capital_productivity::Float64,
-        expected_sales::Float64,
-    )
+@inline function desired_materials_amount(capital_productivity::Float64, expected_sales::Float64)
     return expected_sales / capital_productivity
 end
 
-@inline function desired_employment_amount(
-        labor_productivity::Float64,
-        expected_sales::Float64,
-    )
+@inline function desired_employment_amount(labor_productivity::Float64, expected_sales::Float64)
     return max(1, round(Int64, expected_sales / labor_productivity))
 end
 
@@ -40,19 +29,13 @@ end
     return parse(Int, match(r"Entity\((\d+),", string(entity)).captures[1])
 end
 
-@inline function expected_profit_amount(
-        current_profit::Float64,
-        growth::Float64,
-        inflation::Float64,
-    )
+@inline function expected_profit_amount(current_profit::Float64, growth::Float64, inflation::Float64)
     return current_profit * (1.0 + growth) * (1.0 + inflation)
 end
 
 @inline function expected_deposits_amount(
-        expected_profit::Float64,
-        current_loans::Float64,
-        debt_installment_rate::Float64,
-        corporate_tax::Float64,
+        expected_profit::Float64, current_loans::Float64,
+        debt_installment_rate::Float64, corporate_tax::Float64,
         dividend_payout_ratio::Float64,
     )
     positive_profit = max(0.0, expected_profit)
@@ -64,24 +47,17 @@ end
 end
 
 @inline function expected_capital_amount(
-        capital_goods_price_index::Float64,
-        inflation::Float64,
+        capital_goods_price_index::Float64, inflation::Float64,
         capital_stock::Float64,
     )
     return capital_goods_price_index * (1.0 + inflation) * capital_stock
 end
 
-@inline function expected_loans_amount(
-        current_loans::Float64,
-        debt_installment_rate::Float64,
-    )
+@inline function expected_loans_amount(current_loans::Float64, debt_installment_rate::Float64)
     return (1.0 - debt_installment_rate) * current_loans
 end
 
-@inline function target_loans_amount(
-        expected_deposits::Float64,
-        deposits::Float64,
-    )
+@inline function target_loans_amount(expected_deposits::Float64, deposits::Float64)
     return max(0.0, -expected_deposits - deposits)
 end
 
@@ -96,16 +72,11 @@ end
 end
 
 @inline function compute_firm_cost_push_inflation(
-        wage::Float64,
-        employer_contribution::Float64,
-        household_price::Float64,
-        depreciation_rate::Float64,
-        intermediate_productivity::Float64,
-        labor_productivity::Float64,
-        capital_productivity::Float64,
-        capital_goods_price::Float64,
-        sector_production_cost::Float64,
-        inv_price::Float64,
+        wage::Float64, employer_contribution::Float64,
+        household_price::Float64, depreciation_rate::Float64,
+        intermediate_productivity::Float64, labor_productivity::Float64,
+        capital_productivity::Float64, capital_goods_price::Float64,
+        sector_production_cost::Float64, inv_price::Float64,
     )
     labor_cost = labor_cost_component(
         wage, labor_productivity, employer_contribution, household_price, inv_price
@@ -123,91 +94,47 @@ end
 end
 
 @inline function compute_firm_expectation_scalars(
-        demand::Float64,
-        capital_stock::Float64,
-        current_profit::Float64,
-        current_loans::Float64,
-        current_deposits::Float64,
-        growth::Float64,
-        inflation::Float64,
-        labor_productivity::Float64,
-        capital_productivity::Float64,
-        intermediate_productivity::Float64,
-        capital_goods_price::Float64,
-        debt_installment_rate::Float64,
-        dividend_payout_ratio::Float64,
-        corporate_tax::Float64,
+        demand::Float64, capital_stock::Float64,
+        current_profit::Float64, current_loans::Float64,
+        current_deposits::Float64, growth::Float64,
+        inflation::Float64, labor_productivity::Float64,
+        capital_productivity::Float64, intermediate_productivity::Float64,
+        capital_goods_price::Float64, debt_installment_rate::Float64,
+        dividend_payout_ratio::Float64, corporate_tax::Float64,
     )
-    expected_sales = expected_sales_amount(
-        demand, growth
-    )
+    expected_sales = expected_sales_amount(demand, growth)
 
     capacity_constraint_sales = min(expected_sales, capital_stock * capital_productivity)
 
-    desired_materials = desired_materials_amount(
-        intermediate_productivity, capacity_constraint_sales
-    )
+    desired_materials = desired_materials_amount(intermediate_productivity, capacity_constraint_sales)
 
-    desired_employment = desired_employment_amount(
-        labor_productivity, capacity_constraint_sales
-    )
+    desired_employment = desired_employment_amount(labor_productivity, capacity_constraint_sales)
 
-    expected_profit = expected_profit_amount(
-        current_profit, growth, inflation
-    )
+    expected_profit = expected_profit_amount(current_profit, growth, inflation)
 
     expected_deposits = expected_deposits_amount(
-        expected_profit,
-        current_loans,
-        debt_installment_rate,
-        corporate_tax,
-        dividend_payout_ratio,
+        expected_profit, current_loans, debt_installment_rate,
+        corporate_tax, dividend_payout_ratio,
     )
 
-    expected_capital = expected_capital_amount(
-        capital_goods_price, inflation, capital_stock
-    )
+    expected_capital = expected_capital_amount(capital_goods_price, inflation, capital_stock)
 
-    expected_loans = expected_loans_amount(
-        current_loans, debt_installment_rate
-    )
+    expected_loans = expected_loans_amount(current_loans, debt_installment_rate)
 
-    target_loans = target_loans_amount(
-        expected_deposits, current_deposits
-    )
+    target_loans = target_loans_amount(expected_deposits, current_deposits)
 
     return (
-        expected_sales,
-        desired_materials,
-        desired_employment,
-        expected_profit,
-        expected_capital,
-        expected_loans,
-        target_loans,
+        expected_sales, desired_materials, desired_employment, expected_profit,
+        expected_capital, expected_loans, target_loans,
     )
 end
 
 const FIRM_EXPECTATION_COMPONENTS = (
-    PrincipalProduct,
-    Price,
-    AverageWageRate,
-    CapitalDeprecationRate,
-    IntermediateProductivity,
-    LaborProductivity,
-    CapitalProductivity,
-    GoodsDemand,
-    CapitalStock,
-    Profits,
-    LoansOutstanding,
-    Deposits,
-    DesiredInvestment,
-    DesiredMaterials,
-    DesiredEmployment,
-    ExpectedProfits,
-    ExpectedCapital,
-    ExpectedLoans,
-    ExpectedSales,
-    TargetLoans,
+    PrincipalProduct, Price, AverageWageRate, CapitalDeprecationRate,
+    IntermediateProductivity, LaborProductivity, CapitalProductivity,
+    GoodsDemand, CapitalStock, Profits, LoansOutstanding, Deposits,
+    DesiredInvestment, DesiredMaterials, DesiredEmployment, ExpectedProfits,
+    ExpectedCapital, ExpectedLoans, ExpectedSales, TargetLoans,
 )
 
 function set_firms_expectations_and_decisions!(world::Ark.World)
@@ -234,9 +161,7 @@ function set_firms_expectations_and_decisions!(world::Ark.World)
     corporate_tax = properties.tax_rates.corporate
 
     precompute_sector_production_costs!(
-        firm_cache.sector_production_cost,
-        technology_matrix,
-        sector,
+        firm_cache.sector_production_cost, technology_matrix, sector,
     )
 
     @dub for t in Ark.Query(world, FIRM_EXPECTATION_COMPONENTS)
@@ -260,40 +185,19 @@ function set_firms_expectations_and_decisions!(world::Ark.World)
             sector_production_cost = firm_cache.sector_production_cost[product_id]
 
             cost_push_inflation = compute_firm_cost_push_inflation(
-                wage,
-                employer_contribution,
-                household,
-                δ,
-                a_m,
-                a_l,
-                a_k,
-                capital_goods,
-                sector_production_cost,
-                inv_price,
+                wage, employer_contribution, household, δ, a_m, a_l, a_k,
+                capital_goods, sector_production_cost, inv_price,
             )
 
             (
-                expected_sales_amount,
-                desired_materials_amount,
-                desired_employment_amount,
-                expected_profit_amount,
-                expected_capital_amount,
-                expected_loans_amount,
+                expected_sales_amount, desired_materials_amount,
+                desired_employment_amount, expected_profit_amount,
+                expected_capital_amount, expected_loans_amount,
                 target_loans_amount,
             ) = compute_firm_expectation_scalars(
-                demand,
-                capital_stock,
-                current_profit,
-                current_loans,
-                current_deposits,
-                growth,
-                inflation,
-                a_l,
-                a_k,
-                a_m,
-                capital_goods,
-                debt_installment_rate,
-                dividend_payout_ratio,
+                demand, capital_stock, current_profit, current_loans,
+                current_deposits, growth, inflation, a_l, a_k, a_m,
+                capital_goods, debt_installment_rate, dividend_payout_ratio,
                 corporate_tax,
             )
 
@@ -321,44 +225,30 @@ function set_firms_expectations_and_decisions!(world::Ark.World)
 end
 
 function firm_wage(
-        baseline_wage,
-        expected_sales,
-        capital_stock,
-        capital_productivity,
-        materials,
-        intermediate_productivity,
-        employment,
-        labor_productivity,
+        baseline_wage, expected_sales,
+        capital_stock, capital_productivity,
+        materials, intermediate_productivity,
+        employment, labor_productivity,
     )
     constrained_output = min(
         expected_sales,
-        min(
-            capital_stock * capital_productivity,
-            materials * intermediate_productivity,
-        ),
+        min(capital_stock * capital_productivity, materials * intermediate_productivity),
     )
     return baseline_wage * min(1.5, constrained_output / (employment * labor_productivity))
 end
 
 const FIRM_WAGE_COMPONENTS = (
-    ExpectedSales, WageBill, CapitalStock, Intermediates, Employment,
-    LaborProductivity, CapitalProductivity, IntermediateProductivity, AverageWageRate,
+    ExpectedSales, WageBill, CapitalStock, Intermediates, Employment, LaborProductivity,
+    CapitalProductivity, IntermediateProductivity, AverageWageRate,
 )
 
 function set_firms_wages!(world::Ark.World)
-    @dub for t in Ark.Query(
-            world,
-            FIRM_WAGE_COMPONENTS
-        )
+    @dub for t in Ark.Query(world, FIRM_WAGE_COMPONENTS)
         t.wage_bill.amount .= firm_wage.(
-            t.average_wage_rate.rate,
-            t.expected_sales.amount,
-            t.capital_stock.amount,
-            t.capital_productivity.value,
-            t.intermediates.amount,
-            t.intermediate_productivity.value,
-            t.employment.amount,
-            t.labor_productivity.value
+            t.average_wage_rate.rate, t.expected_sales.amount,
+            t.capital_stock.amount, t.capital_productivity.value,
+            t.intermediates.amount, t.intermediate_productivity.value,
+            t.employment.amount, t.labor_productivity.value
         )
     end
 
@@ -376,10 +266,7 @@ end
     )
     constrained_output = min(
         expected_sales,
-        min(
-            capital_stock * capital_productivity,
-            materials * intermediate_productivity,
-        ),
+        min(capital_stock * capital_productivity, materials * intermediate_productivity),
     )
     return baseline_labor_productivity *
         min(1.5, constrained_output / (employment * baseline_labor_productivity))
@@ -398,44 +285,29 @@ end
         expected_sales,
         min(
             employment * labor_productivity,
-            min(
-                capital_stock * capital_productivity,
-                materials * intermediate_productivity,
-            ),
+            min(capital_stock * capital_productivity, materials * intermediate_productivity),
         ),
     )
 end
 
 const FIRM_PRODUCTION_COMPONENTS = (
-    ExpectedSales,
-    Output,
-    Employment,
-    LaborProductivity,
-    CapitalStock,
-    CapitalProductivity,
-    Intermediates,
-    IntermediateProductivity,
+    ExpectedSales, Output, Employment, LaborProductivity, CapitalStock, CapitalProductivity,
+    Intermediates, IntermediateProductivity,
 )
 
 function set_firms_production!(world::Ark.World)
     @dub for t in Ark.Query(world, FIRM_PRODUCTION_COMPONENTS)
         for i in eachindex(t.e)
             effective_labor_productivity = firm_labor_productivity(
-                t.labor_productivity[i].value,
-                t.expected_sales[i].amount,
-                t.capital_stock[i].amount,
-                t.capital_productivity[i].value,
-                t.intermediates[i].amount,
-                t.intermediate_productivity[i].value,
+                t.labor_productivity[i].value, t.expected_sales[i].amount,
+                t.capital_stock[i].amount, t.capital_productivity[i].value,
+                t.intermediates[i].amount, t.intermediate_productivity[i].value,
                 t.employment[i].amount,
             )
             t.output[i] = firm_production(
-                t.expected_sales[i].amount,
-                t.employment[i].amount,
-                effective_labor_productivity,
-                t.capital_stock[i].amount,
-                t.capital_productivity[i].value,
-                t.intermediates[i].amount,
+                t.expected_sales[i].amount, t.employment[i].amount,
+                effective_labor_productivity, t.capital_stock[i].amount,
+                t.capital_productivity[i].value, t.intermediates[i].amount,
                 t.intermediate_productivity[i].value,
             ) |> Output
         end
@@ -445,24 +317,11 @@ end
 
 
 @inline function firm_profit(
-        price::T,
-        quantity::T,
-        excess_sales::T,
-        deposits::T,
-        wage::T,
-        employment::V,
-        household_price_index::T,
-        employer_contribution::T,
-        intermediate_productivity::T,
-        intermediate_price::T,
-        output::T,
-        depreciation_rate::T,
-        capital_productivity::T,
-        capital_goods_price::T,
-        product_tax_rate::T,
-        capital_tax_rate::T,
-        loans::T,
-        lending_rate::T,
+        price::T, quantity::T, excess_sales::T, deposits::T, wage::T,
+        employment::V, household_price_index::T, employer_contribution::T,
+        intermediate_productivity::T, intermediate_price::T, output::T,
+        depreciation_rate::T, capital_productivity::T, capital_goods_price::T,
+        product_tax_rate::T, capital_tax_rate::T, loans::T, lending_rate::T,
         deposit_rate::T,
     ) where {T <: Real, V <: Real}
     in_sales = price * quantity + price * excess_sales
@@ -475,26 +334,14 @@ end
     out_taxes_capital = capital_tax_rate * price * output
     out_loans = lending_rate * (loans + max(0.0, -deposits))
 
-    return in_sales + in_deposits -
-        out_wages - out_expenses - out_depreciation - out_taxes_prods - out_taxes_capital - out_loans
+    return in_sales + in_deposits - out_wages - out_expenses - out_depreciation -
+        out_taxes_prods - out_taxes_capital - out_loans
 end
 
 const FIRM_PROFIT_COMPONENTS = (
-    Profits,
-    Price,
-    Sales,
-    Output,
-    FinalGoodsStockChange,
-    Deposits,
-    WageBill,
-    Employment,
-    IntermediateProductivity,
-    PriceIndex,
-    CapitalDeprecationRate,
-    CapitalProductivity,
-    CFPriceIndex,
-    TaxRates,
-    LoansOutstanding,
+    Profits, Price, Sales, Output, FinalGoodsStockChange, Deposits, WageBill, Employment,
+    IntermediateProductivity, PriceIndex, CapitalDeprecationRate, CapitalProductivity,
+    CFPriceIndex, TaxRates, LoansOutstanding,
 )
 
 function set_firms_profits!(world::Ark.World)
@@ -504,30 +351,16 @@ function set_firms_profits!(world::Ark.World)
     _, r = single(Ark.Query(world, (LendingRate,)))
     _, r_bar = single(Ark.Query(world, (NominalInterestRate,)))
 
-
     @dub for t in Ark.Query(world, FIRM_PROFIT_COMPONENTS)
         @inbounds for i in eachindex(t.e)
-
             t.profits[i] = firm_profit(
-                t.price.value[i],
-                t.sales.amount[i],
-                t.final_goods_stock_change.amount[i],
-                t.deposits.amount[i],
-                t.wage_bill.amount[i],
-                t.employment.amount[i],
-                price_indices.household_consumption,
-                properties.social_insurance.employers_contribution,
-                t.intermediate_productivity.value[i],
-                t.price_index.value[i],
-                t.output.amount[i],
-                t.capital_depreciation_rate.rate[i],
-                t.capital_productivity.value[i],
-                t.cf_price_index.value[i],
-                t.tax_rates.output[i],
-                t.tax_rates.capital[i],
-                t.loans_outstanding.amount[i],
-                r.rate,
-                r_bar.rate,
+                t.price.value[i], t.sales.amount[i], t.final_goods_stock_change.amount[i],
+                t.deposits.amount[i], t.wage_bill.amount[i], t.employment.amount[i],
+                price_indices.household_consumption, properties.social_insurance.employers_contribution,
+                t.intermediate_productivity.value[i], t.price_index.value[i], t.output.amount[i],
+                t.capital_depreciation_rate.rate[i], t.capital_productivity.value[i],
+                t.cf_price_index.value[i], t.tax_rates.output[i], t.tax_rates.capital[i],
+                t.loans_outstanding.amount[i], r.rate, r_bar.rate,
             ) |> Profits
         end
 
@@ -574,32 +407,16 @@ end
     investment_cost = -capital_goods_price_index * investment
     debt_installment = -debt_installment_rate * loans
 
-    deposit_change =
-        sales_income +
-        labour_cost +
-        material_cost +
-        taxes_products +
-        taxes_production +
-        corporate_tax +
-        dividend_payments +
-        interest_payments +
-        interest_received +
-        investment_cost +
-        loan_flow +
-        debt_installment
+    deposit_change = sales_income + labour_cost + material_cost + taxes_products + taxes_production +
+        corporate_tax + dividend_payments + interest_payments + interest_received + investment_cost +
+        loan_flow + debt_installment
 
     return deposits + deposit_change
 end
 
 @inline function firm_equity(
-        deposits,
-        intermediates,
-        sector_production_cost,
-        price,
-        inventories,
-        capital_goods_price_index,
-        capital_stock,
-        loans,
+        deposits, intermediates, sector_production_cost, price, inventories,
+        capital_goods_price_index, capital_stock, loans,
     )
     return deposits +
         intermediates * sector_production_cost +
@@ -609,40 +426,21 @@ end
 end
 
 @inline function next_capital_stock(
-        capital_stock,
-        depreciation_rate,
-        capital_productivity,
-        output,
-        investment,
+        capital_stock, depreciation_rate, capital_productivity, output, investment,
     )
     return capital_stock - depreciation_rate / capital_productivity * output + investment
 end
 
 @inline function next_intermediates(
-        intermediates,
-        output,
-        intermediate_productivity,
-        materials_stock_change,
+        intermediates, output, intermediate_productivity, materials_stock_change,
     )
     return intermediates - output / intermediate_productivity + materials_stock_change
 end
 
 
 const FIRM_DEPOSIT_COMPONENTS = (
-    Deposits,
-    Price,
-    Sales,
-    WageBill,
-    Employment,
-    MaterialsStockChange,
-    PriceIndex,
-    TaxRates,
-    Output,
-    CFPriceIndex,
-    Profits,
-    LoansOutstanding,
-    Investment,
-    LoanFlow,
+    Deposits, Price, Sales, WageBill, Employment, MaterialsStockChange, PriceIndex, TaxRates,
+    Output, CFPriceIndex, Profits, LoansOutstanding, Investment, LoanFlow,
 )
 
 function set_firms_deposits!(world::Ark.World)
@@ -661,31 +459,15 @@ function set_firms_deposits!(world::Ark.World)
 
     @dub for t in Ark.Query(world, FIRM_DEPOSIT_COMPONENTS)
         for i in eachindex(t.deposits)
-            t.deposits[i] = (
-                firm_deposits(
-                    t.deposits[i].amount,
-                    t.price[i].value,
-                    t.sales[i].amount,
-                    t.wage_bill[i].amount,
-                    t.employment[i].amount,
-                    household_price_index,
-                    employer_contribution,
-                    t.materials_stock_change[i].amount,
-                    t.price_index[i].value,
-                    t.tax_rates[i].output,
-                    t.output[i].amount,
-                    t.tax_rates[i].capital,
-                    t.profits[i].amount,
-                    corporate_tax_rate,
-                    dividend_payout_ratio,
-                    t.loans_outstanding[i].amount,
-                    r.rate,
-                    r_bar.rate,
-                    t.cf_price_index[i].value,
-                    t.investment[i].amount,
-                    t.loan_flow[i].amount,
-                    debt_installment_rate,
-                )
+            t.deposits[i] = firm_deposits(
+                t.deposits[i].amount, t.price[i].value, t.sales[i].amount,
+                t.wage_bill[i].amount, t.employment[i].amount, household_price_index,
+                employer_contribution, t.materials_stock_change[i].amount,
+                t.price_index[i].value, t.tax_rates[i].output, t.output[i].amount,
+                t.tax_rates[i].capital, t.profits[i].amount, corporate_tax_rate,
+                dividend_payout_ratio, t.loans_outstanding[i].amount,
+                r.rate, r_bar.rate, t.cf_price_index[i].value, t.investment[i].amount,
+                t.loan_flow[i].amount, debt_installment_rate,
             ) |> Deposits
         end
     end
@@ -694,13 +476,7 @@ function set_firms_deposits!(world::Ark.World)
 end
 
 const FIRM_EQUITY_COMPONENTS = (
-    Equity,
-    Deposits,
-    Intermediates,
-    PrincipalProduct,
-    Price,
-    Inventories,
-    CapitalStock,
+    Equity, Deposits, Intermediates, PrincipalProduct, Price, Inventories, CapitalStock,
     LoansOutstanding,
 )
 
@@ -710,8 +486,7 @@ function set_firms_equity!(world::Ark.World)
     firm_cache = Ark.get_resource(world, FirmTmpBuffers{Float64})
 
     precompute_sector_production_costs!(
-        firm_cache.sector_production_cost,
-        properties.product_coeffs.technology_matrix,
+        firm_cache.sector_production_cost, properties.product_coeffs.technology_matrix,
         price_indices.sector,
     )
 
@@ -720,17 +495,11 @@ function set_firms_equity!(world::Ark.World)
 
     @dub for t in Ark.Query(world, FIRM_EQUITY_COMPONENTS)
         @inbounds for i in eachindex(t.e)
-            t.equity[i] = (
-                firm_equity(
-                    t.deposits[i].amount,
-                    t.intermediates[i].amount,
-                    sector_costs[t.principal_product[i].id],
-                    t.price[i].value,
-                    t.inventories[i].amount,
-                    capital_goods_price_index,
-                    t.capital_stock[i].amount,
-                    t.loans_outstanding[i].amount,
-                )
+            t.equity[i] = firm_equity(
+                t.deposits[i].amount, t.intermediates[i].amount,
+                sector_costs[t.principal_product[i].id], t.price[i].value,
+                t.inventories[i].amount, capital_goods_price_index, t.capital_stock[i].amount,
+                t.loans_outstanding[i].amount,
             ) |> Equity
         end
     end
@@ -754,36 +523,21 @@ function set_firms_loans!(world::Ark.World)
 end
 
 const FIRM_STOCK_COMPONENTS = (
-    CapitalStock,
-    CapitalDeprecationRate,
-    CapitalProductivity,
-    Output,
-    Investment,
-    Intermediates,
-    IntermediateProductivity,
-    MaterialsStockChange,
-    Sales,
-    FinalGoodsStockChange,
-    Inventories,
+    CapitalStock, CapitalDeprecationRate, CapitalProductivity, Output, Investment, Intermediates,
+    IntermediateProductivity, MaterialsStockChange, Sales, FinalGoodsStockChange, Inventories,
 )
 
 function set_firms_stocks!(world::Ark.World)
     @dub for t in Ark.Query(world, FIRM_STOCK_COMPONENTS)
         @inbounds t.final_goods_stock_change.amount .= t.output.amount .- t.sales.amount
 
-
         @inbounds t.capital_stock.amount .= next_capital_stock.(
-            t.capital_stock.amount,
-            t.capital_depreciation_rate.rate,
-            t.capital_productivity.value,
-            t.output.amount,
-            t.investment.amount,
+            t.capital_stock.amount, t.capital_depreciation_rate.rate,
+            t.capital_productivity.value, t.output.amount, t.investment.amount,
         )
 
         @inbounds t.intermediates.amount .= next_intermediates.(
-            t.intermediates.amount,
-            t.output.amount,
-            t.intermediate_productivity.value,
+            t.intermediates.amount, t.output.amount, t.intermediate_productivity.value,
             t.materials_stock_change.amount,
         )
 

@@ -7,7 +7,6 @@ function set_growth_inflation_expectations!(world::Ark.World)
 
     (; gross_domestic_product_history, inflation_history) = macro_state
 
-
     expected_gdp = estimate_next_value(log.(gross_domestic_product_history[1:(interval + time - 1)])) |> exp
     expected_growth = expected_gdp / gross_domestic_product_history[interval + time - 1] - 1.0
     expected_inflation = exp(estimate_next_value(inflation_history[1:(interval + time - 1)])) - 1.0
@@ -15,7 +14,6 @@ function set_growth_inflation_expectations!(world::Ark.World)
     expectations.gross_domestic_product = expected_gdp
     expectations.output_growth = expected_growth
     expectations.inflation = expected_inflation
-
 
     return nothing
 end
@@ -31,7 +29,6 @@ function set_growth_inflation_EA!(world::Ark.World)
 
     random_inflation_shock = inflation_shock_sd * randn()
 
-
     @dub for t in Ark.Query(world, (EuroAreaGDP, EuroAreaGrowth, EuroAreaInflation))
         @inbounds for i in eachindex(t.e)
             expected_growth = exp(
@@ -44,8 +41,7 @@ function set_growth_inflation_EA!(world::Ark.World)
             t.euro_area_inflation[i] = (
                 exp(
                     inflation_autoregression * log1p(t.euro_area_inflation[i].rate) +
-                        inflation_response_to_output_gap +
-                        random_inflation_shock
+                        inflation_response_to_output_gap + random_inflation_shock
                 ) - 1
             ) |> EuroAreaInflation
         end

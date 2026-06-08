@@ -1,4 +1,3 @@
-
 component_field_name(::Type{Ark.Relation{T}}) where {T} = component_field_name(T)
 component_field_name(::Type{ActiveBuyers}) = :active_buyers
 component_field_name(::Type{AverageWageRate}) = :average_wage_rate

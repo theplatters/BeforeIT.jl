@@ -71,8 +71,7 @@ function set_bank_equity!(world::Ark.World)
 
     total_taxed_and_dividend_ratio = (dividend_payout_ratio * (1 - corporate_tax) + corporate_tax)
     @dub for t in Ark.Query(world, (Equity, Profits), with = (Bank,))
-        t.equity.amount .= t.equity.amount .+
-            t.profits.amount .-
+        t.equity.amount .= t.equity.amount .+ t.profits.amount .-
             total_taxed_and_dividend_ratio .* max.(0, t.profits.amount)
     end
 
@@ -92,7 +91,8 @@ function set_bank_profits!(world)
         @inbounds for i in eachindex(t.e)
             central_bank_term = t.residual_items[i].amount - total_positive_deposits
             t.profits[i] = (
-                t.lending_rate[i].rate * rterm + cb_rate * central_bank_term
+                t.lending_rate[i].rate * rterm +
+                    cb_rate * central_bank_term
             ) |> Profits
         end
     end

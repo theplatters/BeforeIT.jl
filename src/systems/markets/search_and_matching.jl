@@ -13,21 +13,12 @@ function perform_search_and_matching!(world::Ark.World; parallel = false)
     realisation_cache = Ark.get_resource(world, RetailRealisationCache)
     properties = BeforeIT.properties(world)
     @dub for t in Ark.Query(
-            world,
-            (
-                PrincipalProduct,
-                IntermediateMarketDemandBook,
-                IntermediateMarketDemandClearing,
-                FinalMarketDemandBook,
-                FinalMarketDemandClearing,
-                MarketSupplyPool,
-                MarketCapacityPool,
-                MarketPricePool,
-                FirstPassIntermediateDemand,
-                FirstPassFinalDemand,
-                MarketWeights,
-                MarketWeightVector,
-                ActiveBuyers,
+            world, (
+                PrincipalProduct, IntermediateMarketDemandBook,
+                IntermediateMarketDemandClearing, FinalMarketDemandBook,
+                FinalMarketDemandClearing, MarketSupplyPool, MarketCapacityPool,
+                MarketPricePool, FirstPassIntermediateDemand, FirstPassFinalDemand,
+                MarketWeights, MarketWeightVector, ActiveBuyers,
             )
         )
         @maybe_threads parallel for i in eachindex(t.e)
@@ -147,9 +138,8 @@ end
         realisation_cache,
     )
     @dub for t in Ark.Query(
-            world,
-            (ConsumptionBudget, InvestmentBudget, FinalDemandCacheIndex),
-            with = (Household,),
+            world, (ConsumptionBudget, InvestmentBudget, FinalDemandCacheIndex),
+            with = (Household,)
         )
         @inbounds for i in eachindex(t.e)
             cache_pos = t.final_demand_cache_index[i].id
@@ -247,15 +237,9 @@ end
 function build_domestic_stock_pool!(world::Ark.World)
     @dub for t in Ark.Query(world, (MarketSupplyPool, MarketCapacityPool, MarketPricePool))
         @dub for t2 in Ark.Query(
-                world,
-                (
-                    PrincipalProduct,
-                    Output,
-                    Inventories,
-                    CapitalStock,
-                    CapitalProductivity,
-                    Price,
-                    StockCacheIndex,
+                world, (
+                    PrincipalProduct, Output, Inventories, CapitalStock,
+                    CapitalProductivity, Price, StockCacheIndex,
                 )
             )
             @inbounds for j in eachindex(t2.e)
@@ -276,14 +260,7 @@ end
 
 function build_import_stock_pool!(world::Ark.World)
     @dub for t in Ark.Query(world, (MarketSupplyPool, MarketCapacityPool, MarketPricePool))
-        @dub for t2 in Ark.Query(
-                world, (
-                    PrincipalProduct,
-                    ImportSupply,
-                    ImportPrice,
-                    StockCacheIndex,
-                )
-            )
+        @dub for t2 in Ark.Query(world, (PrincipalProduct, ImportSupply, ImportPrice, StockCacheIndex))
             @inbounds for j in eachindex(t2.e)
                 market_pos = t2.principal_product[j].id
                 pos = t2.stock_cache_index[j].id
@@ -784,10 +761,7 @@ function update_retail_realisations!(world::Ark.World, realisation_cache)
         for j in eachindex(t.e)
             demand_book_amount = t.final_market_demand_book[j].amount
             first_pass_amount = t.first_pass_final_demand[j].amount
-            @dub for t2 in Ark.Query(
-                    world, (RealisedConsumption, RealisedInvestment, FinalDemandCacheIndex),
-                    with = (Household,),
-                )
+            @dub for t2 in Ark.Query(world, (RealisedConsumption, RealisedInvestment, FinalDemandCacheIndex), with = (Household,))
 
                 @inbounds for i in eachindex(t2.e)
                     household_index = t2.final_demand_cache_index[i].id
@@ -861,37 +835,25 @@ function perform_retail_market!(
         sector_available_stocks, sector_stock_capacity, sector_prices, demand_book, demand_clearing, first_pass, active, weights, weight_vector
     )
 
-
     sector_weights = BeforeIT.rebuild_weight_vector(weights, weight_vector)
 
+    zero_inactive_retail_weights!(sector_weights, sector_available_stocks)
 
-    zero_inactive_retail_weights!(
-        sector_weights,
-        sector_available_stocks,
-    )
     allocate_retail_from_available_stocks!(
-        sector_available_stocks, sector_stock_capacity, sector_prices, demand_book, demand_clearing,
-        active,
-        sector_weights,
+        sector_available_stocks, sector_stock_capacity, sector_prices, demand_book,
+        demand_clearing, active, sector_weights,
     )
 
-    copyto!(
-        first_pass,
-        demand_book,
-    )
+    copyto!(first_pass, demand_book)
 
     sector_weights = BeforeIT.rebuild_weight_vector(weights, weight_vector)
 
-    zero_inactive_retail_weights!(
-        sector_weights,
-        sector_stock_capacity,
-    )
-    allocate_retail_from_stock_capacity!(
-        sector_available_stocks, sector_stock_capacity, sector_prices, demand_book, demand_clearing,
-        active,
-        sector_weights,
-    )
+    zero_inactive_retail_weights!(sector_weights, sector_stock_capacity)
 
+    allocate_retail_from_stock_capacity!(
+        sector_available_stocks, sector_stock_capacity, sector_prices, demand_book,
+        demand_clearing, active, sector_weights,
+    )
 
     return nothing
 end
@@ -910,14 +872,9 @@ end
 function update_search_and_match_realisations!(world::Ark.World)
     retail_realisation_cache = Ark.get_resource(world, RetailRealisationCache)
 
-    (; technology_matrix, capital_formation) =
-        BeforeIT.properties(world).product_coeffs
+    (; technology_matrix, capital_formation) = BeforeIT.properties(world).product_coeffs
 
-    update_firm_realisations!(
-        world,
-        technology_matrix,
-        capital_formation,
-    )
+    update_firm_realisations!(world, technology_matrix, capital_formation)
 
     update_retail_realisations!(world, retail_realisation_cache)
     update_goods_demand_from_remaining_stocks!(world)
@@ -932,10 +889,7 @@ function finalize_search_and_match!(world::Ark.World)
     total_investment = 0.0
     total_consumption = 0.0
 
-    @dub for t in Ark.Query(
-            world, (RealisedConsumption, RealisedInvestment, CapitalStock),
-            with = (Household,),
-        )
+    @dub for t in Ark.Query(world, (RealisedConsumption, RealisedInvestment, CapitalStock), with = (Household,))
         total_consumption += sum(t.realised_consumption.amount)
         total_investment += sum(t.realised_investment.amount)
         t.capital_stock.amount .+= t.realised_investment.amount

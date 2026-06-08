@@ -8,7 +8,6 @@ function set_central_bank_rate!(world)
 
     (; inflation_target, interest_rate_smoothing, response_to_inflation, response_to_output, natural_rate) = properties.monetary_policy
 
-
     e, growth, inflation = single(Ark.Query(world, (EuroAreaGrowth, EuroAreaInflation)))
     rotw_growth = growth.rate
     rotw_inflation = inflation.rate
@@ -17,14 +16,9 @@ function set_central_bank_rate!(world)
         @inbounds for i in eachindex(t.e)
             t.nominal_interest_rate[i] = (
                 taylor_rule(
-                    interest_rate_smoothing,
-                    t.nominal_interest_rate[i].rate,
-                    natural_rate,
-                    inflation_target,
-                    response_to_inflation,
-                    response_to_output,
-                    rotw_growth,
-                    rotw_inflation,
+                    interest_rate_smoothing, t.nominal_interest_rate[i].rate,
+                    natural_rate, inflation_target, response_to_inflation,
+                    response_to_output, rotw_growth, rotw_inflation,
                 )
             ) |> NominalInterestRate
         end
