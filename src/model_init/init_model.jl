@@ -37,7 +37,8 @@ end
 
 function seed_initial_employment!(world::Ark.World, properties::Properties)
     unemployed_workers = Ark.Entity[]
-    for (worker_e, _) in Ark.Query(world, (Unemployed,))
+    for comps in Ark.Query(world, (Unemployed,))
+        worker_e, _ = comps
         append!(unemployed_workers, worker_e)
     end
     sort!(unemployed_workers)
@@ -45,7 +46,8 @@ function seed_initial_employment!(world::Ark.World, properties::Properties)
     initial_assignments = Tuple{Ark.Entity, Ark.Entity, Float64}[]
     worker_index = 1
     firm_rows = Tuple{Ark.Entity, Int, Float64}[]
-    for (firm_e, employment, average_wages) in Ark.Query(world, (Employment, AverageWageRate))
+    for comps in Ark.Query(world, (Employment, AverageWageRate))
+        firm_e, employment, average_wages = comps
         for i in eachindex(firm_e)
             push!(firm_rows, (firm_e[i], employment[i].amount, average_wages[i].rate))
         end
@@ -77,7 +79,7 @@ function initialize_household_incomes_and_balance_sheets!(world::Ark.World, prop
 
     household_debt_ratio = properties.initial_conditions.households.debt
     household_capital_ratio = properties.initial_conditions.households.capital
-    for (_, income, deposits, capital) in Ark.Query(
+    for comps in Ark.Query(
             world,
             (
                 NetDisposableIncome,
@@ -86,6 +88,7 @@ function initialize_household_incomes_and_balance_sheets!(world::Ark.World, prop
             ),
             with = (Household,),
         )
+        _, income, deposits, capital = comps
         deposits.amount .= household_debt_ratio .* income.amount
         capital.amount .= household_capital_ratio .* income.amount
     end
@@ -97,7 +100,8 @@ function normalize_deposits_and_capital_stocks!(world)
     total_disposable_income = @sum_over (income.amount for income in Ark.Query(world, (NetDisposableIncome,)))
 
 
-    for (_, capital, deposits) in Ark.Query(world, (CapitalStock, Deposits), with = (Household,))
+    for comps in Ark.Query(world, (CapitalStock, Deposits), with = (Household,))
+        _, capital, deposits = comps
         capital.amount .= capital.amount ./ total_disposable_income
         deposits.amount .= deposits.amount ./ total_disposable_income
     end
@@ -109,7 +113,8 @@ function add_deposits_to_bank!(world)
     total_deposits = @sum_over (deposits.amount for deposits in Ark.Query(world, (Deposits,)))
     total_loans = @sum_over (loans.amount for loans in Ark.Query(world, (LoansOutstanding,)))
 
-    for (_, equity, residual_items) in Ark.Query(world, (Equity, ResidualItems), with = (Bank,))
+    for comps in Ark.Query(world, (Equity, ResidualItems), with = (Bank,))
+        _, equity, residual_items = comps
         residual_items.amount .= equity.amount .- total_loans .+ total_deposits
     end
 

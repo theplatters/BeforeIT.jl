@@ -32,14 +32,15 @@ function set_growth_inflation_EA!(world::Ark.World)
     random_inflation_shock = inflation_shock_sd * randn()
 
 
-    for (e, gdp, growth, inflation) in Ark.Query(world, (EuroAreaGDP, EuroAreaGrowth, EuroAreaInflation))
+    for comps in Ark.Query(world, (EuroAreaGDP, EuroAreaGrowth, EuroAreaInflation))
+        e, gdp, growth, inflation = comps
         @inbounds for i in eachindex(e)
             expected_growth = exp(output_autoregression * log(gdp[i].value) + output_autoregression_scalar + epsilon_Y_EA)
-            growth[i] = EuroAreaGrowth(expected_growth / gdp[i].value - 1)
-            gdp[i] = EuroAreaGDP(expected_growth)
-            inflation[i] = EuroAreaInflation(
+            growth[i] = expected_growth / gdp[i].value - 1 |> EuroAreaGrowth
+            gdp[i] = expected_growth |> EuroAreaGDP
+            inflation[i] = (
                 exp(inflation_autoregression * log1p(inflation[i].rate) + inflation_response_to_output_gap + random_inflation_shock) - 1
-            )
+            ) |> EuroAreaInflation
         end
     end
 
@@ -57,7 +58,8 @@ function set_inflation_priceindex!(world::Ark.World)
 
     total_monetary_output_value = 0.0
     total_output = 0.0
-    for (e, prices, quantities) in Ark.Query(world, (Price, Output))
+    for comps in Ark.Query(world, (Price, Output))
+        e, prices, quantities = comps
         for i in eachindex(e)
             total_monetary_output_value += prices[i].value * quantities[i].amount
             total_output += quantities[i].amount
@@ -78,14 +80,16 @@ function set_sector_specific_priceindex!(world::Ark.World)
     fill!(price_indices.sector, 0.0)
     total_sales = zeros(size(price_indices.sector))
 
-    for (entities, principal_product, prices, sales) in Ark.Query(world, (PrincipalProduct, Price, Sales))
+    for comps in Ark.Query(world, (PrincipalProduct, Price, Sales))
+        entities, principal_product, prices, sales = comps
         @inbounds for i in eachindex(entities)
             price_indices.sector[principal_product[i].id] += prices[i].value * sales[i].amount
             total_sales[principal_product[i].id] += sales[i].amount
         end
     end
 
-    for (entities, principal_product, prices, sales) in Ark.Query(world, (PrincipalProduct, ImportPrice, ImportSales))
+    for comps in Ark.Query(world, (PrincipalProduct, ImportPrice, ImportSales))
+        entities, principal_product, prices, sales = comps
         @inbounds for i in eachindex(entities)
             price_indices.sector[principal_product[i].id] += prices[i].value * sales[i].amount
             total_sales[principal_product[i].id] += sales[i].amount

@@ -81,17 +81,17 @@ function setup_firms!(world::Ark.World, properties::Properties, markets)
     ) do (entities, net_inc, cons_b, inv_b, exp_inc, real_cons, real_inv, cap_s, dep, cap_ist, hh, final_cache_index)
         for i in eachindex(entities)
             owners[i] = entities[i]
-            net_inc[i] = NetDisposableIncome(disposable_income[i])
-            cons_b[i] = ConsumptionBudget(0.0)
-            inv_b[i] = InvestmentBudget(0.0)
-            exp_inc[i] = ExpectedIncome(0.0)
-            real_cons[i] = RealisedConsumption(0.0)
-            real_inv[i] = RealisedInvestment(0.0)
-            cap_s[i] = CapitalStock(K_h[i])
-            dep[i] = Deposits(D_h[i])
+            net_inc[i] = disposable_income[i] |> NetDisposableIncome
+            cons_b[i] = 0.0 |> ConsumptionBudget
+            inv_b[i] = 0.0 |> InvestmentBudget
+            exp_inc[i] = 0.0 |> ExpectedIncome
+            real_cons[i] = 0.0 |> RealisedConsumption
+            real_inv[i] = 0.0 |> RealisedInvestment
+            cap_s[i] = K_h[i] |> CapitalStock
+            dep[i] = D_h[i] |> Deposits
             cap_ist[i] = Capitalist()
             hh[i] = Household()
-            final_cache_index[i] = FinalDemandCacheIndex(firm_owner_final_demand_offset + i)
+            final_cache_index[i] = firm_owner_final_demand_offset + i |> FinalDemandCacheIndex
         end
     end
 
@@ -145,46 +145,46 @@ function setup_firms!(world::Ark.World, properties::Properties, markets)
         ) do (entities, pp, lp, ip, cp, wb, awr, cdr, tr, emp, out, sal, gd, pr, inv, cs, interm, lo, om, dep, prof, vac, invst, eq, pi, cfpi, tl, ec, el, es, di, dm, de, ep, fgsc, msc, lf, intermediary_cache_index, stock_cache_index, firm, owner, market)
             for i in eachindex(entities)
                 firm_index = firm_offset + i
-                pp[i] = PrincipalProduct(principal_product[firm_index])
-                lp[i] = LaborProductivity(output_elasticities[firm_index])
-                ip[i] = IntermediateProductivity(material_coeffs[firm_index])
-                cp[i] = CapitalProductivity(capital_coeffs[firm_index])
-                wb[i] = WageBill(0.0)
-                awr[i] = AverageWageRate(wage_rate[firm_index])
-                cdr[i] = CapitalDeprecationRate(deprecation_rate[firm_index])
+                pp[i] = principal_product[firm_index] |> PrincipalProduct
+                lp[i] = output_elasticities[firm_index] |> LaborProductivity
+                ip[i] = material_coeffs[firm_index] |> IntermediateProductivity
+                cp[i] = capital_coeffs[firm_index] |> CapitalProductivity
+                wb[i] = 0.0 |> WageBill
+                awr[i] = wage_rate[firm_index] |> AverageWageRate
+                cdr[i] = deprecation_rate[firm_index] |> CapitalDeprecationRate
                 tr[i] = TaxRates(output_tax_rate[firm_index], capital_tax_rate[firm_index])
-                emp[i] = Employment(employment[firm_index])
-                out[i] = Output(output[firm_index])
-                sal[i] = Sales(output[firm_index])
-                gd[i] = GoodsDemand(output[firm_index])
-                pr[i] = Price(1.0)
-                inv[i] = Inventories(0.0)
-                cs[i] = CapitalStock(capital[firm_index])
-                interm[i] = Intermediates(intermediates[firm_index])
-                lo[i] = LoansOutstanding(outstanding_loans[firm_index])
-                om[i] = OperatingMargins(operating_margins[firm_index])
-                dep[i] = Deposits(deposits[firm_index])
-                prof[i] = Profits(profits[firm_index])
-                vac[i] = Vacancies(employment[firm_index])
-                invst[i] = Investment(0.0)
-                eq[i] = Equity(0.0)
-                pi[i] = PriceIndex(0.0)
-                cfpi[i] = CFPriceIndex(0.0)
-                tl[i] = TargetLoans(0.0)
-                ec[i] = ExpectedCapital(0.0)
-                el[i] = ExpectedLoans(0.0)
-                es[i] = ExpectedSales(0.0)
-                di[i] = DesiredInvestment(0.0)
-                dm[i] = DesiredMaterials(0.0)
-                de[i] = DesiredEmployment(0.0)
-                ep[i] = ExpectedProfits(0.0)
-                fgsc[i] = FinalGoodsStockChange(0.0)
-                msc[i] = MaterialsStockChange(0.0)
-                lf[i] = LoanFlow(0.0)
-                intermediary_cache_index[i] = IntermediaryDemandCacheIndex(firm_index)
-                stock_cache_index[i] = StockCacheIndex(i)
+                emp[i] = employment[firm_index] |> Employment
+                out[i] = output[firm_index] |> Output
+                sal[i] = output[firm_index] |> Sales
+                gd[i] = output[firm_index] |> GoodsDemand
+                pr[i] = 1.0 |> Price
+                inv[i] = 0.0 |> Inventories
+                cs[i] = capital[firm_index] |> CapitalStock
+                interm[i] = intermediates[firm_index] |> Intermediates
+                lo[i] = outstanding_loans[firm_index] |> LoansOutstanding
+                om[i] = operating_margins[firm_index] |> OperatingMargins
+                dep[i] = deposits[firm_index] |> Deposits
+                prof[i] = profits[firm_index] |> Profits
+                vac[i] = employment[firm_index] |> Vacancies
+                invst[i] = 0.0 |> Investment
+                eq[i] = 0.0 |> Equity
+                pi[i] = 0.0 |> PriceIndex
+                cfpi[i] = 0.0 |> CFPriceIndex
+                tl[i] = 0.0 |> TargetLoans
+                ec[i] = 0.0 |> ExpectedCapital
+                el[i] = 0.0 |> ExpectedLoans
+                es[i] = 0.0 |> ExpectedSales
+                di[i] = 0.0 |> DesiredInvestment
+                dm[i] = 0.0 |> DesiredMaterials
+                de[i] = 0.0 |> DesiredEmployment
+                ep[i] = 0.0 |> ExpectedProfits
+                fgsc[i] = 0.0 |> FinalGoodsStockChange
+                msc[i] = 0.0 |> MaterialsStockChange
+                lf[i] = 0.0 |> LoanFlow
+                intermediary_cache_index[i] = firm_index |> IntermediaryDemandCacheIndex
+                stock_cache_index[i] = i |> StockCacheIndex
                 firm[i] = Firm()
-                owner[i] = Owner(owners[firm_index])
+                owner[i] = owners[firm_index] |> Owner
                 market[i] = Market()
             end
         end

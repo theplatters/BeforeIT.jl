@@ -7,14 +7,16 @@ end
 
 function apply_interest_rate_shock!(world)
     time = Ark.get_resource(world, TimeIndex)
-    for (e, interest_rate_shock) in Ark.Query(world, (InterestRateShock,))
+    for comps in Ark.Query(world, (InterestRateShock,))
+        e, interest_rate_shock = comps
 
         for i in eachindex(e)
 
             if (time.step <= interest_rate_shock[i].final_time)
-                for (e_cb, cb_rate) in Ark.Query(world, (NominalInterestRate,))
+                for comps in Ark.Query(world, (NominalInterestRate,))
+                    e_cb, cb_rate = comps
                     for j in eachindex(e_cb)
-                        cb_rate[j] = NominalInterestRate(interest_rate_shock[i].rate)
+                        cb_rate[j] = interest_rate_shock[i].rate |> NominalInterestRate
                     end
                 end
 
@@ -27,12 +29,14 @@ end
 
 function apply_productitvity_shock!(world)
 
-    for (e, productivity_shock) in Ark.Query(world, (ProductivityShock,))
+    for comps in Ark.Query(world, (ProductivityShock,))
+        e, productivity_shock = comps
 
         for i in eachindex(e)
-            for (e_firm, labor_productivity) in Ark.Query(world, (LaborProductivity,))
+            for comps in Ark.Query(world, (LaborProductivity,))
+                e_firm, labor_productivity = comps
                 for j in eachindex(e_firm)
-                    labor_productivity[j] = LaborProductivity(productivity_shock[i].productivity_multiplier * labor_productivity[j].rate)
+                    labor_productivity[j] = productivity_shock[i].productivity_multiplier * labor_productivity[j].rate |> LaborProductivity
                 end
             end
 
@@ -46,7 +50,8 @@ function apply_consumption_shock!(world)
     time = Ark.get_resource(world, TimeIndex)
     properties = BeforeIT.properties(world)
     rate = properties.household_params.consumption_share
-    for (e, interest_rate_shock) in Ark.Query(world, (ConsumptionShock,))
+    for comps in Ark.Query(world, (ConsumptionShock,))
+        e, interest_rate_shock = comps
 
         for i in eachindex(e)
 

@@ -2,7 +2,8 @@ function setup_bank!(world::Ark.World, properties::Properties)
     (; equity_ratio, policy_rate) = properties.initial_conditions.banking
     risk_premium = properties.banking_params.risk_premium
     total_loans = 0.0
-    for (_, loans) in Ark.Query(world, (LoansOutstanding,), with = (Firm,))
+    for comps in Ark.Query(world, (LoansOutstanding,), with = (Firm,))
+        _, loans = comps
         total_loans += sum(loans.amount)
     end
     initial_profits = risk_premium * total_loans + policy_rate * equity_ratio

@@ -28,6 +28,7 @@ include("utils/toannual.jl")
 include("utils/maybe_threads.jl")
 
 include("components/components.jl")
+include("utils/query_rows.jl")
 
 include("resources/aggregates.jl")
 include("resources/properties.jl")

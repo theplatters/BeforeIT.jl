@@ -239,46 +239,25 @@ function set_firms_expectations_and_decisions!(world::Ark.World)
         sector,
     )
 
-    for (
-            e,
-            principal_product,
-            prices,
-            average_wages,
-            depreciation_rate,
-            intermediate_productivity,
-            labor_productivity,
-            capital_productivity,
-            goods_demand,
-            capital,
-            profits,
-            loans,
-            deposits,
-            desired_investment,
-            desired_materials,
-            desired_employment,
-            expected_profits,
-            expected_capital,
-            expected_loans,
-            expected_sales,
-            target_loans,
-        ) in Ark.Query(world, FIRM_EXPECTATION_COMPONENTS)
+    for comps in Ark.Query(world, FIRM_EXPECTATION_COMPONENTS)
+        row = query_row(comps)
 
-        @inbounds for i in eachindex(e)
-            product_id = principal_product[i].id
-            price = prices[i].value
+        @inbounds for i in eachindex(row.e)
+            product_id = row.principal_product[i].id
+            price = row.price[i].value
             inv_price = inv(price)
 
-            wage = average_wages[i].rate
-            δ = depreciation_rate[i].rate
-            a_m = intermediate_productivity[i].value
-            a_l = labor_productivity[i].value
-            a_k = capital_productivity[i].value
+            wage = row.average_wage_rate[i].rate
+            δ = row.capital_depreciation_rate[i].rate
+            a_m = row.intermediate_productivity[i].value
+            a_l = row.labor_productivity[i].value
+            a_k = row.capital_productivity[i].value
 
-            demand = goods_demand[i].amount
-            capital_stock = capital[i].amount
-            current_profit = profits[i].amount
-            current_loans = loans[i].amount
-            current_deposits = deposits[i].amount
+            demand = row.goods_demand[i].amount
+            capital_stock = row.capital_stock[i].amount
+            current_profit = row.profits[i].amount
+            current_loans = row.loans_outstanding[i].amount
+            current_deposits = row.deposits[i].amount
 
             sector_production_cost = firm_cache.sector_production_cost[product_id]
 
@@ -328,15 +307,15 @@ function set_firms_expectations_and_decisions!(world::Ark.World)
 
             desired_investment_sales = use_capacity_sales_for_investment ? capacity_sales_amount : expected_sales_amount
 
-            desired_investment[i] = DesiredInvestment(desired_investment_amount(δ, a_k, desired_investment_sales))
-            desired_materials[i] = DesiredMaterials(desired_materials_amount)
-            desired_employment[i] = DesiredEmployment(desired_employment_amount)
-            expected_sales[i] = ExpectedSales(expected_sales_amount)
-            expected_profits[i] = ExpectedProfits(expected_profit_amount)
-            expected_capital[i] = ExpectedCapital(expected_capital_amount)
-            expected_loans[i] = ExpectedLoans(expected_loans_amount)
-            target_loans[i] = TargetLoans(target_loans_amount)
-            prices[i] = Price(price * (1 + cost_push_inflation) * (1 + inflation))
+            row.desired_investment[i] = desired_investment_amount(δ, a_k, desired_investment_sales) |> DesiredInvestment
+            row.desired_materials[i] = desired_materials_amount |> DesiredMaterials
+            row.desired_employment[i] = desired_employment_amount |> DesiredEmployment
+            row.expected_sales[i] = expected_sales_amount |> ExpectedSales
+            row.expected_profits[i] = expected_profit_amount |> ExpectedProfits
+            row.expected_capital[i] = expected_capital_amount |> ExpectedCapital
+            row.expected_loans[i] = expected_loans_amount |> ExpectedLoans
+            row.target_loans[i] = target_loans_amount |> TargetLoans
+            row.price[i] = price * (1 + cost_push_inflation) * (1 + inflation) |> Price
         end
     end
 
@@ -369,30 +348,20 @@ const FIRM_WAGE_COMPONENTS = (
 )
 
 function set_firms_wages!(world::Ark.World)
-    for (
-            _,
-            expected_sales,
-            wage_bill,
-            capital,
-            intermediates,
-            employment,
-            labor_productivity,
-            capital_productivity,
-            intermediate_productivity,
-            average_wages,
-        ) in Ark.Query(
+    for comps in Ark.Query(
             world,
             FIRM_WAGE_COMPONENTS
         )
-        wage_bill.amount .= firm_wage.(
-            average_wages.rate,
-            expected_sales.amount,
-            capital.amount,
-            capital_productivity.value,
-            intermediates.amount,
-            intermediate_productivity.value,
-            employment.amount,
-            labor_productivity.value
+        row = query_row(comps)
+        row.wage_bill.amount .= firm_wage.(
+            row.average_wage_rate.rate,
+            row.expected_sales.amount,
+            row.capital_stock.amount,
+            row.capital_productivity.value,
+            row.intermediates.amount,
+            row.intermediate_productivity.value,
+            row.employment.amount,
+            row.labor_productivity.value
         )
     end
 
@@ -452,30 +421,27 @@ const FIRM_PRODUCTION_COMPONENTS = (
 )
 
 function set_firms_production!(world::Ark.World)
-    for (
-            e, expected_sales, production, employment,
-            labor_productivity, capital, capital_productivity,
-            intermediates, intermediate_productivity,
-        ) in Ark.Query(world, FIRM_PRODUCTION_COMPONENTS)
+    for comps in Ark.Query(world, FIRM_PRODUCTION_COMPONENTS)
+        row = query_row(comps)
 
-        for i in eachindex(e)
+        for i in eachindex(row.e)
             effective_labor_productivity = firm_labor_productivity(
-                labor_productivity[i].value,
-                expected_sales[i].amount,
-                capital[i].amount,
-                capital_productivity[i].value,
-                intermediates[i].amount,
-                intermediate_productivity[i].value,
-                employment[i].amount,
+                row.labor_productivity[i].value,
+                row.expected_sales[i].amount,
+                row.capital_stock[i].amount,
+                row.capital_productivity[i].value,
+                row.intermediates[i].amount,
+                row.intermediate_productivity[i].value,
+                row.employment[i].amount,
             )
-            production[i] = firm_production(
-                expected_sales[i].amount,
-                employment[i].amount,
+            row.output[i] = firm_production(
+                row.expected_sales[i].amount,
+                row.employment[i].amount,
                 effective_labor_productivity,
-                capital[i].amount,
-                capital_productivity[i].value,
-                intermediates[i].amount,
-                intermediate_productivity[i].value,
+                row.capital_stock[i].amount,
+                row.capital_productivity[i].value,
+                row.intermediates[i].amount,
+                row.intermediate_productivity[i].value,
             ) |> Output
         end
     end
@@ -540,49 +506,33 @@ function set_firms_profits!(world::Ark.World)
     price_indices = Ark.get_resource(world, PriceIndices)
     properties = Ark.get_resource(world, Properties)
 
-    (_, r) = single(Ark.Query(world, (LendingRate,)))
-    (_, r_bar) = single(Ark.Query(world, (NominalInterestRate,)))
+    _, r = single(Ark.Query(world, (LendingRate,)))
+    _, r_bar = single(Ark.Query(world, (NominalInterestRate,)))
 
 
-    for (
-            e,
-            profits,
-            prices,
-            sales,
-            production,
-            final_goods_stock_change,
-            deposits,
-            wage_bill,
-            employment,
-            intermediate_productivity,
-            intermediate_price,
-            depreciation_rate,
-            capital_productivity,
-            cf_price_index,
-            tax_rates,
-            loans,
-        ) in Ark.Query(world, FIRM_PROFIT_COMPONENTS)
+    for comps in Ark.Query(world, FIRM_PROFIT_COMPONENTS)
+        row = query_row(comps)
 
-        @inbounds for i in eachindex(e)
+        @inbounds for i in eachindex(row.e)
 
-            profits[i] = firm_profit(
-                prices.value[i],
-                sales.amount[i],
-                final_goods_stock_change.amount[i],
-                deposits.amount[i],
-                wage_bill.amount[i],
-                employment.amount[i],
+            row.profits[i] = firm_profit(
+                row.price.value[i],
+                row.sales.amount[i],
+                row.final_goods_stock_change.amount[i],
+                row.deposits.amount[i],
+                row.wage_bill.amount[i],
+                row.employment.amount[i],
                 price_indices.household_consumption,
                 properties.social_insurance.employers_contribution,
-                intermediate_productivity.value[i],
-                intermediate_price.value[i],
-                production.amount[i],
-                depreciation_rate.rate[i],
-                capital_productivity.value[i],
-                cf_price_index.value[i],
-                tax_rates.output[i],
-                tax_rates.capital[i],
-                loans.amount[i],
+                row.intermediate_productivity.value[i],
+                row.price_index.value[i],
+                row.output.amount[i],
+                row.capital_depreciation_rate.rate[i],
+                row.capital_productivity.value[i],
+                row.cf_price_index.value[i],
+                row.tax_rates.output[i],
+                row.tax_rates.capital[i],
+                row.loans_outstanding.amount[i],
                 r.rate,
                 r_bar.rate,
             ) |> Profits
@@ -706,8 +656,8 @@ function set_firms_deposits!(world::Ark.World)
     price_indices = Ark.get_resource(world, PriceIndices)
     properties = Ark.get_resource(world, Properties)
 
-    (_, r) = single(Ark.Query(world, (LendingRate,)))
-    (_, r_bar) = single(Ark.Query(world, (NominalInterestRate,)))
+    _, r = single(Ark.Query(world, (LendingRate,)))
+    _, r_bar = single(Ark.Query(world, (NominalInterestRate,)))
 
     employer_contribution = properties.social_insurance.employers_contribution
     corporate_tax_rate = properties.tax_rates.corporate
@@ -716,51 +666,36 @@ function set_firms_deposits!(world::Ark.World)
 
     household_price_index = price_indices.household_consumption
 
-    for (
-            _,
-            deposits,
-            prices,
-            sales,
-            wage_bill,
-            employment,
-            materials_stock_change,
-            price_index,
-            tax_rates,
-            output,
-            cf_price_index,
-            profits,
-            loans,
-            investment,
-            loan_flow,
-        ) in Ark.Query(world, FIRM_DEPOSIT_COMPONENTS)
+    for comps in Ark.Query(world, FIRM_DEPOSIT_COMPONENTS)
+        row = query_row(comps)
 
-        for i in eachindex(deposits)
-            deposits[i] = Deposits(
+        for i in eachindex(row.deposits)
+            row.deposits[i] = (
                 firm_deposits(
-                    deposits[i].amount,
-                    prices[i].value,
-                    sales[i].amount,
-                    wage_bill[i].amount,
-                    employment[i].amount,
+                    row.deposits[i].amount,
+                    row.price[i].value,
+                    row.sales[i].amount,
+                    row.wage_bill[i].amount,
+                    row.employment[i].amount,
                     household_price_index,
                     employer_contribution,
-                    materials_stock_change[i].amount,
-                    price_index[i].value,
-                    tax_rates[i].output,
-                    output[i].amount,
-                    tax_rates[i].capital,
-                    profits[i].amount,
+                    row.materials_stock_change[i].amount,
+                    row.price_index[i].value,
+                    row.tax_rates[i].output,
+                    row.output[i].amount,
+                    row.tax_rates[i].capital,
+                    row.profits[i].amount,
                     corporate_tax_rate,
                     dividend_payout_ratio,
-                    loans[i].amount,
+                    row.loans_outstanding[i].amount,
                     r.rate,
                     r_bar.rate,
-                    cf_price_index[i].value,
-                    investment[i].amount,
-                    loan_flow[i].amount,
+                    row.cf_price_index[i].value,
+                    row.investment[i].amount,
+                    row.loan_flow[i].amount,
                     debt_installment_rate,
                 )
-            )
+            ) |> Deposits
         end
     end
 
@@ -792,31 +727,22 @@ function set_firms_equity!(world::Ark.World)
     sector_costs = firm_cache.sector_production_cost
     capital_goods_price_index = price_indices.capital_goods
 
-    for (
-            e,
-            equity,
-            deposits,
-            intermediates,
-            principal_product,
-            prices,
-            inventories,
-            capital,
-            loans,
-        ) in Ark.Query(world, FIRM_EQUITY_COMPONENTS)
+    for comps in Ark.Query(world, FIRM_EQUITY_COMPONENTS)
+        row = query_row(comps)
 
-        @inbounds for i in eachindex(e)
-            equity[i] = Equity(
+        @inbounds for i in eachindex(row.e)
+            row.equity[i] = (
                 firm_equity(
-                    deposits[i].amount,
-                    intermediates[i].amount,
-                    sector_costs[principal_product[i].id],
-                    prices[i].value,
-                    inventories[i].amount,
+                    row.deposits[i].amount,
+                    row.intermediates[i].amount,
+                    sector_costs[row.principal_product[i].id],
+                    row.price[i].value,
+                    row.inventories[i].amount,
                     capital_goods_price_index,
-                    capital[i].amount,
-                    loans[i].amount,
+                    row.capital_stock[i].amount,
+                    row.loans_outstanding[i].amount,
                 )
-            )
+            ) |> Equity
         end
     end
 
@@ -831,8 +757,9 @@ const FIRM_LOAN_COMPONENTS = (
 function set_firms_loans!(world::Ark.World)
     debt_installment_rate = Ark.get_resource(world, Properties).banking_params.debt_installment_rate
 
-    for (_, loans, loan_flow) in Ark.Query(world, FIRM_LOAN_COMPONENTS)
-        @inbounds loans.amount .= (1.0 - debt_installment_rate) .* loans.amount .+ loan_flow.amount
+    for comps in Ark.Query(world, FIRM_LOAN_COMPONENTS)
+        row = query_row(comps)
+        @inbounds row.loans_outstanding.amount .= (1.0 - debt_installment_rate) .* row.loans_outstanding.amount .+ row.loan_flow.amount
     end
 
     return nothing
@@ -853,40 +780,28 @@ const FIRM_STOCK_COMPONENTS = (
 )
 
 function set_firms_stocks!(world::Ark.World)
-    for (
-            _,
-            capital,
-            depreciation_rate,
-            capital_productivity,
-            output,
-            investment,
-            intermediates,
-            intermediate_productivity,
-            materials_stock_change,
-            sales,
-            final_goods_stock_change_comp,
-            inventories,
-        ) in Ark.Query(world, FIRM_STOCK_COMPONENTS)
+    for comps in Ark.Query(world, FIRM_STOCK_COMPONENTS)
+        row = query_row(comps)
 
-        @inbounds final_goods_stock_change_comp.amount .= output.amount .- sales.amount
+        @inbounds row.final_goods_stock_change.amount .= row.output.amount .- row.sales.amount
 
 
-        @inbounds capital.amount .= next_capital_stock.(
-            capital.amount,
-            depreciation_rate.rate,
-            capital_productivity.value,
-            output.amount,
-            investment.amount,
+        @inbounds row.capital_stock.amount .= next_capital_stock.(
+            row.capital_stock.amount,
+            row.capital_depreciation_rate.rate,
+            row.capital_productivity.value,
+            row.output.amount,
+            row.investment.amount,
         )
 
-        @inbounds intermediates.amount .= next_intermediates.(
-            intermediates.amount,
-            output.amount,
-            intermediate_productivity.value,
-            materials_stock_change.amount,
+        @inbounds row.intermediates.amount .= next_intermediates.(
+            row.intermediates.amount,
+            row.output.amount,
+            row.intermediate_productivity.value,
+            row.materials_stock_change.amount,
         )
 
-        @inbounds inventories.amount .= inventories.amount .+ final_goods_stock_change_comp.amount
+        @inbounds row.inventories.amount .= row.inventories.amount .+ row.final_goods_stock_change.amount
     end
 
     return nothing

@@ -9,6 +9,7 @@ macro sum_over(generator)
         error("Expected Query(world, ComponentType)")
     e = gensym(:e)
     vals = gensym(:vals)
+    comps = gensym(:comps)
     i = gensym(:i)
 
     # Replace var with vals[i] in expr
@@ -18,7 +19,8 @@ macro sum_over(generator)
 
     return quote
         let total = 0.0
-            for ($e, $vals) in $query_type($world, $component_type)
+            for $comps in $query_type($world, $component_type)
+                ($e, $vals) = $comps
                 for $i in eachindex($e)
                     total += $new_expr
                 end
