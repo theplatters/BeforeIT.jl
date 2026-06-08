@@ -5,7 +5,7 @@ function search_and_matching!(world::Ark.World; parallel = false)
     zero_out_components_for_search_and_match!(world)
 
 
-    perform_search_and_matching!(world)
+    perform_search_and_matching!(world; parallel)
 
     update_search_and_match_realisations!(world)
     finalize_search_and_match!(world)
@@ -13,7 +13,7 @@ function search_and_matching!(world::Ark.World; parallel = false)
 end
 
 
-function perform_search_and_matching!(world::Ark.World)
+function perform_search_and_matching!(world::Ark.World; parallel = false)
     realisation_cache = Ark.get_resource(world, RetailRealisationCache)
     properties = BeforeIT.properties(world)
     for (e, sector, intermediate_demand_book, intermediate_demand_clearing, final_demand_book, final_demand_clearing, sector_available_stocks, sector_stock_capacity, sector_prices, first_pass_intermediate, first_pass_final, weights, weight_vector, active) in Ark.Query(
@@ -34,7 +34,7 @@ function perform_search_and_matching!(world::Ark.World)
                 ActiveBuyers,
             )
         )
-        for i in eachindex(e)
+        @maybe_threads parallel for i in eachindex(e)
             perform_firm_market!(
                 sector_available_stocks[i].amount,
                 sector_stock_capacity[i].amount,

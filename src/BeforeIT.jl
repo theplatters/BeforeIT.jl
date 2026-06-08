@@ -25,6 +25,7 @@ include("utils/positive.jl")
 include("utils/misc.jl")
 include("utils/extensions.jl")
 include("utils/toannual.jl")
+include("utils/maybe_threads.jl")
 
 include("components/components.jl")
 
