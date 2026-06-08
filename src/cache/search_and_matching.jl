@@ -23,7 +23,3 @@ function RetailRealisationCache(households::Int64, final_demands::Int64, sectors
         zeros(sectors),
     )
 end
-
-function choose_random_firm(weights)
-    return rand(weights)
-end

@@ -3,15 +3,11 @@ function search_and_matching!(world::Ark.World; parallel = false)
     build_consumption_demand!(world)
     build_stock_pool!(world)
     zero_out_components_for_search_and_match!(world)
-
-
     perform_search_and_matching!(world; parallel)
-
     update_search_and_match_realisations!(world)
     finalize_search_and_match!(world)
     return nothing
 end
-
 
 function perform_search_and_matching!(world::Ark.World; parallel = false)
     realisation_cache = Ark.get_resource(world, RetailRealisationCache)
@@ -82,7 +78,7 @@ function build_intermediate_demand!(world::Ark.World)
             world,
             (PrincipalProduct, IntermediateMarketDemandBook, IntermediateMarketDemandClearing)
         )
-        for j in eachindex(e_market)
+        @inbounds for j in eachindex(e_market)
             g = sector[j].id
             market_book_amount = market_book[j].amount
             market_clearing_amount = market_clearing[j].amount
@@ -90,7 +86,7 @@ function build_intermediate_demand!(world::Ark.World)
                     world,
                     (PrincipalProduct, DesiredInvestment, DesiredMaterials, IntermediaryDemandCacheIndex)
                 )
-                @inbounds for i in eachindex(e_buyer)
+                for i in eachindex(e_buyer)
                     demand_pos = index[i].id
                     product_id = principal_product[i].id
                     desired_materials_amount = desired_materials[i].amount
@@ -145,7 +141,6 @@ function build_consumption_demand!(world::Ark.World)
         coeffs.government_consumption,
         (total_households + foreign_consumers + 1):(total_households + foreign_consumers + local_governments),
     )
-
 
     return nothing
 end
@@ -336,7 +331,7 @@ function build_stock_weights!(world::Ark.World)
             end
             inv_price_sum = price_sum > 0 ? inv(price_sum) : 0.0
             inv_size_sum = size_sum > 0 ? inv(size_sum) : 0.0
-            @inbounds for i in eachindex(weight, price, stock)
+            for i in eachindex(weight, price, stock)
                 if weight[i] > 0.0
                     weight[i] = weight[i] * inv_price_sum + stock[i] * inv_size_sum
                 end
@@ -492,7 +487,7 @@ function _allocate(sector_available_stocks, sector_stock_capacity, sector_prices
         new_nactive = 0
         for i in 1:nactive
             buyer = active[i]
-            firm_index = BeforeIT.choose_random_firm(weights)
+            firm_index = choose_random_firm(weights)
 
             price = sector_prices[firm_index]
             available_stock = sector_available_stocks[firm_index]
@@ -941,6 +936,10 @@ function zero_inactive_retail_weights!(weights, live_stocks)
         live_stocks[i] > 0.0 || (weights[i] = 0.0)
     end
     return nothing
+end
+
+function choose_random_firm(weights)
+    return rand(weights)
 end
 
 function update_search_and_match_realisations!(world::Ark.World)

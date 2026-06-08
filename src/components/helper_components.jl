@@ -1,11 +1,11 @@
 @register struct StockCacheIndex
-    id::Int
+    id::Int32
 end
 
 @register struct IntermediaryDemandCacheIndex
-    id::Int
+    id::Int32
 end
 
 @register struct FinalDemandCacheIndex
-    id::Int
+    id::Int32
 end
