@@ -938,7 +938,6 @@ end
 
 function update_search_and_match_realisations!(world::Ark.World)
     retail_realisation_cache = Ark.get_resource(world, RetailRealisationCache)
-    stock_cache = Ark.get_resource(world, BeforeIT.StockCache)
 
     (; technology_matrix, capital_formation) =
         BeforeIT.properties(world).product_coeffs
