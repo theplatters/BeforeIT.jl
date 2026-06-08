@@ -33,7 +33,11 @@ function set_growth_inflation_EA!(world::Ark.World)
 
 
     for comps in Ark.Query(world, (EuroAreaGDP, EuroAreaGrowth, EuroAreaInflation))
-        e, gdp, growth, inflation = comps
+        row = query_row(comps)
+        e = row.e
+        gdp = row.euro_area_gdp
+        growth = row.euro_area_growth
+        inflation = row.euro_area_inflation
         @inbounds for i in eachindex(e)
             expected_growth = exp(output_autoregression * log(gdp[i].value) + output_autoregression_scalar + epsilon_Y_EA)
             growth[i] = expected_growth / gdp[i].value - 1 |> EuroAreaGrowth
@@ -59,7 +63,10 @@ function set_inflation_priceindex!(world::Ark.World)
     total_monetary_output_value = 0.0
     total_output = 0.0
     for comps in Ark.Query(world, (Price, Output))
-        e, prices, quantities = comps
+        row = query_row(comps)
+        e = row.e
+        prices = row.price
+        quantities = row.output
         for i in eachindex(e)
             total_monetary_output_value += prices[i].value * quantities[i].amount
             total_output += quantities[i].amount
@@ -81,7 +88,11 @@ function set_sector_specific_priceindex!(world::Ark.World)
     total_sales = zeros(size(price_indices.sector))
 
     for comps in Ark.Query(world, (PrincipalProduct, Price, Sales))
-        entities, principal_product, prices, sales = comps
+        row = query_row(comps)
+        entities = row.e
+        principal_product = row.principal_product
+        prices = row.price
+        sales = row.sales
         @inbounds for i in eachindex(entities)
             price_indices.sector[principal_product[i].id] += prices[i].value * sales[i].amount
             total_sales[principal_product[i].id] += sales[i].amount
@@ -89,7 +100,11 @@ function set_sector_specific_priceindex!(world::Ark.World)
     end
 
     for comps in Ark.Query(world, (PrincipalProduct, ImportPrice, ImportSales))
-        entities, principal_product, prices, sales = comps
+        row = query_row(comps)
+        entities = row.e
+        principal_product = row.principal_product
+        prices = row.import_price
+        sales = row.import_sales
         @inbounds for i in eachindex(entities)
             price_indices.sector[principal_product[i].id] += prices[i].value * sales[i].amount
             total_sales[principal_product[i].id] += sales[i].amount

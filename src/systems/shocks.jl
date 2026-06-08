@@ -8,13 +8,17 @@ end
 function apply_interest_rate_shock!(world)
     time = Ark.get_resource(world, TimeIndex)
     for comps in Ark.Query(world, (InterestRateShock,))
-        e, interest_rate_shock = comps
+        row = query_row(comps)
+        e = row.e
+        interest_rate_shock = row.interest_rate_shock
 
         for i in eachindex(e)
 
             if (time.step <= interest_rate_shock[i].final_time)
                 for comps in Ark.Query(world, (NominalInterestRate,))
-                    e_cb, cb_rate = comps
+                    row = query_row(comps)
+                    e_cb = row.e
+                    cb_rate = row.nominal_interest_rate
                     for j in eachindex(e_cb)
                         cb_rate[j] = interest_rate_shock[i].rate |> NominalInterestRate
                     end
@@ -30,11 +34,15 @@ end
 function apply_productitvity_shock!(world)
 
     for comps in Ark.Query(world, (ProductivityShock,))
-        e, productivity_shock = comps
+        row = query_row(comps)
+        e = row.e
+        productivity_shock = row.productivity_shock
 
         for i in eachindex(e)
             for comps in Ark.Query(world, (LaborProductivity,))
-                e_firm, labor_productivity = comps
+                row = query_row(comps)
+                e_firm = row.e
+                labor_productivity = row.labor_productivity
                 for j in eachindex(e_firm)
                     labor_productivity[j] = productivity_shock[i].productivity_multiplier * labor_productivity[j].rate |> LaborProductivity
                 end
@@ -51,7 +59,9 @@ function apply_consumption_shock!(world)
     properties = BeforeIT.properties(world)
     rate = properties.household_params.consumption_share
     for comps in Ark.Query(world, (ConsumptionShock,))
-        e, interest_rate_shock = comps
+        row = query_row(comps)
+        e = row.e
+        interest_rate_shock = row.consumption_shock
 
         for i in eachindex(e)
 

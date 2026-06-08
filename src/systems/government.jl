@@ -46,29 +46,11 @@ function set_gov_revenues!(world::Ark.World)
 
     cpi = Ark.get_resource(world, PriceIndices).household_consumption
 
-    total_wages = @sum_over (w.rate for  w in Ark.Query(world, (Employed,)))
-    total_consumption = 0.0
-    for comps in Ark.Query(world, (RealisedConsumption,), with = (Household,))
-        row = query_row(comps)
-        total_consumption += sum(row.realised_consumption.amount)
-    end
-
-    total_investment = 0.0
-    for comps in Ark.Query(world, (RealisedInvestment,), with = (Household,))
-        row = query_row(comps)
-        total_investment += sum(row.realised_investment.amount)
-    end
-    total_firm_profits = 0.0
-    for comps in Ark.Query(world, (Profits,), with = (Firm,))
-        row = query_row(comps)
-        total_firm_profits += sum(max(0, profit.amount) for profit in row.profits)
-    end
-
-    total_bank_profits = 0.0
-    for comps in Ark.Query(world, (Profits,), with = (Bank,))
-        row = query_row(comps)
-        total_bank_profits += sum(max(0, profit.amount) for profit in row.profits)
-    end
+    total_wages = sum_rate(world, Employed)
+    total_consumption = sum_amount(world, RealisedConsumption, with = (Household,))
+    total_investment = sum_amount(world, RealisedInvestment, with = (Household,))
+    total_firm_profits = sum_positive_amount(world, Profits, with = (Firm,))
+    total_bank_profits = sum_positive_amount(world, Profits, with = (Bank,))
     total_profits = total_firm_profits + total_bank_profits
 
     social_security = (employees_contribution + employers_contribution) * total_wages * cpi
@@ -78,20 +60,15 @@ function set_gov_revenues!(world::Ark.World)
     corporate_income = τ_firm * total_profits
     capital_formation = τ_cf * total_investment
 
-    products = 0.0
-    production = 0.0
-    for comps in Ark.Query(world, (Output, Price, TaxRates))
-        row = query_row(comps)
-        for i in eachindex(row.e)
-            products += row.output[i].amount * row.price[i].value * row.tax_rates[i].output
-            production += row.output[i].amount * row.price[i].value * row.tax_rates[i].capital
-        end
+    products = sum_query(world, (Output, Price, TaxRates)) do row
+        sum(row.output.amount .* row.price.value .* row.tax_rates.output)
+    end
+    production = sum_query(world, (Output, Price, TaxRates)) do row
+        sum(row.output.amount .* row.price.value .* row.tax_rates.capital)
     end
 
     τ_export = prop.tax_rates.exports # or matching property name
-    exports = @sum_over (
-        x.amount for x in Ark.Query(world, (ForeignConsumption,))
-    )
+    exports = sum_amount(world, ForeignConsumption)
 
     export_tax = τ_export * exports
 
@@ -122,7 +99,7 @@ function set_gov_loans!(world::Ark.World)
     theta_UB = properties.social_insurance.unemployment_benefit
     r_g = properties.fiscal_policy.government_interest_rate
 
-    total_wages_unemployed = @sum_over (w.unemployment_benefits for  w in Ark.Query(world, (Unemployed,)))
+    total_wages_unemployed = sum_component_field(world, Unemployed, :unemployment_benefits)
     for comps in Ark.Query(world, (SocialBenefitsInactive, SocialBenefitsOther, GovernmentDebt, RealisedConsumption, GovernmentRevenues))
         row = query_row(comps)
         for i in eachindex(row.e)

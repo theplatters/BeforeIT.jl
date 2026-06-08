@@ -9,7 +9,11 @@ end
 
 function calculate_initial_vacancies!(world::Ark.World)
     for comps in Ark.Query(world, (Vacancies, DesiredEmployment, Employment))
-        e, vacancies, desired_employment, employment = comps
+        row = query_row(comps)
+        e = row.e
+        vacancies = row.vacancies
+        desired_employment = row.desired_employment
+        employment = row.employment
         for i in eachindex(e)
             vacancies[i] = desired_employment[i].amount - employment[i].amount |> Vacancies
         end
@@ -22,7 +26,10 @@ function build_hiring_firms_cache!(world)
     reset_cache!(cache)
 
     for comps in Ark.Query(world, (DesiredEmployment, Employment))
-        e, desired_employment, employment = comps
+        row = query_row(comps)
+        e = row.e
+        desired_employment = row.desired_employment
+        employment = row.employment
         for i in eachindex(e)
             BeforeIT.emblace!(desired_employment[i].amount - employment[i].amount, e[i], cache)
         end
@@ -38,7 +45,8 @@ function build_worker_cache!(world)
 
     unemployed_workers = cache.unemployed_workers
     for comps in Ark.Query(world, (Unemployed,))
-        worker_e, _ = comps
+        row = query_row(comps)
+        worker_e = row.e
         append!(unemployed_workers, worker_e)
     end
 
@@ -57,7 +65,10 @@ function fire_employed_workers!(world::Ark.World)
     employed_workers = cache.employed_workers
 
     for comps in Ark.Query(world, (Employed, EmployedAt))
-        worker_e, employed, employed_at = comps
+        row = query_row(comps)
+        worker_e = row.e
+        employed = row.employed
+        employed_at = row.employed_at
         for j in eachindex(worker_e)
             push!(employed_workers, (worker_e[j], employed_at[j].entity))
         end
@@ -137,7 +148,9 @@ function hire_workers!(world::Ark.World)
     end
 
     for comps in Ark.Query(world, (Employment,))
-        firm_e, employment = comps
+        row = query_row(comps)
+        firm_e = row.e
+        employment = row.employment
         for i in eachindex(firm_e)
             hired = get(hired_workers, firm_e[i], 0)
             hired == 0 && continue

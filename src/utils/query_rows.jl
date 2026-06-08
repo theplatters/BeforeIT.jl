@@ -119,6 +119,12 @@ component_field_name(::Type{WageBill}) = :wage_bill
 
 query_component_type(::Type{T}) where {T} = eltype(T)
 
+@generated function query_component(row::NamedTuple{names}, ::Type{T}) where {names, T}
+    name = component_field_name(T)
+    name in names || error("component $T is not present in query row $names")
+    return :(getfield(row, $(QuoteNode(name))))
+end
+
 @generated function query_row(comps::T) where {T <: Tuple}
     field_types = T.parameters
     names = Vector{Symbol}(undef, length(field_types))
@@ -129,4 +135,50 @@ query_component_type(::Type{T}) where {T} = eltype(T)
         names[i] = component_field_name(query_component_type(field_types[i]))
     end
     return :(NamedTuple{$(QuoteNode(Tuple(names)))}(comps))
+end
+
+function sum_component_field(world::Ark.World, ::Type{T}, field::Symbol; kwargs...) where {T}
+    total = 0.0
+    for comps in Ark.Query(world, (T,); kwargs...)
+        row = query_row(comps)
+        total += sum(getproperty(query_component(row, T), field))
+    end
+    return total
+end
+
+sum_amount(world::Ark.World, ::Type{T}; kwargs...) where {T} =
+    sum_component_field(world, T, :amount; kwargs...)
+
+sum_rate(world::Ark.World, ::Type{T}; kwargs...) where {T} =
+    sum_component_field(world, T, :rate; kwargs...)
+
+sum_value(world::Ark.World, ::Type{T}; kwargs...) where {T} =
+    sum_component_field(world, T, :value; kwargs...)
+
+function sum_positive_amount(world::Ark.World, ::Type{T}; kwargs...) where {T}
+    total = 0.0
+    for comps in Ark.Query(world, (T,); kwargs...)
+        row = query_row(comps)
+        amount = query_component(row, T).amount
+        total += sum(max.(zero(eltype(amount)), amount))
+    end
+    return total
+end
+
+function sum_negative_amount(world::Ark.World, ::Type{T}; kwargs...) where {T}
+    total = 0.0
+    for comps in Ark.Query(world, (T,); kwargs...)
+        row = query_row(comps)
+        amount = query_component(row, T).amount
+        total += sum(max.(zero(eltype(amount)), .-amount))
+    end
+    return total
+end
+
+function sum_query(f, world::Ark.World, component_types; kwargs...)
+    total = 0.0
+    for comps in Ark.Query(world, component_types; kwargs...)
+        total += f(query_row(comps))
+    end
+    return total
 end

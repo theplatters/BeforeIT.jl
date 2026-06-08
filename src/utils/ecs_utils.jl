@@ -10,6 +10,7 @@ macro sum_over(generator)
     e = gensym(:e)
     vals = gensym(:vals)
     comps = gensym(:comps)
+    row = gensym(:row)
     i = gensym(:i)
 
     # Replace var with vals[i] in expr
@@ -20,7 +21,9 @@ macro sum_over(generator)
     return quote
         let total = 0.0
             for $comps in $query_type($world, $component_type)
-                ($e, $vals) = $comps
+                $row = query_row($comps)
+                $e = $row.e
+                $vals = query_component($row, first($component_type))
                 for $i in eachindex($e)
                     total += $new_expr
                 end

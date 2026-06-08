@@ -14,7 +14,9 @@ function set_central_bank_rate!(world)
     rotw_inflation = inflation.rate
 
     for comps in Ark.Query(world, (NominalInterestRate,), with = (CentralBank,))
-        e, interest_rate = comps
+        row = query_row(comps)
+        e = row.e
+        interest_rate = row.nominal_interest_rate
         @inbounds for i in eachindex(e)
             interest_rate[i] = (
                 taylor_rule(interest_rate_smoothing, interest_rate[i].rate, natural_rate, inflation_target, response_to_inflation, response_to_output, rotw_growth, rotw_inflation)
@@ -28,11 +30,14 @@ end
 function set_central_bank_equity!(world)
     properties = Ark.get_resource(world, Properties)
     government_interest_rate = properties.fiscal_policy.government_interest_rate
-    total_government_debt = @sum_over (government_debt.amount for government_debt in Ark.Query(world, (GovernmentDebt,)))
-    total_banking_residuals = @sum_over (residual.amount for residual in Ark.Query(world, (ResidualItems,)))
+    total_government_debt = sum_amount(world, GovernmentDebt)
+    total_banking_residuals = sum_amount(world, ResidualItems)
 
     for comps in Ark.Query(world, (Equity, NominalInterestRate), with = (CentralBank,))
-        e, equity, interest_rate = comps
+        row = query_row(comps)
+        e = row.e
+        equity = row.equity
+        interest_rate = row.nominal_interest_rate
         for i in eachindex(e)
             profits = government_interest_rate * total_government_debt - interest_rate[i].rate * total_banking_residuals
             equity[i] = (equity[i].amount + profits) |> Equity
