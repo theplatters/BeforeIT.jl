@@ -204,12 +204,10 @@ end
     ) where {DemandType}
     for comps in Ark.Query(world, (DemandType, FinalDemandCacheIndex), with = with)
         row = query_row(comps)
-        e = row.e
         demand = query_component(row, DemandType)
-        cache_index = row.final_demand_cache_index
 
-        @inbounds for i in eachindex(e)
-            cache_pos = cache_index[i].id
+        @inbounds for i in eachindex(row.e)
+            cache_pos = row.final_demand_cache_index[i].id
             final_demand_pos = cache_pos - length(realisation_cache.consumption_budget)
             realisation_cache.final_demand_amount[final_demand_pos] = demand[i].amount
         end

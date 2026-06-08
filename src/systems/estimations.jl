@@ -34,16 +34,20 @@ function set_growth_inflation_EA!(world::Ark.World)
 
     for comps in Ark.Query(world, (EuroAreaGDP, EuroAreaGrowth, EuroAreaInflation))
         row = query_row(comps)
-        e = row.e
-        gdp = row.euro_area_gdp
-        growth = row.euro_area_growth
-        inflation = row.euro_area_inflation
-        @inbounds for i in eachindex(e)
-            expected_growth = exp(output_autoregression * log(gdp[i].value) + output_autoregression_scalar + epsilon_Y_EA)
-            growth[i] = expected_growth / gdp[i].value - 1 |> EuroAreaGrowth
-            gdp[i] = expected_growth |> EuroAreaGDP
-            inflation[i] = (
-                exp(inflation_autoregression * log1p(inflation[i].rate) + inflation_response_to_output_gap + random_inflation_shock) - 1
+        @inbounds for i in eachindex(row.e)
+            expected_growth = exp(
+                output_autoregression * log(row.euro_area_gdp[i].value) +
+                    output_autoregression_scalar +
+                    epsilon_Y_EA
+            )
+            row.euro_area_growth[i] = expected_growth / row.euro_area_gdp[i].value - 1 |> EuroAreaGrowth
+            row.euro_area_gdp[i] = expected_growth |> EuroAreaGDP
+            row.euro_area_inflation[i] = (
+                exp(
+                    inflation_autoregression * log1p(row.euro_area_inflation[i].rate) +
+                        inflation_response_to_output_gap +
+                        random_inflation_shock
+                ) - 1
             ) |> EuroAreaInflation
         end
     end
@@ -64,12 +68,9 @@ function set_inflation_priceindex!(world::Ark.World)
     total_output = 0.0
     for comps in Ark.Query(world, (Price, Output))
         row = query_row(comps)
-        e = row.e
-        prices = row.price
-        quantities = row.output
-        for i in eachindex(e)
-            total_monetary_output_value += prices[i].value * quantities[i].amount
-            total_output += quantities[i].amount
+        for i in eachindex(row.e)
+            total_monetary_output_value += row.price[i].value * row.output[i].amount
+            total_output += row.output[i].amount
         end
     end
     price_index = total_monetary_output_value / total_output
@@ -89,25 +90,17 @@ function set_sector_specific_priceindex!(world::Ark.World)
 
     for comps in Ark.Query(world, (PrincipalProduct, Price, Sales))
         row = query_row(comps)
-        entities = row.e
-        principal_product = row.principal_product
-        prices = row.price
-        sales = row.sales
-        @inbounds for i in eachindex(entities)
-            price_indices.sector[principal_product[i].id] += prices[i].value * sales[i].amount
-            total_sales[principal_product[i].id] += sales[i].amount
+        @inbounds for i in eachindex(row.e)
+            price_indices.sector[row.principal_product[i].id] += row.price[i].value * row.sales[i].amount
+            total_sales[row.principal_product[i].id] += row.sales[i].amount
         end
     end
 
     for comps in Ark.Query(world, (PrincipalProduct, ImportPrice, ImportSales))
         row = query_row(comps)
-        entities = row.e
-        principal_product = row.principal_product
-        prices = row.import_price
-        sales = row.import_sales
-        @inbounds for i in eachindex(entities)
-            price_indices.sector[principal_product[i].id] += prices[i].value * sales[i].amount
-            total_sales[principal_product[i].id] += sales[i].amount
+        @inbounds for i in eachindex(row.e)
+            price_indices.sector[row.principal_product[i].id] += row.import_price[i].value * row.import_sales[i].amount
+            total_sales[row.principal_product[i].id] += row.import_sales[i].amount
         end
     end
 

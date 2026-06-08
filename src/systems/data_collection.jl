@@ -38,11 +38,9 @@ function collect_data!(world::Ark.World)
     gov_count = 0
     for comps in Ark.Query(world, (PriceInflationGovernmentGoods, RealisedConsumption), with = (Government,))
         row = query_row(comps)
-        p_j = row.price_inflation_government_goods
-        c_j = row.realised_consumption
-        gov_P_j += sum(p_j.value)
-        gov_C_j += sum(c_j.amount)
-        gov_count += length(p_j.value)
+        gov_P_j += sum(row.price_inflation_government_goods.value)
+        gov_C_j += sum(row.realised_consumption.amount)
+        gov_count += length(row.price_inflation_government_goods.value)
     end
     gov_P_j = gov_count > 0 ? gov_P_j / gov_count : 1.0
 
@@ -185,15 +183,20 @@ function collect_data!(world::Ark.World)
         real_gva_g = 0.0
         for comps in Ark.Query(world, (PrincipalProduct, TaxRates, Price, Output, IntermediateProductivity, PriceIndex))
             row = query_row(comps)
-            pp = row.principal_product
-            tau = row.tax_rates
-            p = row.price
-            y = row.output
-            beta = row.intermediate_productivity
-            p_bar = row.price_index
-            mask = pp.id .== g
-            nom_gva_g += sum(mask .* ((1.0 .- tau.output) .* p.value .* y.amount .- 1.0 ./ beta.value .* p_bar.value .* y.amount))
-            real_gva_g += sum(mask .* (y.amount .* ((1.0 .- tau.output) .- 1.0 ./ beta.value)))
+            mask = row.principal_product.id .== g
+            nom_gva_g += sum(
+                mask .* (
+                    (1.0 .- row.tax_rates.output) .* row.price.value .* row.output.amount .-
+                        1.0 ./ row.intermediate_productivity.value .* row.price_index.value .* row.output.amount
+                )
+            )
+            real_gva_g += sum(
+                mask .* (
+                    row.output.amount .* (
+                        (1.0 .- row.tax_rates.output) .- 1.0 ./ row.intermediate_productivity.value
+                    )
+                )
+            )
         end
         nom_sector_gva[g] = nom_gva_g
         real_sector_gva[g] = real_gva_g
@@ -239,29 +242,37 @@ function collect_data_init!(world::Ark.World, history::DataCollector, props::Pro
             ),
         )
         row = query_row(comps)
-        pp = row.principal_product
-        tau = row.tax_rates
-        y = row.output
-        beta = row.intermediate_productivity
-        delta = row.capital_depreciation_rate
-        kappa = row.capital_productivity
-        wage = row.average_wage_rate
-        employment = row.employment
-        alpha = row.labor_productivity
-        real_gdp += sum(y.amount .* (1.0 .- 1.0 ./ beta.value))
-        real_gva += sum(y.amount .* ((1.0 .- tau.output) .- 1.0 ./ beta.value))
-        nominal_gva += sum(y.amount .* ((1.0 .- tau.output) .- 1.0 ./ beta.value))
-        capitalformation_firms += sum(y.amount .* delta.rate ./ kappa.value)
-        wages += sum(wage.rate .* employment.amount)
-        taxes_production += sum(tau.capital .* y.amount)
+        real_gdp += sum(row.output.amount .* (1.0 .- 1.0 ./ row.intermediate_productivity.value))
+        real_gva += sum(
+            row.output.amount .* (
+                (1.0 .- row.tax_rates.output) .- 1.0 ./ row.intermediate_productivity.value
+            )
+        )
+        nominal_gva += sum(
+            row.output.amount .* (
+                (1.0 .- row.tax_rates.output) .- 1.0 ./ row.intermediate_productivity.value
+            )
+        )
+        capitalformation_firms += sum(
+            row.output.amount .* row.capital_depreciation_rate.rate ./ row.capital_productivity.value
+        )
+        wages += sum(row.average_wage_rate.rate .* row.employment.amount)
+        taxes_production += sum(row.tax_rates.capital .* row.output.amount)
         operating_surplus += sum(
-            y.amount .* (1.0 .- ((1.0 + τ_SIF) .* wage.rate ./ alpha.value .+ 1.0 ./ beta.value)) .-
-                tau.capital .* y.amount .-
-                tau.output .* y.amount,
+            row.output.amount .* (
+                1.0 .- (
+                    (1.0 + τ_SIF) .* row.average_wage_rate.rate ./ row.labor_productivity.value .+
+                        1.0 ./ row.intermediate_productivity.value
+                )
+            ) .-
+                row.tax_rates.capital .* row.output.amount .-
+                row.tax_rates.output .* row.output.amount,
         )
 
-        for i in eachindex(pp.id)
-            nominal_sector_gva[pp.id[i]] += y.amount[i] * ((1.0 - tau.output[i]) - 1.0 / beta.value[i])
+        for i in eachindex(row.principal_product.id)
+            nominal_sector_gva[row.principal_product.id[i]] += row.output.amount[i] * (
+                (1.0 - row.tax_rates.output[i]) - 1.0 / row.intermediate_productivity.value[i]
+            )
         end
     end
 

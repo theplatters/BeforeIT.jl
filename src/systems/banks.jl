@@ -4,11 +4,8 @@ function set_bank_deposits!(world::Ark.World)
 
     for comps in Ark.Query(world, (Equity, ResidualItems), with = (Bank,))
         row = query_row(comps)
-        e = row.e
-        equity = row.equity
-        residual = row.residual_items
-        for i in eachindex(e)
-            residual[i] = equity[i].amount - total_loans + total_deposits |> ResidualItems
+        for i in eachindex(row.e)
+            row.residual_items[i] = row.equity[i].amount - total_loans + total_deposits |> ResidualItems
         end
     end
 
@@ -22,27 +19,21 @@ function finance_insolvent_firms!(world::Ark.World)
     financed_total_equity = 0.0
     for comps in Ark.Query(world, (LoansOutstanding, Equity, Deposits, CapitalStock))
         row = query_row(comps)
-        e = row.e
-        outstanding_loans = row.loans_outstanding
-        equity = row.equity
-        deposits = row.deposits
-        capital = row.capital_stock
-        for i in eachindex(e)
-            (deposits[i].amount >= 0.0 || equity[i].amount >= 0) && continue
-            loan = ζ * P_bar_CF * capital[i].amount
-            financed_equity = outstanding_loans[i].amount - deposits[i].amount - loan
+        for i in eachindex(row.e)
+            (row.deposits[i].amount >= 0.0 || row.equity[i].amount >= 0) && continue
+            loan = ζ * P_bar_CF * row.capital_stock[i].amount
+            financed_equity = row.loans_outstanding[i].amount - row.deposits[i].amount - loan
 
             financed_total_equity += financed_equity
-            equity[i] = equity[i].amount + financed_equity |> Equity
-            outstanding_loans[i] = loan |> LoansOutstanding
-            deposits[i] = 0.0 |> Deposits
+            row.equity[i] = row.equity[i].amount + financed_equity |> Equity
+            row.loans_outstanding[i] = loan |> LoansOutstanding
+            row.deposits[i] = 0.0 |> Deposits
         end
     end
 
     for comps in Ark.Query(world, (Equity,), with = (Bank,))
         row = query_row(comps)
-        equity = row.equity
-        equity.amount .-= financed_total_equity
+        row.equity.amount .-= financed_total_equity
     end
 
     return nothing
@@ -53,9 +44,7 @@ function set_bank_expected_profits!(world)
 
     for comps in Ark.Query(world, (ExpectedProfits, Profits), with = (LendingRate,))
         row = query_row(comps)
-        expected_profits = row.expected_profits
-        profits = row.profits
-        expected_profits.amount .= profits.amount .* (1 + output_growth) .* (1 + inflation)
+        row.expected_profits.amount .= row.profits.amount .* (1 + output_growth) .* (1 + inflation)
     end
 
 
@@ -66,10 +55,8 @@ function set_bank_rate!(world)
     cb_rate = 0.0
     for comps in Ark.Query(world, (NominalInterestRate,))
         row = query_row(comps)
-        e = row.e
-        cb = row.nominal_interest_rate
-        for i in eachindex(e)
-            cb_rate = cb[i].rate
+        for i in eachindex(row.e)
+            cb_rate = row.nominal_interest_rate[i].rate
         end
     end
 
@@ -77,8 +64,7 @@ function set_bank_rate!(world)
 
     for comps in Ark.Query(world, (LendingRate,))
         row = query_row(comps)
-        lending_rate = row.lending_rate
-        lending_rate.rate .= cb_rate + mu
+        row.lending_rate.rate .= cb_rate + mu
     end
 
     return nothing
@@ -92,9 +78,9 @@ function set_bank_equity!(world::Ark.World)
     total_taxed_and_dividend_ratio = (dividend_payout_ratio * (1 - corporate_tax) + corporate_tax)
     for comps in Ark.Query(world, (Equity, Profits), with = (Bank,))
         row = query_row(comps)
-        equity = row.equity
-        profits = row.profits
-        equity.amount .= equity.amount .+ profits.amount .- total_taxed_and_dividend_ratio .* max.(0, profits.amount)
+        row.equity.amount .= row.equity.amount .+
+            row.profits.amount .-
+            total_taxed_and_dividend_ratio .* max.(0, row.profits.amount)
     end
 
     return nothing
@@ -111,14 +97,10 @@ function set_bank_profits!(world)
     rterm = total_loans + total_negative_deposits
     for comps in Ark.Query(world, (Profits, LendingRate, ResidualItems))
         row = query_row(comps)
-        e = row.e
-        profits = row.profits
-        lending_rate = row.lending_rate
-        residual_item = row.residual_items
-        @inbounds for i in eachindex(e)
-            central_bank_term = residual_item[i].amount - total_positive_deposits
-            profits[i] = (
-                lending_rate[i].rate * rterm + cb_rate * central_bank_term
+        @inbounds for i in eachindex(row.e)
+            central_bank_term = row.residual_items[i].amount - total_positive_deposits
+            row.profits[i] = (
+                row.lending_rate[i].rate * rterm + cb_rate * central_bank_term
             ) |> Profits
         end
     end

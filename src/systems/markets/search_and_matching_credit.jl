@@ -6,8 +6,7 @@ function search_and_matching_credit!(world::Ark.World)
 
     for comps in Ark.Query(world, (LoanFlow,), with = (Firm,))
         row = query_row(comps)
-        loan_flow = row.loan_flow
-        loan_flow.amount .= 0.0
+        row.loan_flow.amount .= 0.0
     end
 
     cache = Ark.get_resource(world, CreditMatchingCache)
@@ -16,12 +15,10 @@ function search_and_matching_credit!(world::Ark.World)
     n_active = 0
     for comps in Ark.Query(world, (TargetLoans,), with = (Firm,))
         row = query_row(comps)
-        e = row.e
-        target_loan = row.target_loans
-        for i in eachindex(e)
-            if target_loan[i].amount > 0.0
+        for i in eachindex(row.e)
+            if row.target_loans[i].amount > 0.0
                 n_active += 1
-                active_firms[n_active] = e[i]
+                active_firms[n_active] = row.e[i]
             end
         end
     end
