@@ -1,7 +1,7 @@
 function update_workers_wages!(world::Ark.World)
     @dub for t in Ark.Query(world, (WageBill,))
         for i in eachindex(t.e)
-            @dub for t2 in Ark.Query(world, (Employed,), with = (EmployedAt => t.e[i],))
+            for t2 in Ark.Query(world, (Employed,), with = (EmployedAt => t.e[i],))
                 t2.employed.rate .= t.wage_bill[i].amount
             end
         end

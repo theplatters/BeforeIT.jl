@@ -91,8 +91,7 @@ function set_bank_profits!(world)
         @inbounds for i in eachindex(t.e)
             central_bank_term = t.residual_items[i].amount - total_positive_deposits
             t.profits[i] = (
-                t.lending_rate[i].rate * rterm +
-                    cb_rate * central_bank_term
+                t.lending_rate[i].rate * rterm + cb_rate * central_bank_term
             ) |> Profits
         end
     end

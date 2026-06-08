@@ -19,4 +19,25 @@
 
     @test seen_entities == [:firm_a, :firm_b]
     @test products == 2.0 * 5.0 * 0.1 + 3.0 * 7.0 * 0.3
+
+    function query_row_call_count(ex)
+        if ex isa Expr
+            count = ex.head == :call &&
+                first(ex.args) isa GlobalRef &&
+                first(ex.args).name === :query_row ? 1 : 0
+            for arg in ex.args
+                count += query_row_call_count(arg)
+            end
+            return count
+        end
+        return 0
+    end
+
+    expanded = @macroexpand Bit.@dub for t in Ark.Query(world, (Bit.Output,))
+        for t2 in Ark.Query(world, (Bit.Price,))
+            nothing
+        end
+    end
+
+    @test query_row_call_count(expanded) == 2
 end

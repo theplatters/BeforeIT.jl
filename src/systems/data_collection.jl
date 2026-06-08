@@ -32,7 +32,6 @@ function collect_data!(world::Ark.World)
     tot_C_h = sum_amount(world, RealisedConsumption, with = (Household,))
     tot_I_h = sum_amount(world, RealisedInvestment, with = (Household,))
 
-
     gov_P_j = 0.0
     gov_C_j = 0.0
     gov_count = 0
@@ -87,20 +86,15 @@ function collect_data!(world::Ark.World)
 
     # GDP
     push!(
-        history.nominal_gdp, nominal_output_tax +
-            τ_VAT * tot_C_h +
-            τ_CF * tot_I_h +
-            τ_G * gov_C_j +
-            τ_EXPORT * rotw_C_l +
-            nominal_gva_at_basic_prices
+        history.nominal_gdp, 
+        nominal_output_tax + τ_VAT * tot_C_h + τ_CF * tot_I_h + τ_G * gov_C_j + τ_EXPORT *
+            rotw_C_l + nominal_gva_at_basic_prices
     )
 
     push!(
-        history.real_gdp, real_gva_at_basic_prices +
-            real_output_tax +
-            τ_VAT * tot_C_h / P_bar_h +
-            τ_CF * tot_I_h / P_bar_CF_h +
-            τ_G * gov_C_j / gov_P_j +
+        history.real_gdp,
+        real_gva_at_basic_prices + real_output_tax + τ_VAT * tot_C_h / P_bar_h +
+            τ_CF * tot_I_h / P_bar_CF_h + τ_G * gov_C_j / gov_P_j +
             τ_EXPORT * rotw_C_l / BeforeIT.zero_to_one(rotw_P_l)
     )
 
@@ -131,6 +125,7 @@ function collect_data!(world::Ark.World)
         end
         total
     end
+
     nominal_material_stock_adj = sum_query(world, (MaterialsStockChange, PriceIndex, IntermediateProductivity, Output)) do row
         total = 0.0
         @inbounds for i in eachindex(row.materials_stock_change.amount)
@@ -276,19 +271,12 @@ function collect_data_init!(world::Ark.World, history::DataCollector, props::Pro
     nominal_sector_gva = zeros(props.dimensions.sectors)
 
     @dub for t in Ark.Query(
-            world,
-            (
-                PrincipalProduct,
-                TaxRates,
-                Output,
-                IntermediateProductivity,
-                CapitalDeprecationRate,
-                CapitalProductivity,
-                AverageWageRate,
-                Employment,
-                LaborProductivity,
-            ),
-        )
+        world,
+        (
+            PrincipalProduct, TaxRates, Output, IntermediateProductivity, CapitalDeprecationRate,
+            CapitalProductivity, AverageWageRate, Employment, LaborProductivity,
+        ),
+    )
         @inbounds for i in eachindex(t.output.amount)
             real_gdp += t.output.amount[i] * (1.0 - 1.0 / t.intermediate_productivity.value[i])
             real_gva += t.output.amount[i] * (
@@ -298,23 +286,16 @@ function collect_data_init!(world::Ark.World, history::DataCollector, props::Pro
                 (1.0 - t.tax_rates.output[i]) - 1.0 / t.intermediate_productivity.value[i]
             )
             capitalformation_firms += (
-                t.output.amount[i] *
-                    t.capital_depreciation_rate.rate[i] /
-                    t.capital_productivity.value[i]
+                t.output.amount[i] * t.capital_depreciation_rate.rate[i] / t.capital_productivity.value[i]
             )
             wages += t.average_wage_rate.rate[i] * t.employment.amount[i]
             taxes_production += t.tax_rates.capital[i] * t.output.amount[i]
             operating_surplus += (
-                t.output.amount[i] * (
-                    1.0 - (
-                        (1.0 + τ_SIF) *
-                            t.average_wage_rate.rate[i] /
-                            t.labor_productivity.value[i] +
-                            1.0 / t.intermediate_productivity.value[i]
+                t.output.amount[i] * (1.0 - (
+                        (1.0 + τ_SIF) * t.average_wage_rate.rate[i] / t.labor_productivity.value[i] +
+                        1.0 / t.intermediate_productivity.value[i]
                     )
-                ) -
-                    t.tax_rates.capital[i] * t.output.amount[i] -
-                    t.tax_rates.output[i] * t.output.amount[i]
+                ) - t.tax_rates.capital[i] * t.output.amount[i] - t.tax_rates.output[i] * t.output.amount[i]
             )
 
             nominal_sector_gva[t.principal_product.id[i]] += t.output.amount[i] * (
@@ -335,11 +316,8 @@ function collect_data_init!(world::Ark.World, history::DataCollector, props::Pro
     nominal_capitalformation = capitalformation_firms + total_income * ψ_H
     nominal_fixed_capitalformation_dwellings = total_income * ψ_H
     nominal_exports = (1.0 + τ_EXPORT) * exports
-    nominal_gdp =
-        real_gdp +
-        nominal_household_consumption / (1.0 / τ_VAT + 1.0) +
-        τ_G * gov_consumption +
-        nominal_fixed_capitalformation_dwellings / (1.0 / τ_CF + 1.0) +
+    nominal_gdp = real_gdp + nominal_household_consumption / (1.0 / τ_VAT + 1.0) +
+        τ_G * gov_consumption + nominal_fixed_capitalformation_dwellings / (1.0 / τ_CF + 1.0) +
         τ_EXPORT * exports
 
     push!(history.nominal_gdp, nominal_gdp)

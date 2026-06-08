@@ -23,9 +23,7 @@ function build_hiring_firms_cache!(world)
     @dub for t in Ark.Query(world, (DesiredEmployment, Employment))
         for i in eachindex(t.e)
             BeforeIT.emblace!(
-                t.desired_employment[i].amount - t.employment[i].amount,
-                t.e[i],
-                cache
+                t.desired_employment[i].amount - t.employment[i].amount, t.e[i], cache
             )
         end
     end
@@ -70,17 +68,14 @@ function fire_employed_workers!(world::Ark.World)
         vacancies.amount >= 0 && continue
         push!(remove_employment, worker_e)
         Ark.set_components!(
-            world, firm_e,
-            (Vacancies(vacancies.amount + 1), Employment(employment.amount - 1))
+            world, firm_e, (Vacancies(vacancies.amount + 1), Employment(employment.amount - 1))
         )
     end
 
     for now_unemployed in remove_employment
         unemployment_benefit, = Ark.get_components(world, now_unemployed, (Employed,))
         Ark.exchange_components!(
-            world, now_unemployed,
-            remove = (Employed, EmployedAt),
-            add = (Unemployed(unemployment_benefit.rate),)
+            world, now_unemployed, remove = (Employed, EmployedAt), add = (Unemployed(unemployment_benefit.rate),)
         )
     end
 
@@ -130,9 +125,7 @@ function hire_workers!(world::Ark.World)
 
     for (worker_e, firm_e) in add_employment
         Ark.exchange_components!(
-            world, worker_e,
-            remove = (Unemployed,),
-            add = (Employed(0.0), EmployedAt(firm_e) => firm_e)
+            world, worker_e, remove = (Unemployed,), add = (Employed(0.0), EmployedAt(firm_e) => firm_e)
         )
     end
 

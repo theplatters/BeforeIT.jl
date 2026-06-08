@@ -19,7 +19,7 @@ function set_rotw_import_export!(world::Ark.World)
                 investment_response_to_utilization .+ I
         )
 
-        @dub for t2 in Ark.Query(world, (ForeignConsumptionDemand,))
+        for t2 in Ark.Query(world, (ForeignConsumptionDemand,))
             t2.foreign_consumption_demand.amount .= (
                 only(t.total_export_demand.amount) / foreign_consumers *
                     dot(exports, sector_price_index) * (1 + expected_inflation)
@@ -27,7 +27,7 @@ function set_rotw_import_export!(world::Ark.World)
 
         end
 
-        @dub for t2 in Ark.Query(world, (PrincipalProduct, ImportSupply, ImportPrice), with = (ForeignSector,))
+        for t2 in Ark.Query(world, (PrincipalProduct, ImportSupply, ImportPrice), with = (ForeignSector,))
             @inbounds for i in eachindex(t2.e)
                 g = t2.principal_product[i].id
                 t2.import_supply[i] = imports[g] * only(t.total_import_supply.amount) |> ImportSupply
@@ -46,7 +46,7 @@ function set_rotw_deposits!(world::Ark.World)
     τ_EXPORT = properties.tax_rates.exports
 
     @dub for t in Ark.Query(world, (NetForeignPosition, ForeignConsumption))
-        @dub for t2 in Ark.Query(world, (ImportPrice, ImportSales))
+        for t2 in Ark.Query(world, (ImportPrice, ImportSales))
             t.net_foreign_position.amount .+= dot(t2.import_price.value, t2.import_sales.amount)
         end
         t.net_foreign_position.amount .-= (1 + τ_EXPORT) * t.foreign_consumption.amount

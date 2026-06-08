@@ -1,5 +1,11 @@
-function taylor_rule(adjustment_rate, interest_rate, natural_rate, inflation_target, inflation_weight, growth_weigth, output_growth_rate, inflation_rate)
-    rate = muladd(adjustment_rate, interest_rate, (1.0 - adjustment_rate) * (natural_rate + inflation_target + inflation_weight * (inflation_rate - inflation_target) + growth_weigth * output_growth_rate))
+function taylor_rule(
+        adjustment_rate, interest_rate, natural_rate, inflation_target, inflation_weight,
+        growth_weigth, output_growth_rate, inflation_rate
+    )
+    rate = muladd(
+        adjustment_rate, interest_rate, (1.0 - adjustment_rate) *
+            (natural_rate + inflation_target + inflation_weight * (inflation_rate - inflation_target) + growth_weigth * output_growth_rate)
+    )
     return max(0.0, rate)
 end
 
