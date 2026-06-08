@@ -23,11 +23,17 @@ function setup_rotw!(world::Ark.World, properties::Properties, markets)
     Ark.new_entities!(
         world, L,
         (
-            ForeignConsumptionDemand(0.0),
-            RestOfWorldEntity(rotw),
-            FinalDemandCacheIndex(0),
+            ForeignConsumptionDemand,
+            RestOfWorldEntity,
+            FinalDemandCacheIndex,
         )
-    )
+    ) do (entities, foreign_consumption_demand, rest_of_world_entity, final_cache_index)
+        for i in eachindex(entities)
+            foreign_consumption_demand[i] = ForeignConsumptionDemand(0.0)
+            rest_of_world_entity[i] = RestOfWorldEntity(rotw)
+            final_cache_index[i] = FinalDemandCacheIndex(properties.population.total + i)
+        end
+    end
 
 
     for g in 1:G
@@ -45,7 +51,7 @@ function setup_rotw!(world::Ark.World, properties::Properties, markets)
                 ExportPriceInflation(0.0),
                 RestOfWorldEntity(rotw),
                 IntermediaryDemandCacheIndex(0),
-                StockCacheIndex(0),
+                StockCacheIndex(properties.dimensions.firms_per_sector[g] + 1),
                 Market() => markets[g],
             )
         )

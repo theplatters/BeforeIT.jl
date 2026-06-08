@@ -20,7 +20,7 @@ function setup_bank!(world::Ark.World, properties::Properties)
             Deposits(0.0),
             Banker(),
             Household(),
-            FinalDemandCacheIndex(0),
+            FinalDemandCacheIndex(properties.population.total),
         )
     )
     Ark.new_entity!(

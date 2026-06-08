@@ -1,13 +1,3 @@
-struct HouseholdConsumptionDemandEntityBuffer
-    entities::Vector{Ark.Entity}
-end
-
-function HouseholdConsumptionDemandEntityBuffer(size::Int64)
-    entities = Ark.Entity[]
-    sizehint!(entities, size)
-    return HouseholdConsumptionDemandEntityBuffer(entities)
-end
-
 struct RetailRealisationCache
     consumption_budget::Vector{Float64}
     investment_budget::Vector{Float64}

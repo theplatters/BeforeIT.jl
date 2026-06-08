@@ -14,6 +14,8 @@ function setup_firms!(world::Ark.World, properties::Properties, markets)
     (; total_debt, total_loans) = properties.initial_conditions.firms
 
     omega = properties.initial_conditions.firms.capacity_utilization
+    firm_owner_final_demand_offset =
+        properties.population.active - total_firms - 1 + properties.population.inactive
 
     D_H = properties.initial_conditions.households.debt
     K_H = properties.initial_conditions.households.capital
@@ -89,7 +91,7 @@ function setup_firms!(world::Ark.World, properties::Properties, markets)
             dep[i] = Deposits(D_h[i])
             cap_ist[i] = Capitalist()
             hh[i] = Household()
-            final_cache_index[i] = FinalDemandCacheIndex(0)
+            final_cache_index[i] = FinalDemandCacheIndex(firm_owner_final_demand_offset + i)
         end
     end
 
@@ -179,8 +181,8 @@ function setup_firms!(world::Ark.World, properties::Properties, markets)
                 fgsc[i] = FinalGoodsStockChange(0.0)
                 msc[i] = MaterialsStockChange(0.0)
                 lf[i] = LoanFlow(0.0)
-                intermediary_cache_index[i] = IntermediaryDemandCacheIndex(0)
-                stock_cache_index[i] = StockCacheIndex(0)
+                intermediary_cache_index[i] = IntermediaryDemandCacheIndex(firm_index)
+                stock_cache_index[i] = StockCacheIndex(i)
                 firm[i] = Firm()
                 owner[i] = Owner(owners[firm_index])
                 market[i] = Market()

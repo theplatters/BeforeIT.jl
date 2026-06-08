@@ -28,7 +28,6 @@ function setup_aggregates!(world::Ark.World, properties::Properties)
         HireWorkersCache(properties.population.active, properties.dimensions.total_firms)
     )
     Ark.add_resource!(world, CreditMatchingCache(properties.dimensions.total_firms))
-    Ark.add_resource!(world, HouseholdConsumptionDemandEntityBuffer(properties.population.total))
     Ark.add_resource!(
         world,
         RetailRealisationCache(

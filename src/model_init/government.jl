@@ -19,6 +19,13 @@ function setup_government!(world, properties::Properties)::Nothing
         )
     )
 
-    Ark.new_entities!(world, local_governments, (ConsumptionDemand(0.0), FinalDemandCacheIndex(0), LocalGovernment() => e))
+    final_demand_offset = properties.population.total + properties.dimensions.foreign_consumers
+    Ark.new_entities!(world, local_governments, (ConsumptionDemand, FinalDemandCacheIndex, LocalGovernment => e)) do (entities, consumption_demand, final_cache_index, local_government)
+        for i in eachindex(entities)
+            consumption_demand[i] = ConsumptionDemand(0.0)
+            final_cache_index[i] = FinalDemandCacheIndex(final_demand_offset + i)
+            local_government[i] = LocalGovernment()
+        end
+    end
     return nothing
 end
