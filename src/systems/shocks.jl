@@ -61,3 +61,7 @@ function apply_consumption_shock!(world)
 
     return nothing
 end
+
+function add_shock!(model, shock_type)
+    return Ark.new_entity!(model.world, (Shock(), shock_type))
+end
