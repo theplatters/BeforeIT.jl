@@ -715,7 +715,7 @@ function update_goods_demand_from_remaining_stocks!(world::Ark.World)
                     firm_index = t2.stock_cache_index[i].id
                     t2.goods_demand[i] = (
                         t2.goods_demand[i].amount + t2.output[i].amount +
-                        t2.inventories[i].amount - t.market_supply_pool[j].amount[firm_index]
+                            t2.inventories[i].amount - t.market_supply_pool[j].amount[firm_index]
                     ) |> GoodsDemand
                 end
             end
@@ -737,7 +737,7 @@ function update_import_demand_from_remaining_stocks!(world::Ark.World)
 
                     t2.import_demand[i] = (
                         t2.import_demand[i].amount + t2.import_supply[i].amount -
-                        t.market_supply_pool[j].amount[rotw_index]
+                            t.market_supply_pool[j].amount[rotw_index]
                     ) |> ImportDemand
                 end
             end

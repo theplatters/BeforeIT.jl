@@ -86,7 +86,7 @@ function collect_data!(world::Ark.World)
 
     # GDP
     push!(
-        history.nominal_gdp, 
+        history.nominal_gdp,
         nominal_output_tax + τ_VAT * tot_C_h + τ_CF * tot_I_h + τ_G * gov_C_j + τ_EXPORT *
             rotw_C_l + nominal_gva_at_basic_prices
     )
@@ -271,12 +271,12 @@ function collect_data_init!(world::Ark.World, history::DataCollector, props::Pro
     nominal_sector_gva = zeros(props.dimensions.sectors)
 
     @dub for t in Ark.Query(
-        world,
-        (
-            PrincipalProduct, TaxRates, Output, IntermediateProductivity, CapitalDeprecationRate,
-            CapitalProductivity, AverageWageRate, Employment, LaborProductivity,
-        ),
-    )
+            world,
+            (
+                PrincipalProduct, TaxRates, Output, IntermediateProductivity, CapitalDeprecationRate,
+                CapitalProductivity, AverageWageRate, Employment, LaborProductivity,
+            ),
+        )
         @inbounds for i in eachindex(t.output.amount)
             real_gdp += t.output.amount[i] * (1.0 - 1.0 / t.intermediate_productivity.value[i])
             real_gva += t.output.amount[i] * (
@@ -291,9 +291,10 @@ function collect_data_init!(world::Ark.World, history::DataCollector, props::Pro
             wages += t.average_wage_rate.rate[i] * t.employment.amount[i]
             taxes_production += t.tax_rates.capital[i] * t.output.amount[i]
             operating_surplus += (
-                t.output.amount[i] * (1.0 - (
+                t.output.amount[i] * (
+                    1.0 - (
                         (1.0 + τ_SIF) * t.average_wage_rate.rate[i] / t.labor_productivity.value[i] +
-                        1.0 / t.intermediate_productivity.value[i]
+                            1.0 / t.intermediate_productivity.value[i]
                     )
                 ) - t.tax_rates.capital[i] * t.output.amount[i] - t.tax_rates.output[i] * t.output.amount[i]
             )
