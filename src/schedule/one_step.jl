@@ -16,7 +16,7 @@ function _step_impl!(model; parallel = false, shock! = nothing)
     BeforeIT.set_central_bank_rate!(world)
 
     # apply an eventual shock to the model, the default does nothing
-    shock! !== nothing && shock!(model)
+    apply_shocks!(world)
 
     # update rate on loans and morgages
     BeforeIT.set_bank_rate!(world)

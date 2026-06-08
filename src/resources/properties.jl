@@ -222,7 +222,7 @@ function update_household_consumption(prop::Properties, new_consumption)
         prop.product_coeffs,
         prop.sectoral_params,
         prop.external_params,
-        prop.init_conds
+        prop.initial_conditions
     )
 end
 function Properties(parameters::Dict{String, Any}, initial_conditions::Dict{String, Any})

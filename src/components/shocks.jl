@@ -11,7 +11,7 @@ end
     productivity_multiplier::Float64    # productivity multiplier
 end
 
-struct ConsumptionShock <: AbstractShock
+@register struct ConsumptionShock <: AbstractShock
     consumption_multiplier::Float64    # productivity multiplier
     final_time::Int
 end
