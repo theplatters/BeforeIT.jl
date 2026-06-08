@@ -9,7 +9,8 @@ function set_rotw_import_export!(world::Ark.World)
     (; exports_response_to_foreign_output, exports_autoregression) = properties.fiscal_policy
     (; investment_autoregression, investment_response_to_utilization) = properties.sectoral_params
 
-    @dub for totals_row in Ark.Query(world, (TotalExportDemand, TotalImportSupply))        totals_row.total_export_demand.amount .= exp.(
+    @dub for totals_row in Ark.Query(world, (TotalExportDemand, TotalImportSupply))
+        totals_row.total_export_demand.amount .= exp.(
             exports_response_to_foreign_output .* log.(totals_row.total_export_demand.amount) .+
                 exports_autoregression .+
                 E
@@ -20,7 +21,8 @@ function set_rotw_import_export!(world::Ark.World)
                 I
         )
 
-        @dub for row in Ark.Query(world, (ForeignConsumptionDemand,))            row.foreign_consumption_demand.amount .= (
+        @dub for row in Ark.Query(world, (ForeignConsumptionDemand,))
+            row.foreign_consumption_demand.amount .= (
                 only(totals_row.total_export_demand.amount) / foreign_consumers *
                     dot(exports, sector_price_index) *
                     (1 + expected_inflation)
@@ -28,7 +30,8 @@ function set_rotw_import_export!(world::Ark.World)
 
         end
 
-        @dub for row in Ark.Query(                world,
+        @dub for row in Ark.Query(
+                world,
                 (
                     PrincipalProduct,
                     ImportSupply,
@@ -54,7 +57,8 @@ function set_rotw_deposits!(world::Ark.World)
     τ_EXPORT = properties.tax_rates.exports
 
     @dub for rotw_row in Ark.Query(world, (NetForeignPosition, ForeignConsumption))
-        @dub for row in Ark.Query(world, (ImportPrice, ImportSales))            rotw_row.net_foreign_position.amount .+= dot(row.import_price.value, row.import_sales.amount)
+        @dub for row in Ark.Query(world, (ImportPrice, ImportSales))
+            rotw_row.net_foreign_position.amount .+= dot(row.import_price.value, row.import_sales.amount)
         end
         rotw_row.net_foreign_position.amount .-= (1 + τ_EXPORT) * rotw_row.foreign_consumption.amount
     end

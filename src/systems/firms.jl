@@ -346,7 +346,8 @@ const FIRM_WAGE_COMPONENTS = (
 )
 
 function set_firms_wages!(world::Ark.World)
-    @dub for row in Ark.Query(            world,
+    @dub for row in Ark.Query(
+            world,
             FIRM_WAGE_COMPONENTS
         )
         row.wage_bill.amount .= firm_wage.(
@@ -745,7 +746,8 @@ const FIRM_LOAN_COMPONENTS = (
 function set_firms_loans!(world::Ark.World)
     debt_installment_rate = Ark.get_resource(world, Properties).banking_params.debt_installment_rate
 
-    @dub for row in Ark.Query(world, FIRM_LOAN_COMPONENTS)        @inbounds row.loans_outstanding.amount .= (1.0 - debt_installment_rate) .* row.loans_outstanding.amount .+ row.loan_flow.amount
+    @dub for row in Ark.Query(world, FIRM_LOAN_COMPONENTS)
+        @inbounds row.loans_outstanding.amount .= (1.0 - debt_installment_rate) .* row.loans_outstanding.amount .+ row.loan_flow.amount
     end
 
     return nothing

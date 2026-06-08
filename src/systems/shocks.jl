@@ -11,7 +11,8 @@ function apply_interest_rate_shock!(world)
         for i in eachindex(shock_row.e)
 
             if (time.step <= shock_row.interest_rate_shock[i].final_time)
-                @dub for row in Ark.Query(world, (NominalInterestRate,))                    for j in eachindex(row.e)
+                @dub for row in Ark.Query(world, (NominalInterestRate,))
+                    for j in eachindex(row.e)
                         row.nominal_interest_rate[j] = shock_row.interest_rate_shock[i].rate |> NominalInterestRate
                     end
                 end
@@ -27,7 +28,8 @@ function apply_productitvity_shock!(world)
 
     @dub for shock_row in Ark.Query(world, (ProductivityShock,))
         for i in eachindex(shock_row.e)
-            @dub for row in Ark.Query(world, (LaborProductivity,))                for j in eachindex(row.e)
+            @dub for row in Ark.Query(world, (LaborProductivity,))
+                for j in eachindex(row.e)
                     row.labor_productivity[j] = (
                         shock_row.productivity_shock[i].productivity_multiplier *
                             row.labor_productivity[j].rate

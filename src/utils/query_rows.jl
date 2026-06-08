@@ -156,7 +156,8 @@ end
 
 function sum_component_field(world::Ark.World, ::Type{T}, ::Val{field}; kwargs...) where {T, field}
     total = 0.0
-    @dub for row in Ark.Query(world, (T,); kwargs...)        total += _sum_values(getproperty(query_component(row, T), field))
+    @dub for row in Ark.Query(world, (T,); kwargs...)
+        total += _sum_values(getproperty(query_component(row, T), field))
     end
     return total
 end
@@ -172,7 +173,8 @@ sum_value(world::Ark.World, ::Type{T}; kwargs...) where {T} =
 
 function sum_positive_amount(world::Ark.World, ::Type{T}; kwargs...) where {T}
     total = 0.0
-    @dub for row in Ark.Query(world, (T,); kwargs...)        amount = query_component(row, T).amount
+    @dub for row in Ark.Query(world, (T,); kwargs...)
+        amount = query_component(row, T).amount
         total += _sum_positive_values(amount)
     end
     return total
@@ -180,7 +182,8 @@ end
 
 function sum_negative_amount(world::Ark.World, ::Type{T}; kwargs...) where {T}
     total = 0.0
-    @dub for row in Ark.Query(world, (T,); kwargs...)        amount = query_component(row, T).amount
+    @dub for row in Ark.Query(world, (T,); kwargs...)
+        amount = query_component(row, T).amount
         total += _sum_negative_values(amount)
     end
     return total
@@ -188,8 +191,8 @@ end
 
 function sum_query(f, world::Ark.World, component_types; kwargs...)
     total = 0.0
-    for comps in Ark.Query(world, component_types; kwargs...)
-        total += f(query_row(comps))
+    @dub for row in Ark.Query(world, component_types; kwargs...)
+        total += f(row)
     end
     return total
 end

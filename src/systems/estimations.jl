@@ -32,7 +32,8 @@ function set_growth_inflation_EA!(world::Ark.World)
     random_inflation_shock = inflation_shock_sd * randn()
 
 
-    @dub for row in Ark.Query(world, (EuroAreaGDP, EuroAreaGrowth, EuroAreaInflation))        @inbounds for i in eachindex(row.e)
+    @dub for row in Ark.Query(world, (EuroAreaGDP, EuroAreaGrowth, EuroAreaInflation))
+        @inbounds for i in eachindex(row.e)
             expected_growth = exp(
                 output_autoregression * log(row.euro_area_gdp[i].value) +
                     output_autoregression_scalar +
@@ -64,7 +65,8 @@ function set_inflation_priceindex!(world::Ark.World)
 
     total_monetary_output_value = 0.0
     total_output = 0.0
-    @dub for row in Ark.Query(world, (Price, Output))        for i in eachindex(row.e)
+    @dub for row in Ark.Query(world, (Price, Output))
+        for i in eachindex(row.e)
             total_monetary_output_value += row.price[i].value * row.output[i].amount
             total_output += row.output[i].amount
         end
@@ -84,13 +86,15 @@ function set_sector_specific_priceindex!(world::Ark.World)
     fill!(price_indices.sector, 0.0)
     total_sales = zeros(size(price_indices.sector))
 
-    @dub for row in Ark.Query(world, (PrincipalProduct, Price, Sales))        @inbounds for i in eachindex(row.e)
+    @dub for row in Ark.Query(world, (PrincipalProduct, Price, Sales))
+        @inbounds for i in eachindex(row.e)
             price_indices.sector[row.principal_product[i].id] += row.price[i].value * row.sales[i].amount
             total_sales[row.principal_product[i].id] += row.sales[i].amount
         end
     end
 
-    @dub for row in Ark.Query(world, (PrincipalProduct, ImportPrice, ImportSales))        @inbounds for i in eachindex(row.e)
+    @dub for row in Ark.Query(world, (PrincipalProduct, ImportPrice, ImportSales))
+        @inbounds for i in eachindex(row.e)
             price_indices.sector[row.principal_product[i].id] += row.import_price[i].value * row.import_sales[i].amount
             total_sales[row.principal_product[i].id] += row.import_sales[i].amount
         end
