@@ -66,9 +66,9 @@ function apply_consumption_shock!(world)
         for i in eachindex(e)
 
             if (time == 1)
-                rate = rate * interest_rate_shock[i].consumption_multiplier
+                rate = rate * consumption_shock[i].consumption_multiplier
             elseif (time == 1)
-                rate = rate * interest_rate_shock[i].consumption_multiplier
+                rate = rate * consumption_shock[i].consumption_multiplier
             end
         end
     end
