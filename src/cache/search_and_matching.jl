@@ -12,14 +12,8 @@ end
 
 function RetailRealisationCache(households::Int64, final_demands::Int64, sectors::Int64)
     return RetailRealisationCache(
-        zeros(households),
-        zeros(households),
-        zeros(final_demands),
-        zeros(sectors),
-        zeros(sectors),
-        zeros(sectors),
-        zeros(sectors),
-        zeros(sectors),
-        zeros(sectors),
+        zeros(households), zeros(households), zeros(final_demands),
+        zeros(sectors), zeros(sectors), zeros(sectors), zeros(sectors),
+        zeros(sectors), zeros(sectors),
     )
 end

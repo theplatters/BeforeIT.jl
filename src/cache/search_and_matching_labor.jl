@@ -8,11 +8,8 @@ end
 
 function HiringFirmsCache(size::Int64)
     return HiringFirmsCache(
-        Vector{Int64}(undef, size),
-        Vector{Int64}(undef, size),
-        Vector{Ark.Entity}(undef, size),
-        1,
-        0,
+        Vector{Int64}(undef, size), Vector{Int64}(undef, size),
+        Vector{Ark.Entity}(undef, size), 1, 0,
     )
 end
 

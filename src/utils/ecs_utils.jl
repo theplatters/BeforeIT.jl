@@ -1,4 +1,3 @@
-using MacroTools
 
 function _dub_query_call(ex)
     ex isa Expr && ex.head == :call || return false
@@ -68,39 +67,6 @@ end
 
 macro dub(loop)
     return _dub_loop(loop, true) |> esc
-end
-
-macro sum_over(generator)
-    # Parse: expr for var in Query(world, component)
-    @capture(generator, expr_ for var_ in query_call_) ||
-        error("Syntax: @sum_over(expr for var in Query(world, ComponentType))")
-
-    @capture(query_call, query_type_(world_, component_type_)) ||
-        error("Expected Query(world, ComponentType)")
-    e = gensym(:e)
-    vals = gensym(:vals)
-    comps = gensym(:comps)
-    row = gensym(:row)
-    i = gensym(:i)
-
-    # Replace var with vals[i] in expr
-    new_expr = MacroTools.postwalk(expr) do x
-        x === var ? :($vals[$i]) : x
-    end
-
-    return quote
-        let total = 0.0
-            for $comps in $query_type($world, $component_type)
-                $row = query_row($comps)
-                $e = $row.e
-                $vals = query_component($row, first($component_type))
-                for $i in eachindex($e)
-                    total += $new_expr
-                end
-            end
-            total
-        end
-    end |> esc
 end
 
 @inline function single(q::Ark.Query)

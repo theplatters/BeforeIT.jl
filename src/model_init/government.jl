@@ -6,15 +6,10 @@ function setup_government!(world, properties::Properties)::Nothing
 
     e = Ark.new_entity!(
         world, (
-            GovernmentRevenues(0.0),
-            ConsumptionDemand(consumption[T_prime]),
-            RealisedConsumption(0.0),
-            GovernmentDebt(debt),
-            SocialBenefitsInactive(subsidies_inactive),
-            SocialBenefitsOther(subsidies_other),
-            PriceInflationGovernmentGoods(0.0),
-            Government(),
-
+            GovernmentRevenues(0.0), ConsumptionDemand(consumption[T_prime]),
+            RealisedConsumption(0.0), GovernmentDebt(debt),
+            SocialBenefitsInactive(subsidies_inactive), SocialBenefitsOther(subsidies_other),
+            PriceInflationGovernmentGoods(0.0), Government(),
         )
     )
 

@@ -1,15 +1,9 @@
 function setup_aggregates!(world::Ark.World, properties::Properties)
     economy = properties.initial_conditions.economy
 
+    Ark.add_resource!(world, TimeIndex(1))
 
-    Ark.add_resource!(
-        world,
-        TimeIndex(1)
-    )
-
-    Ark.add_resource!(
-        world, properties
-    )
+    Ark.add_resource!(world, properties)
 
     Ark.add_resource!(world, FirmTmpBuffers{Float64}(zeros(properties.dimensions.sectors)))
     Ark.add_resource!(world, HiringFirmsCache(properties.dimensions.total_firms))
@@ -35,7 +29,7 @@ function setup_aggregates!(world::Ark.World, properties::Properties)
     Ark.add_resource!(world, DataCollector(properties))
     Ark.add_resource!(
         world, PriceIndices(
-            ones(Float64, properties.dimensions.sectors), # sector price index
+            ones(Float64, properties.dimensions.sectors),  # sector price index
             1.0,                                           # aggregate_price_index
             1.0,                                           # household_consumption_price_index
             1.0,                                           # capital_goods_price_index
