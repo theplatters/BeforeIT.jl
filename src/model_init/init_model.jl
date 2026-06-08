@@ -37,17 +37,17 @@ end
 
 function seed_initial_employment!(world::Ark.World, properties::Properties)
     unemployed_workers = Ark.Entity[]
-    @dub for row in Ark.Query(world, (Unemployed,))
-        append!(unemployed_workers, row.e)
+    @dub for t in Ark.Query(world, (Unemployed,))
+        append!(unemployed_workers, t.e)
     end
     sort!(unemployed_workers)
 
     initial_assignments = Tuple{Ark.Entity, Ark.Entity, Float64}[]
     worker_index = 1
     firm_rows = Tuple{Ark.Entity, Int, Float64}[]
-    @dub for row in Ark.Query(world, (Employment, AverageWageRate))
-        for i in eachindex(row.e)
-            push!(firm_rows, (row.e[i], row.employment[i].amount, row.average_wage_rate[i].rate))
+    @dub for t in Ark.Query(world, (Employment, AverageWageRate))
+        for i in eachindex(t.e)
+            push!(firm_rows, (t.e[i], t.employment[i].amount, t.average_wage_rate[i].rate))
         end
     end
     sort!(firm_rows; by = first)
@@ -77,7 +77,7 @@ function initialize_household_incomes_and_balance_sheets!(world::Ark.World, prop
 
     household_debt_ratio = properties.initial_conditions.households.debt
     household_capital_ratio = properties.initial_conditions.households.capital
-    @dub for row in Ark.Query(
+    @dub for t in Ark.Query(
             world,
             (
                 NetDisposableIncome,
@@ -86,8 +86,8 @@ function initialize_household_incomes_and_balance_sheets!(world::Ark.World, prop
             ),
             with = (Household,),
         )
-        row.deposits.amount .= household_debt_ratio .* row.net_disposable_income.amount
-        row.capital_stock.amount .= household_capital_ratio .* row.net_disposable_income.amount
+        t.deposits.amount .= household_debt_ratio .* t.net_disposable_income.amount
+        t.capital_stock.amount .= household_capital_ratio .* t.net_disposable_income.amount
     end
 
     return nothing
@@ -97,9 +97,9 @@ function normalize_deposits_and_capital_stocks!(world)
     total_disposable_income = sum_amount(world, NetDisposableIncome)
 
 
-    @dub for row in Ark.Query(world, (CapitalStock, Deposits), with = (Household,))
-        row.capital_stock.amount .= row.capital_stock.amount ./ total_disposable_income
-        row.deposits.amount .= row.deposits.amount ./ total_disposable_income
+    @dub for t in Ark.Query(world, (CapitalStock, Deposits), with = (Household,))
+        t.capital_stock.amount .= t.capital_stock.amount ./ total_disposable_income
+        t.deposits.amount .= t.deposits.amount ./ total_disposable_income
     end
 
     return nothing
@@ -109,8 +109,8 @@ function add_deposits_to_bank!(world)
     total_deposits = sum_amount(world, Deposits)
     total_loans = sum_amount(world, LoansOutstanding)
 
-    @dub for row in Ark.Query(world, (Equity, ResidualItems), with = (Bank,))
-        row.residual_items.amount .= row.equity.amount .- total_loans .+ total_deposits
+    @dub for t in Ark.Query(world, (Equity, ResidualItems), with = (Bank,))
+        t.residual_items.amount .= t.equity.amount .- total_loans .+ total_deposits
     end
 
     return

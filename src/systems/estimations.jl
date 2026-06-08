@@ -32,18 +32,18 @@ function set_growth_inflation_EA!(world::Ark.World)
     random_inflation_shock = inflation_shock_sd * randn()
 
 
-    @dub for row in Ark.Query(world, (EuroAreaGDP, EuroAreaGrowth, EuroAreaInflation))
-        @inbounds for i in eachindex(row.e)
+    @dub for t in Ark.Query(world, (EuroAreaGDP, EuroAreaGrowth, EuroAreaInflation))
+        @inbounds for i in eachindex(t.e)
             expected_growth = exp(
-                output_autoregression * log(row.euro_area_gdp[i].value) +
+                output_autoregression * log(t.euro_area_gdp[i].value) +
                     output_autoregression_scalar +
                     epsilon_Y_EA
             )
-            row.euro_area_growth[i] = expected_growth / row.euro_area_gdp[i].value - 1 |> EuroAreaGrowth
-            row.euro_area_gdp[i] = expected_growth |> EuroAreaGDP
-            row.euro_area_inflation[i] = (
+            t.euro_area_growth[i] = expected_growth / t.euro_area_gdp[i].value - 1 |> EuroAreaGrowth
+            t.euro_area_gdp[i] = expected_growth |> EuroAreaGDP
+            t.euro_area_inflation[i] = (
                 exp(
-                    inflation_autoregression * log1p(row.euro_area_inflation[i].rate) +
+                    inflation_autoregression * log1p(t.euro_area_inflation[i].rate) +
                         inflation_response_to_output_gap +
                         random_inflation_shock
                 ) - 1
@@ -65,10 +65,10 @@ function set_inflation_priceindex!(world::Ark.World)
 
     total_monetary_output_value = 0.0
     total_output = 0.0
-    @dub for row in Ark.Query(world, (Price, Output))
-        for i in eachindex(row.e)
-            total_monetary_output_value += row.price[i].value * row.output[i].amount
-            total_output += row.output[i].amount
+    @dub for t in Ark.Query(world, (Price, Output))
+        for i in eachindex(t.e)
+            total_monetary_output_value += t.price[i].value * t.output[i].amount
+            total_output += t.output[i].amount
         end
     end
     price_index = total_monetary_output_value / total_output
@@ -86,17 +86,17 @@ function set_sector_specific_priceindex!(world::Ark.World)
     fill!(price_indices.sector, 0.0)
     total_sales = zeros(size(price_indices.sector))
 
-    @dub for row in Ark.Query(world, (PrincipalProduct, Price, Sales))
-        @inbounds for i in eachindex(row.e)
-            price_indices.sector[row.principal_product[i].id] += row.price[i].value * row.sales[i].amount
-            total_sales[row.principal_product[i].id] += row.sales[i].amount
+    @dub for t in Ark.Query(world, (PrincipalProduct, Price, Sales))
+        @inbounds for i in eachindex(t.e)
+            price_indices.sector[t.principal_product[i].id] += t.price[i].value * t.sales[i].amount
+            total_sales[t.principal_product[i].id] += t.sales[i].amount
         end
     end
 
-    @dub for row in Ark.Query(world, (PrincipalProduct, ImportPrice, ImportSales))
-        @inbounds for i in eachindex(row.e)
-            price_indices.sector[row.principal_product[i].id] += row.import_price[i].value * row.import_sales[i].amount
-            total_sales[row.principal_product[i].id] += row.import_sales[i].amount
+    @dub for t in Ark.Query(world, (PrincipalProduct, ImportPrice, ImportSales))
+        @inbounds for i in eachindex(t.e)
+            price_indices.sector[t.principal_product[i].id] += t.import_price[i].value * t.import_sales[i].amount
+            total_sales[t.principal_product[i].id] += t.import_sales[i].amount
         end
     end
 

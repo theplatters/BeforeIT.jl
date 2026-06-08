@@ -11,9 +11,9 @@ function apply_interest_rate_shock!(world)
         for i in eachindex(shock_row.e)
 
             if (time.step <= shock_row.interest_rate_shock[i].final_time)
-                @dub for row in Ark.Query(world, (NominalInterestRate,))
-                    for j in eachindex(row.e)
-                        row.nominal_interest_rate[j] = shock_row.interest_rate_shock[i].rate |> NominalInterestRate
+                @dub for t in Ark.Query(world, (NominalInterestRate,))
+                    for j in eachindex(t.e)
+                        t.nominal_interest_rate[j] = shock_row.interest_rate_shock[i].rate |> NominalInterestRate
                     end
                 end
 
@@ -28,11 +28,11 @@ function apply_productitvity_shock!(world)
 
     @dub for shock_row in Ark.Query(world, (ProductivityShock,))
         for i in eachindex(shock_row.e)
-            @dub for row in Ark.Query(world, (LaborProductivity,))
-                for j in eachindex(row.e)
-                    row.labor_productivity[j] = (
+            @dub for t in Ark.Query(world, (LaborProductivity,))
+                for j in eachindex(t.e)
+                    t.labor_productivity[j] = (
                         shock_row.productivity_shock[i].productivity_multiplier *
-                            row.labor_productivity[j].rate
+                            t.labor_productivity[j].rate
                     ) |> LaborProductivity
                 end
             end
@@ -47,13 +47,13 @@ function apply_consumption_shock!(world)
     time = Ark.get_resource(world, TimeIndex)
     properties = BeforeIT.properties(world)
     rate = properties.household_params.consumption_share
-    @dub for row in Ark.Query(world, (ConsumptionShock,))
-        for i in eachindex(row.e)
+    @dub for t in Ark.Query(world, (ConsumptionShock,))
+        for i in eachindex(t.e)
 
             if (time == 1)
-                rate = rate * row.consumption_shock[i].consumption_multiplier
+                rate = rate * t.consumption_shock[i].consumption_multiplier
             elseif (time == 1)
-                rate = rate * row.consumption_shock[i].consumption_multiplier
+                rate = rate * t.consumption_shock[i].consumption_multiplier
             end
         end
     end
