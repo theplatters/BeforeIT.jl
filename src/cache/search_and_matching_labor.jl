@@ -2,19 +2,15 @@ mutable struct HiringFirmsCache
     vacancies::Vector{Int64}
     active::Vector{Int64}
     firms::Vector{Ark.Entity}
-    rows::Vector{Tuple{Ark.Entity, Int64}}
     current_index::Int64
     nhiring::Int64
 end
 
 function HiringFirmsCache(size::Int64)
-    rows = Tuple{Ark.Entity, Int64}[]
-    sizehint!(rows, size)
     return HiringFirmsCache(
         Vector{Int64}(undef, size),
         Vector{Int64}(undef, size),
         Vector{Ark.Entity}(undef, size),
-        rows,
         1,
         0,
     )
@@ -32,7 +28,6 @@ function emblace!(vacancies, entity, cache::HiringFirmsCache)
 end
 
 function reset_cache!(cache::HiringFirmsCache)
-    empty!(cache.rows)
     cache.current_index = 1
     cache.nhiring = 0
     return nothing

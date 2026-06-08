@@ -14,7 +14,6 @@ function setup_government!(world, properties::Properties)::Nothing
             SocialBenefitsOther(subsidies_other),
             PriceInflationGovernmentGoods(0.0),
             Government(),
-            FinalDemandCacheIndex(0),
 
         )
     )

@@ -16,13 +16,6 @@ end
     value::FloatType
 end
 
-@register struct FirmProperties
-    intermediate_productivity::FloatType
-    capital_productivity::FloatType
-    labor_productivity::FloatType
-    capital_deprecation_rate::FloatType
-end
-
 @register struct CapitalDeprecationRate <: FirmComponent #delta_i
     rate::FloatType
 end

@@ -20,15 +20,10 @@ function build_hiring_firms_cache!(world)
     cache = Ark.get_resource(world, HiringFirmsCache)
     reset_cache!(cache)
 
-    rows = cache.rows
     for (e, desired_employment, employment) in Ark.Query(world, (DesiredEmployment, Employment))
         for i in eachindex(e)
-            push!(rows, (e[i], desired_employment[i].amount - employment[i].amount))
+            BeforeIT.emblace!(desired_employment[i].amount - employment[i].amount, e[i], cache)
         end
-    end
-
-    for (entity, vacancies) in rows
-        BeforeIT.emblace!(vacancies, entity, cache)
     end
 
     return nothing

@@ -50,7 +50,6 @@ function setup_rotw!(world::Ark.World, properties::Properties, markets)
                 ImportPrice(0.0),
                 ExportPriceInflation(0.0),
                 RestOfWorldEntity(rotw),
-                IntermediaryDemandCacheIndex(0),
                 StockCacheIndex(properties.dimensions.firms_per_sector[g] + 1),
                 Market() => markets[g],
             )

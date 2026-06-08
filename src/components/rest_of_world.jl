@@ -26,10 +26,6 @@ end
     amount::FloatType
 end
 
-@register struct ExportDemand <: AbstractComponent
-    amount::FloatType
-end
-
 @register struct ImportSales <: AbstractComponent
     amount::FloatType
 end
@@ -59,5 +55,3 @@ end
 @register struct RestOfWorldEntity <: AbstractComponent
     entity::Ark.Entity
 end
-
-@register struct RestOfWorld <: AbstractComponent end
