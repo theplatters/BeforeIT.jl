@@ -36,9 +36,7 @@ function collect_data!(world::Ark.World)
     gov_P_j = 0.0
     gov_C_j = 0.0
     gov_count = 0
-    for comps in Ark.Query(world, (PriceInflationGovernmentGoods, RealisedConsumption), with = (Government,))
-        row = query_row(comps)
-        gov_P_j += sum(row.price_inflation_government_goods.value)
+    @dub for row in Ark.Query(world, (PriceInflationGovernmentGoods, RealisedConsumption), with = (Government,))        gov_P_j += sum(row.price_inflation_government_goods.value)
         gov_C_j += sum(row.realised_consumption.amount)
         gov_count += length(row.price_inflation_government_goods.value)
     end
@@ -233,9 +231,7 @@ function collect_data!(world::Ark.World)
     for g in 1:props.dimensions.sectors
         nom_gva_g = 0.0
         real_gva_g = 0.0
-        for comps in Ark.Query(world, (PrincipalProduct, TaxRates, Price, Output, IntermediateProductivity, PriceIndex))
-            row = query_row(comps)
-            @inbounds for i in eachindex(row.principal_product.id)
+        @dub for row in Ark.Query(world, (PrincipalProduct, TaxRates, Price, Output, IntermediateProductivity, PriceIndex))            @inbounds for i in eachindex(row.principal_product.id)
                 row.principal_product.id[i] == g || continue
                 nom_gva_g += (
                     (1.0 - row.tax_rates.output[i]) * row.price.value[i] * row.output.amount[i] -
@@ -277,8 +273,7 @@ function collect_data_init!(world::Ark.World, history::DataCollector, props::Pro
     operating_surplus = 0.0
     nominal_sector_gva = zeros(props.dimensions.sectors)
 
-    for comps in Ark.Query(
-            world,
+    @dub for row in Ark.Query(            world,
             (
                 PrincipalProduct,
                 TaxRates,
@@ -291,7 +286,6 @@ function collect_data_init!(world::Ark.World, history::DataCollector, props::Pro
                 LaborProductivity,
             ),
         )
-        row = query_row(comps)
         @inbounds for i in eachindex(row.output.amount)
             real_gdp += row.output.amount[i] * (1.0 - 1.0 / row.intermediate_productivity.value[i])
             real_gva += row.output.amount[i] * (

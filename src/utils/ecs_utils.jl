@@ -1,5 +1,32 @@
 using MacroTools
 
+macro dub(loop)
+    loop isa Expr && loop.head == :for ||
+        error("Syntax: @dub for row in query ... end")
+    length(loop.args) == 2 ||
+        error("Syntax: @dub for row in query ... end")
+
+    iter = loop.args[1]
+    body = loop.args[2]
+
+    iter isa Expr && iter.head == :(=) && length(iter.args) == 2 ||
+        error("Syntax: @dub for row in query ... end")
+
+    row_var, query = iter.args
+    row_var isa Symbol ||
+        error("Syntax: @dub for row in query ... end")
+
+    comps = gensym(Symbol("_", row_var))
+    query_row_ref = GlobalRef(@__MODULE__, :query_row)
+    body_args = body isa Expr && body.head == :block ? body.args : Any[body]
+
+    return Expr(
+        :for,
+        Expr(:(=), comps, query),
+        Expr(:block, :($row_var = $query_row_ref($comps)), body_args...),
+    ) |> esc
+end
+
 macro sum_over(generator)
     # Parse: expr for var in Query(world, component)
     @capture(generator, expr_ for var_ in query_call_) ||

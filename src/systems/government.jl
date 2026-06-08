@@ -12,16 +12,12 @@ function set_gov_expenditure!(world::Ark.World)
     epsilon_G = consumption_shock_sd .* randn()
 
     nominal_sector_demand = dot(P_bar_g, c_G_g)
-    for comps in Ark.Query(world, (ConsumptionDemand,), with = (Government,))
-        row = query_row(comps)
-        for i in eachindex(row.e)
+    @dub for row in Ark.Query(world, (ConsumptionDemand,), with = (Government,))        for i in eachindex(row.e)
 
             row.consumption_demand[i] = (
                 exp(consumption_autoregression .* log(row.consumption_demand[i].amount) + consumption_autoregression_scalar + epsilon_G)
             ) |> ConsumptionDemand
-            for comps in Ark.Query(world, (ConsumptionDemand,), with = (LocalGovernment => row.e[i],))
-                local_row = query_row(comps)
-                local_row.consumption_demand.amount .= row.consumption_demand[i].amount ./ local_governments .* nominal_sector_demand .* (1 .+ pi_e)
+            @dub for local_row in Ark.Query(world, (ConsumptionDemand,), with = (LocalGovernment => row.e[i],))                local_row.consumption_demand.amount .= row.consumption_demand[i].amount ./ local_governments .* nominal_sector_demand .* (1 .+ pi_e)
             end
         end
 
@@ -47,8 +43,13 @@ function set_gov_revenues!(world::Ark.World)
     cpi = Ark.get_resource(world, PriceIndices).household_consumption
 
     total_wages = sum_rate(world, Employed)
-    total_consumption = sum_amount(world, RealisedConsumption, with = (Household,))
-    total_investment = sum_amount(world, RealisedInvestment, with = (Household,))
+    total_consumption = 0.0
+    total_investment = 0.0
+    @dub for row in Ark.Query(world, (RealisedConsumption, RealisedInvestment), with = (Household,))        @inbounds for i in eachindex(row.realised_consumption.amount)
+            total_consumption += row.realised_consumption.amount[i]
+            total_investment += row.realised_investment.amount[i]
+        end
+    end
     total_firm_profits = sum_positive_amount(world, Profits, with = (Firm,))
     total_bank_profits = sum_positive_amount(world, Profits, with = (Bank,))
     total_profits = total_firm_profits + total_bank_profits
@@ -60,19 +61,14 @@ function set_gov_revenues!(world::Ark.World)
     corporate_income = τ_firm * total_profits
     capital_formation = τ_cf * total_investment
 
-    products = sum_query(world, (Output, Price, TaxRates)) do row
-        total = 0.0
-        @inbounds for i in eachindex(row.output.amount)
-            total += row.output.amount[i] * row.price.value[i] * row.tax_rates.output[i]
+    products = 0.0
+    production = 0.0
+    @dub for t in Ark.Query(world, (Output, Price, TaxRates))
+        @inbounds for i in eachindex(t.output.amount)
+            output_value = t.output.amount[i] * t.price.value[i]
+            products += output_value * t.tax_rates.output[i]
+            production += output_value * t.tax_rates.capital[i]
         end
-        total
-    end
-    production = sum_query(world, (Output, Price, TaxRates)) do row
-        total = 0.0
-        @inbounds for i in eachindex(row.output.amount)
-            total += row.output.amount[i] * row.price.value[i] * row.tax_rates.capital[i]
-        end
-        total
     end
 
     τ_export = prop.tax_rates.exports # or matching property name
@@ -81,9 +77,7 @@ function set_gov_revenues!(world::Ark.World)
     export_tax = τ_export * exports
 
 
-    for comps in Ark.Query(world, (GovernmentRevenues,))
-        row = query_row(comps)
-        for i in eachindex(row.e)
+    @dub for row in Ark.Query(world, (GovernmentRevenues,))        for i in eachindex(row.e)
             row.government_revenues[i] = (
                 social_security
                     + labor_income
@@ -108,9 +102,7 @@ function set_gov_loans!(world::Ark.World)
     r_g = properties.fiscal_policy.government_interest_rate
 
     total_wages_unemployed = sum_component_field(world, Unemployed, :unemployment_benefits)
-    for comps in Ark.Query(world, (SocialBenefitsInactive, SocialBenefitsOther, GovernmentDebt, RealisedConsumption, GovernmentRevenues))
-        row = query_row(comps)
-        for i in eachindex(row.e)
+    @dub for row in Ark.Query(world, (SocialBenefitsInactive, SocialBenefitsOther, GovernmentDebt, RealisedConsumption, GovernmentRevenues))        for i in eachindex(row.e)
             social_benefits = cpi * (inactive * row.social_benefits_inactive[i].amount + theta_UB * total_wages_unemployed + total * row.social_benefits_other[i].amount)
             row.government_debt[i] = (row.government_debt[i].amount + social_benefits + row.realised_consumption[i].amount + r_g * row.government_debt[i].amount - row.government_revenues[i].amount) |> GovernmentDebt
         end
@@ -123,9 +115,7 @@ end
 function set_gov_social_benefits!(world::Ark.World)
     expected_growth = BeforeIT.expectations(world).output_growth
 
-    for comps in Ark.Query(world, (SocialBenefitsInactive, SocialBenefitsOther, GovernmentDebt))
-        row = query_row(comps)
-        row.social_benefits_inactive.amount .*= (1 + expected_growth)
+    @dub for row in Ark.Query(world, (SocialBenefitsInactive, SocialBenefitsOther, GovernmentDebt))        row.social_benefits_inactive.amount .*= (1 + expected_growth)
         row.social_benefits_other.amount .*= (1 + expected_growth)
 
     end

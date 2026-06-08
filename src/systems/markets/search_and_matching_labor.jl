@@ -8,9 +8,7 @@ function search_and_matching_labor!(world::Ark.World)
 end
 
 function calculate_initial_vacancies!(world::Ark.World)
-    for comps in Ark.Query(world, (Vacancies, DesiredEmployment, Employment))
-        row = query_row(comps)
-        for i in eachindex(row.e)
+    @dub for row in Ark.Query(world, (Vacancies, DesiredEmployment, Employment))        for i in eachindex(row.e)
             row.vacancies[i] = row.desired_employment[i].amount - row.employment[i].amount |> Vacancies
         end
     end
@@ -21,9 +19,7 @@ function build_hiring_firms_cache!(world)
     cache = Ark.get_resource(world, HiringFirmsCache)
     reset_cache!(cache)
 
-    for comps in Ark.Query(world, (DesiredEmployment, Employment))
-        row = query_row(comps)
-        for i in eachindex(row.e)
+    @dub for row in Ark.Query(world, (DesiredEmployment, Employment))        for i in eachindex(row.e)
             BeforeIT.emblace!(
                 row.desired_employment[i].amount - row.employment[i].amount,
                 row.e[i],
@@ -41,9 +37,7 @@ function build_worker_cache!(world)
     BeforeIT.reset_cache!(cache)
 
     unemployed_workers = cache.unemployed_workers
-    for comps in Ark.Query(world, (Unemployed,))
-        row = query_row(comps)
-        append!(unemployed_workers, row.e)
+    @dub for row in Ark.Query(world, (Unemployed,))        append!(unemployed_workers, row.e)
     end
 
     sort!(unemployed_workers; alg = Base.Sort.QuickSort)
@@ -60,9 +54,7 @@ function fire_employed_workers!(world::Ark.World)
     remove_employment = cache.remove_employment
     employed_workers = cache.employed_workers
 
-    for comps in Ark.Query(world, (Employed, EmployedAt))
-        row = query_row(comps)
-        for j in eachindex(row.e)
+    @dub for row in Ark.Query(world, (Employed, EmployedAt))        for j in eachindex(row.e)
             push!(employed_workers, (row.e[j], row.employed_at[j].entity))
         end
     end
@@ -140,9 +132,7 @@ function hire_workers!(world::Ark.World)
         )
     end
 
-    for comps in Ark.Query(world, (Employment,))
-        row = query_row(comps)
-        for i in eachindex(row.e)
+    @dub for row in Ark.Query(world, (Employment,))        for i in eachindex(row.e)
             hired = get(hired_workers, row.e[i], 0)
             hired == 0 && continue
             row.employment[i] = row.employment[i].amount + hired |> Employment
