@@ -130,7 +130,7 @@ end
 end
 
 const FIRM_EXPECTATION_COMPONENTS = (
-    PrincipalProduct, Price, AverageWageRate, CapitalDeprecationRate,
+    PrincipalProduct, Price, AverageWageRate, CapitalDepreciationRate,
     IntermediateProductivity, LaborProductivity, CapitalProductivity,
     GoodsDemand, CapitalStock, Profits, LoansOutstanding, Deposits,
     DesiredInvestment, DesiredMaterials, DesiredEmployment, ExpectedProfits,
@@ -329,7 +329,7 @@ end
 
 const FIRM_PROFIT_COMPONENTS = (
     Profits, Price, Sales, Output, FinalGoodsStockChange, Deposits, WageBill, Employment,
-    IntermediateProductivity, PriceIndex, CapitalDeprecationRate, CapitalProductivity,
+    IntermediateProductivity, PriceIndex, CapitalDepreciationRate, CapitalProductivity,
     CFPriceIndex, TaxRates, LoansOutstanding,
 )
 
@@ -491,7 +491,7 @@ function set_firms_loans!(world::Ark.World)
 end
 
 const FIRM_STOCK_COMPONENTS = (
-    CapitalStock, CapitalDeprecationRate, CapitalProductivity, Output, Investment, Intermediates,
+    CapitalStock, CapitalDepreciationRate, CapitalProductivity, Output, Investment, Intermediates,
     IntermediateProductivity, MaterialsStockChange, Sales, FinalGoodsStockChange, Inventories,
 )
 

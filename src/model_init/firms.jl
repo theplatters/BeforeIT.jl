@@ -90,7 +90,7 @@ function setup_firms!(world::Ark.World, properties::Properties, markets)
             world, firms_per_sector[g],
             (
                 PrincipalProduct, LaborProductivity, IntermediateProductivity,
-                CapitalProductivity, WageBill, AverageWageRate, CapitalDeprecationRate,
+                CapitalProductivity, WageBill, AverageWageRate, CapitalDepreciationRate,
                 TaxRates, Employment, Output, Sales, GoodsDemand, Price, Inventories,
                 CapitalStock, Intermediates, LoansOutstanding, OperatingMargins,
                 Deposits, Profits, Vacancies, Investment, Equity, PriceIndex, CFPriceIndex,
@@ -108,7 +108,7 @@ function setup_firms!(world::Ark.World, properties::Properties, markets)
                 cp[i] = capital_coeffs[firm_index] |> CapitalProductivity
                 wb[i] = 0.0 |> WageBill
                 awr[i] = wage_rate[firm_index] |> AverageWageRate
-                cdr[i] = deprecation_rate[firm_index] |> CapitalDeprecationRate
+                cdr[i] = deprecation_rate[firm_index] |> CapitalDepreciationRate
                 tr[i] = TaxRates(output_tax_rate[firm_index], capital_tax_rate[firm_index])
                 emp[i] = employment[firm_index] |> Employment
                 out[i] = output[firm_index] |> Output

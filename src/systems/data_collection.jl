@@ -273,7 +273,7 @@ function collect_data_init!(world::Ark.World, history::DataCollector, props::Pro
     @dub for t in Ark.Query(
             world,
             (
-                PrincipalProduct, TaxRates, Output, IntermediateProductivity, CapitalDeprecationRate,
+                PrincipalProduct, TaxRates, Output, IntermediateProductivity, CapitalDepreciationRate,
                 CapitalProductivity, AverageWageRate, Employment, LaborProductivity,
             ),
         )
