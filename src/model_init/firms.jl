@@ -96,7 +96,7 @@ function setup_firms!(world::Ark.World, properties::Properties, markets)
                 CapitalProductivity, WageBill, AverageWageRate, CapitalDeprecationRate,
                 TaxRates, Employment, Output, Sales, GoodsDemand, Price, Inventories,
                 CapitalStock, Intermediates, LoansOutstanding, OperatingMargins,
-                Deposits, Profits, Vacancies, Investment, Equity, PriceIndex, CFPriceIndex
+                Deposits, Profits, Vacancies, Investment, Equity, PriceIndex, CFPriceIndex,
                 TargetLoans, ExpectedCapital, ExpectedLoans, ExpectedSales, DesiredInvestment,
                 DesiredMaterials, DesiredEmployment, ExpectedProfits, FinalGoodsStockChange,
                 MaterialsStockChange, LoanFlow, IntermediaryDemandCacheIndex, StockCacheIndex,

@@ -30,7 +30,6 @@ function reset_cache!(cache::HiringFirmsCache)
     return nothing
 end
 
-
 mutable struct WorkersCache
     worker::Vector{Ark.Entity}
     active::Vector{Int64}
@@ -62,7 +61,6 @@ function reset_cache!(cache::WorkersCache)
     return nothing
 end
 
-
 struct FireEmployedWorkersCache
     remove_employment::Vector{Ark.Entity}
     employed_workers::Vector{Tuple{Ark.Entity, Ark.Entity}}
@@ -81,7 +79,6 @@ function reset_cache!(cache::FireEmployedWorkersCache)
     empty!(cache.employed_workers)
     return nothing
 end
-
 
 struct HireWorkersCache
     add_employment::Vector{Tuple{Ark.Entity, Ark.Entity}}
