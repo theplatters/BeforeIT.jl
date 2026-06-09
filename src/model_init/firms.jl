@@ -41,7 +41,6 @@ function setup_firms!(world::Ark.World, properties::Properties, markets)
 
     output = output_elasticities .* employment
 
-
     capital = output ./ (omega .* capital_coeffs)
     intermediates = output ./ (omega .* material_coeffs)
     outstanding_loans = total_loans .* capital / sum(capital)
@@ -52,7 +51,6 @@ function setup_firms!(world::Ark.World, properties::Properties, markets)
     r = r_bar + mu
     profits = operating_margins .* output - r .* outstanding_loans + r_bar .* max.(0, deposits)
 
-
     P_bar_HH = one(Float64)
     after_tax_profits = max.(0, profits) .* (1 - tau_INC) .* (1 - tau_FIRM)
     dividends = theta_DIV .* after_tax_profits
@@ -60,7 +58,6 @@ function setup_firms!(world::Ark.World, properties::Properties, markets)
     disposable_income = dividends .+ subsidies
     K_h = K_H * disposable_income
     D_h = D_H * disposable_income
-
 
     owners = Vector{Ark.Entity}(undef, total_firms)
     Ark.new_entities!(
