@@ -61,7 +61,7 @@ include("old_actions/firms.jl")
                 world, (
                     Bit.Price, Bit.GoodsDemand, Bit.CapitalStock,
                     Bit.Profits, Bit.LoansOutstanding, Bit.Deposits,
-                    Bit.AverageWageRate, Bit.CapitalDeprecationRate,
+                    Bit.AverageWageRate, Bit.CapitalDepreciationRate,
                     Bit.IntermediateProductivity, Bit.LaborProductivity,
                     Bit.CapitalProductivity, Bit.PrincipalProduct,
                 ), with = (Bit.Firm,)
@@ -74,7 +74,7 @@ include("old_actions/firms.jl")
                 L[i] = Bit.LoansOutstanding(test_L_i[i])
                 D[i] = Bit.Deposits(test_D_i[i])
                 w_bar[i] = Bit.AverageWageRate(test_w_bar_i[i])
-                delta[i] = Bit.CapitalDeprecationRate(test_delta_i[i])
+                delta[i] = Bit.CapitalDepreciationRate(test_delta_i[i])
                 beta[i] = Bit.IntermediateProductivity(test_beta_i[i])
                 alpha_bar[i] = Bit.LaborProductivity(test_alpha_bar_i[i])
                 kappa[i] = Bit.CapitalProductivity(test_kappa_i[i])
@@ -277,7 +277,7 @@ include("old_actions/firms.jl")
                     Bit.Price, Bit.Sales, Bit.FinalGoodsStockChange,
                     Bit.Deposits, Bit.WageBill, Bit.Employment,
                     Bit.IntermediateProductivity, Bit.PriceIndex, Bit.Output,
-                    Bit.CapitalDeprecationRate, Bit.CapitalProductivity,
+                    Bit.CapitalDepreciationRate, Bit.CapitalProductivity,
                     Bit.CFPriceIndex, Bit.TaxRates,
                     Bit.LoansOutstanding,
                 ), with = (Bit.Firm,)
@@ -292,7 +292,7 @@ include("old_actions/firms.jl")
                 beta[i] = Bit.IntermediateProductivity(test_beta_i[i])
                 P_bar[i] = Bit.PriceIndex(test_P_bar_i[i])
                 Y[i] = Bit.Output(test_Y_i[i])
-                delta[i] = Bit.CapitalDeprecationRate(test_delta_i[i])
+                delta[i] = Bit.CapitalDepreciationRate(test_delta_i[i])
                 kappa[i] = Bit.CapitalProductivity(test_kappa_i[i])
                 P_CF[i] = Bit.CFPriceIndex(test_P_CF_i[i])
                 tau[i] = Bit.TaxRates(test_tau_Y_i[i], test_tau_K_i[i])
@@ -523,7 +523,7 @@ include("old_actions/firms.jl")
 
         for (e, K, delta, kappa, Y, I_comp, M, beta, DM, Q, S) in Ark.Query(
                 world, (
-                    Bit.CapitalStock, Bit.CapitalDeprecationRate,
+                    Bit.CapitalStock, Bit.CapitalDepreciationRate,
                     Bit.CapitalProductivity, Bit.Output, Bit.Investment,
                     Bit.Intermediates, Bit.IntermediateProductivity,
                     Bit.MaterialsStockChange, Bit.Sales, Bit.Inventories,
@@ -531,7 +531,7 @@ include("old_actions/firms.jl")
             )
             for i in eachindex(e)
                 K[i] = Bit.CapitalStock(test_K_i[i])
-                delta[i] = Bit.CapitalDeprecationRate(test_delta_i[i])
+                delta[i] = Bit.CapitalDepreciationRate(test_delta_i[i])
                 kappa[i] = Bit.CapitalProductivity(test_kappa_i[i])
                 Y[i] = Bit.Output(test_Y_i[i])
                 I_comp[i] = Bit.Investment(test_I_i[i])

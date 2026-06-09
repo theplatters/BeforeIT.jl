@@ -16,7 +16,7 @@ end
     value::FloatType
 end
 
-@register struct CapitalDeprecationRate <: FirmComponent #delta_i
+@register struct CapitalDepreciationRate <: FirmComponent #delta_i
     rate::FloatType
 end
 

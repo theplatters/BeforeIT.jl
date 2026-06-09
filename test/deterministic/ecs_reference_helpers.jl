@@ -146,7 +146,7 @@ function _firm_reference_state(model)
         world,
         (
             PrincipalProduct, LaborProductivity, IntermediateProductivity,
-            CapitalDeprecationRate, CapitalProductivity, OperatingMargins,
+            CapitalDepreciationRate, CapitalProductivity, OperatingMargins,
             TaxRates, AverageWageRate, Employment, Output, Price, GoodsDemand,
             Inventories, CapitalStock, Intermediates, LoansOutstanding, Deposits,
             Profits, Vacancies,

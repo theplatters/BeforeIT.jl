@@ -382,7 +382,7 @@ function set_mock_components!(world::Ark.World; overrides...)
         :firms_alpha_bar_i => Bit.LaborProductivity,
         :firms_beta_i => Bit.IntermediateProductivity,
         :firms_kappa_i => Bit.CapitalProductivity,
-        :firms_delta_i => Bit.CapitalDeprecationRate
+        :firms_delta_i => Bit.CapitalDepreciationRate
     )
 
     bank_mappings = Dict(
