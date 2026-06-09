@@ -1,5 +1,3 @@
-# src/resources/data_collector.jl
-
 mutable struct DataCollector
     collection_time::Vector{Int64}
     nominal_gdp::Vector{Float64}

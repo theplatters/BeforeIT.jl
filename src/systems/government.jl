@@ -28,7 +28,6 @@ function set_gov_expenditure!(world::Ark.World)
     return nothing
 end
 
-
 function set_gov_revenues!(world::Ark.World)
 
     prop = properties(world)

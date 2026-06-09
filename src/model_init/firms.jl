@@ -41,7 +41,6 @@ function setup_firms!(world::Ark.World, properties::Properties, markets)
 
     output = output_elasticities .* employment
 
-
     capital = output ./ (omega .* capital_coeffs)
     intermediates = output ./ (omega .* material_coeffs)
     outstanding_loans = total_loans .* capital / sum(capital)
@@ -52,7 +51,6 @@ function setup_firms!(world::Ark.World, properties::Properties, markets)
     r = r_bar + mu
     profits = operating_margins .* output - r .* outstanding_loans + r_bar .* max.(0, deposits)
 
-
     P_bar_HH = one(Float64)
     after_tax_profits = max.(0, profits) .* (1 - tau_INC) .* (1 - tau_FIRM)
     dividends = theta_DIV .* after_tax_profits
@@ -61,22 +59,13 @@ function setup_firms!(world::Ark.World, properties::Properties, markets)
     K_h = K_H * disposable_income
     D_h = D_H * disposable_income
 
-
     owners = Vector{Ark.Entity}(undef, total_firms)
     Ark.new_entities!(
         world, total_firms,
         (
-            NetDisposableIncome,
-            ConsumptionBudget,
-            InvestmentBudget,
-            ExpectedIncome,
-            RealisedConsumption,
-            RealisedInvestment,
-            CapitalStock,
-            Deposits,
-            Capitalist,
-            Household,
-            FinalDemandCacheIndex,
+            NetDisposableIncome, ConsumptionBudget, InvestmentBudget, ExpectedIncome,
+            RealisedConsumption, RealisedInvestment, CapitalStock, Deposits, Capitalist,
+            Household, FinalDemandCacheIndex,
         )
     ) do (entities, net_inc, cons_b, inv_b, exp_inc, real_cons, real_inv, cap_s, dep, cap_ist, hh, final_cache_index)
         for i in eachindex(entities)
@@ -100,47 +89,15 @@ function setup_firms!(world::Ark.World, properties::Properties, markets)
         Ark.new_entities!(
             world, firms_per_sector[g],
             (
-                PrincipalProduct,
-                LaborProductivity,
-                IntermediateProductivity,
-                CapitalProductivity,
-                WageBill,
-                AverageWageRate,
-                CapitalDeprecationRate,
-                TaxRates,
-                Employment,
-                Output,
-                Sales,
-                GoodsDemand,
-                Price,
-                Inventories,
-                CapitalStock,
-                Intermediates,
-                LoansOutstanding,
-                OperatingMargins,
-                Deposits,
-                Profits,
-                Vacancies,
-                Investment,
-                Equity,
-                PriceIndex,
-                CFPriceIndex,
-                TargetLoans,
-                ExpectedCapital,
-                ExpectedLoans,
-                ExpectedSales,
-                DesiredInvestment,
-                DesiredMaterials,
-                DesiredEmployment,
-                ExpectedProfits,
-                FinalGoodsStockChange,
-                MaterialsStockChange,
-                LoanFlow,
-                IntermediaryDemandCacheIndex,
-                StockCacheIndex,
-                Firm,
-                Owner,
-                Market => markets[g],
+                PrincipalProduct, LaborProductivity, IntermediateProductivity,
+                CapitalProductivity, WageBill, AverageWageRate, CapitalDeprecationRate,
+                TaxRates, Employment, Output, Sales, GoodsDemand, Price, Inventories,
+                CapitalStock, Intermediates, LoansOutstanding, OperatingMargins,
+                Deposits, Profits, Vacancies, Investment, Equity, PriceIndex, CFPriceIndex,
+                TargetLoans, ExpectedCapital, ExpectedLoans, ExpectedSales, DesiredInvestment,
+                DesiredMaterials, DesiredEmployment, ExpectedProfits, FinalGoodsStockChange,
+                MaterialsStockChange, LoanFlow, IntermediaryDemandCacheIndex, StockCacheIndex,
+                Firm, Owner, Market => markets[g],
             )
         ) do (entities, pp, lp, ip, cp, wb, awr, cdr, tr, emp, out, sal, gd, pr, inv, cs, interm, lo, om, dep, prof, vac, invst, eq, pi, cfpi, tl, ec, el, es, di, dm, de, ep, fgsc, msc, lf, intermediary_cache_index, stock_cache_index, firm, owner, market)
             for i in eachindex(entities)

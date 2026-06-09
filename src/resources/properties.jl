@@ -210,19 +210,10 @@ function update_household_consumption(prop::Properties, new_consumption)
     household_params = HouseholdParams(new_consumption, prop.household_params.housing_investment_share)
 
     return Properties(
-        prop.dimensions,
-        prop.population,
-        prop.tax_rates,
-        prop.sector_tax_rates,
-        prop.social_insurance,
-        prop.monetary_policy,
-        prop.fiscal_policy,
-        household_params,
-        prop.banking_params,
-        prop.product_coeffs,
-        prop.sectoral_params,
-        prop.external_params,
-        prop.initial_conditions
+        prop.dimensions, prop.population, prop.tax_rates, prop.sector_tax_rates,
+        prop.social_insurance, prop.monetary_policy, prop.fiscal_policy,
+        household_params, prop.banking_params, prop.product_coeffs,
+        prop.sectoral_params, prop.external_params, prop.initial_conditions
     )
 end
 function Properties(parameters::Dict{String, Any}, initial_conditions::Dict{String, Any})
@@ -248,12 +239,9 @@ function Properties(parameters::Dict{String, Any}, initial_conditions::Dict{Stri
 
     # === TAX RATES ===
     tax_rates = GlobalTaxRates(
-        Float64(parameters["tau_INC"]),
-        Float64(parameters["tau_FIRM"]),
-        Float64(parameters["tau_VAT"]),
-        Float64(parameters["tau_EXPORT"]),
-        Float64(parameters["tau_CF"]),
-        Float64(parameters["tau_G"])
+        Float64(parameters["tau_INC"]), Float64(parameters["tau_FIRM"]),
+        Float64(parameters["tau_VAT"]), Float64(parameters["tau_EXPORT"]),
+        Float64(parameters["tau_CF"]), Float64(parameters["tau_G"])
     )
 
     sector_tax_rates = SectorTaxRates(
@@ -263,79 +251,58 @@ function Properties(parameters::Dict{String, Any}, initial_conditions::Dict{Stri
 
     # === SOCIAL INSURANCE ===
     social_insurance = SocialInsurance(
-        Float64(parameters["tau_SIF"]),
-        Float64(parameters["tau_SIW"]),
+        Float64(parameters["tau_SIF"]), Float64(parameters["tau_SIW"]),
         Float64(parameters["theta_UB"])
     )
 
     # === HOUSEHOLD BEHAVIOR ===
     household_params = HouseholdParams(
-        Float64(parameters["psi"]),
-        Float64(parameters["psi_H"])
+        Float64(parameters["psi"]), Float64(parameters["psi_H"])
     )
 
     # === BANKING PARAMETERS ===
     banking_params = BankingParams(
-        Float64(parameters["theta_DIV"]),
-        Float64(parameters["theta"]),
-        Float64(parameters["zeta"]),
-        Float64(parameters["zeta_LTV"]),
-        Float64(parameters["zeta_b"]),
-        Float64(parameters["mu"])
+        Float64(parameters["theta_DIV"]), Float64(parameters["theta"]),
+        Float64(parameters["zeta"]), Float64(parameters["zeta_LTV"]),
+        Float64(parameters["zeta_b"]), Float64(parameters["mu"])
     )
 
     # === MONETARY POLICY ===
     monetary_policy = MonetaryPolicy(
-        Float64(parameters["pi_star"]),
-        Float64(parameters["rho"]),
-        Float64(parameters["xi_pi"]),
-        Float64(parameters["xi_gamma"]),
+        Float64(parameters["pi_star"]), Float64(parameters["rho"]),
+        Float64(parameters["xi_pi"]), Float64(parameters["xi_gamma"]),
         Float64(parameters["r_star"])
     )
 
     # === FISCAL POLICY ===
     fiscal_policy = FiscalPolicy(
-        Float64(parameters["r_G"]),
-        Float64(parameters["alpha_G"]),
-        Float64(parameters["beta_G"]),
-        Float64(parameters["sigma_G"]),
-        Float64(parameters["beta_E"]),
-        Float64(parameters["alpha_E"]),
+        Float64(parameters["r_G"]), Float64(parameters["alpha_G"]),
+        Float64(parameters["beta_G"]), Float64(parameters["sigma_G"]),
+        Float64(parameters["beta_E"]), Float64(parameters["alpha_E"]),
         Float64(parameters["sigma_E"])
     )
 
     # === PRODUCT COEFFICIENTS ===
     product_coeffs = ProductCoefficients(
-        Vector{Float64}(vec(parameters["b_HH_g"])),
-        Vector{Float64}(vec(parameters["b_CFH_g"])),
-        Vector{Float64}(vec(parameters["c_G_g"])),
-        Vector{Float64}(vec(parameters["c_E_g"])),
-        Vector{Float64}(vec(parameters["c_I_g"])),
-        Vector{Float64}(vec(parameters["b_CF_g"])),
-        Matrix{Float64}(parameters["a_sg"]),
-        Matrix{Float64}(parameters["C"])
+        Vector{Float64}(vec(parameters["b_HH_g"])), Vector{Float64}(vec(parameters["b_CFH_g"])),
+        Vector{Float64}(vec(parameters["c_G_g"])), Vector{Float64}(vec(parameters["c_E_g"])),
+        Vector{Float64}(vec(parameters["c_I_g"])), Vector{Float64}(vec(parameters["b_CF_g"])),
+        Matrix{Float64}(parameters["a_sg"]), Matrix{Float64}(parameters["C"])
     )
 
     # === SECTORAL PARAMETERS ===
     sectoral_params = SectoralParams(
-        Vector{Float64}(vec(parameters["alpha_s"])),
-        Vector{Float64}(vec(parameters["beta_s"])),
-        Vector{Float64}(vec(parameters["kappa_s"])),
-        Vector{Float64}(vec(parameters["delta_s"])),
-        Vector{Float64}(vec(parameters["w_s"])),
-        Float64(parameters["alpha_I"]),
-        Float64(parameters["beta_I"]),
-        Float64(parameters["sigma_I"])
+        Vector{Float64}(vec(parameters["alpha_s"])), Vector{Float64}(vec(parameters["beta_s"])),
+        Vector{Float64}(vec(parameters["kappa_s"])), Vector{Float64}(vec(parameters["delta_s"])),
+        Vector{Float64}(vec(parameters["w_s"])), Float64(parameters["alpha_I"]),
+        Float64(parameters["beta_I"]), Float64(parameters["sigma_I"])
     )
 
     # === EXTERNAL PARAMETERS ===
     external_params = ExternalParams(
-        Float64(parameters["alpha_Y_EA"]),
-        Float64(parameters["beta_Y_EA"]),
-        Float64(parameters["sigma_Y_EA"]),
-        Float64(parameters["alpha_pi_EA"]),
-        Float64(parameters["beta_pi_EA"]),
-        Float64(parameters["sigma_pi_EA"]),
+        Float64(parameters["alpha_Y_EA"]), Float64(parameters["beta_Y_EA"]),
+        Float64(parameters["sigma_Y_EA"]), Float64(parameters["alpha_pi_EA"]),
+        Float64(parameters["beta_pi_EA"]), Float64(parameters["sigma_pi_EA"]),
         Float64(parameters["beta_E"])
     )
 
@@ -345,54 +312,35 @@ function Properties(parameters::Dict{String, Any}, initial_conditions::Dict{Stri
             Vector{Float64}(vec(initial_conditions["N_s"]))
         ),
         FirmInitialConditions(
-            Float64(initial_conditions["D_I"]),
-            Float64(initial_conditions["L_I"]),
-            Float64(initial_conditions["omega"]),
-            Vector{Float64}(vec(initial_conditions["Y_I"]))
+            Float64(initial_conditions["D_I"]), Float64(initial_conditions["L_I"]),
+            Float64(initial_conditions["omega"]), Vector{Float64}(vec(initial_conditions["Y_I"]))
         ),
         HouseholdInitialConditions(
-            Float64(initial_conditions["D_H"]),
-            Float64(initial_conditions["K_H"]),
+            Float64(initial_conditions["D_H"]), Float64(initial_conditions["K_H"]),
             Float64(initial_conditions["w_UB"])
         ),
         GovernmentInitialConditions(
-            Vector{Float64}(vec(initial_conditions["C_G"])),
-            Float64(initial_conditions["L_G"]),
-            Float64(initial_conditions["sb_inact"]),
-            Float64(initial_conditions["sb_other"])
+            Vector{Float64}(vec(initial_conditions["C_G"])), Float64(initial_conditions["L_G"]),
+            Float64(initial_conditions["sb_inact"]), Float64(initial_conditions["sb_other"])
         ),
         BankingInitialConditions(
-            Float64(initial_conditions["E_CB"]),
-            Float64(initial_conditions["E_k"]),
+            Float64(initial_conditions["E_CB"]), Float64(initial_conditions["E_k"]),
             Float64(initial_conditions["r_bar"])
         ),
         ExternalInitialConditions(
-            Float64(initial_conditions["D_RoW"]),
-            Vector{Float64}(vec(initial_conditions["C_E"])),
-            Vector{Float64}(vec(initial_conditions["Y_I"])),
-            Float64(initial_conditions["Y_EA"]),
+            Float64(initial_conditions["D_RoW"]), Vector{Float64}(vec(initial_conditions["C_E"])),
+            Vector{Float64}(vec(initial_conditions["Y_I"])), Float64(initial_conditions["Y_EA"]),
             Float64(initial_conditions["pi_EA"])
         ),
         EconomyInitialConditions(
-            Vector{Float64}(vec(initial_conditions["Y"])),
-            Vector{Float64}(vec(initial_conditions["pi"]))
+            Vector{Float64}(vec(initial_conditions["Y"])), Vector{Float64}(vec(initial_conditions["pi"]))
         )
     )
 
     return Properties(
-        dimensions,
-        population,
-        tax_rates,
-        sector_tax_rates,
-        social_insurance,
-        monetary_policy,
-        fiscal_policy,
-        household_params,
-        banking_params,
-        product_coeffs,
-        sectoral_params,
-        external_params,
-        init_conds
+        dimensions, population, tax_rates, sector_tax_rates, social_insurance,
+        monetary_policy, fiscal_policy, household_params, banking_params,
+        product_coeffs, sectoral_params, external_params, init_conds
     )
 end
 
@@ -422,5 +370,6 @@ function initial_conditions_dict(initial_conditions::InitialConditions)
     )
 end
 
-Base.getindex(initial_conditions::InitialConditions, key::AbstractString) =
-    initial_conditions_dict(initial_conditions)[String(key)]
+function Base.getindex(initial_conditions::InitialConditions, key::AbstractString)
+    return initial_conditions_dict(initial_conditions)[String(key)]
+end

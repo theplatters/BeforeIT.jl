@@ -1,4 +1,5 @@
 abstract type AbstractModel end
+
 struct ECSModel{CS <: Tuple, CT <: Tuple, ST <: Tuple, N, M} <: AbstractModel
     world::Ark.World{CS, CT, ST, N, M}
 end
@@ -15,7 +16,6 @@ end
 
 function ECSModel(properties::Properties)
     world = Ark.World(Tuple(BIT_COMPONENTS)...; initial_capacity = 16)
-
 
     markets = setup_markets!(world, properties)
     setup_firms!(world, properties, markets)
@@ -78,14 +78,8 @@ function initialize_household_incomes_and_balance_sheets!(world::Ark.World, prop
     household_debt_ratio = properties.initial_conditions.households.debt
     household_capital_ratio = properties.initial_conditions.households.capital
     @dub for t in Ark.Query(
-            world,
-            (
-                NetDisposableIncome,
-                Deposits,
-                CapitalStock,
-            ),
-            with = (Household,),
-        )
+        world, (NetDisposableIncome, Deposits, CapitalStock), with = (Household,),
+    )
         t.deposits.amount .= household_debt_ratio .* t.net_disposable_income.amount
         t.capital_stock.amount .= household_capital_ratio .* t.net_disposable_income.amount
     end
@@ -95,7 +89,6 @@ end
 
 function normalize_deposits_and_capital_stocks!(world)
     total_disposable_income = sum_amount(world, NetDisposableIncome)
-
 
     @dub for t in Ark.Query(world, (CapitalStock, Deposits), with = (Household,))
         t.capital_stock.amount .= t.capital_stock.amount ./ total_disposable_income

@@ -3,7 +3,5 @@ struct CreditMatchingCache
 end
 
 function CreditMatchingCache(size::Int)
-    return CreditMatchingCache(
-        Vector{Ark.Entity}(undef, size),
-    )
+    return CreditMatchingCache(Vector{Ark.Entity}(undef, size))
 end
