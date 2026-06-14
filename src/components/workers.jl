@@ -2,7 +2,7 @@
     rate::FloatType
 end
 
-@register :relation struct EmployedAt
+@register struct EmployedAt
     entity::Ark.Entity
 end
 

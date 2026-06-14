@@ -168,10 +168,13 @@ end
         firm_entity === nothing || break
     end
 
-    for (worker_e, employed) in collect(Ark.Query(world, (Bit.Employed,), with = (Bit.EmployedAt => firm_entity,)))
-        worker_entity = worker_e[1]
-        target_wage = employed[1].rate
-        break
+    for (worker_e, employed, employed_at) in collect(Ark.Query(world, (Bit.Employed, Bit.EmployedAt)))
+        idx = findfirst(ea -> ea.entity == firm_entity, employed_at)
+        if idx !== nothing
+            worker_entity = worker_e[idx]
+            target_wage = employed[idx].rate
+            break
+        end
     end
 
     for (firm_e, employment, desired_employment) in collect(

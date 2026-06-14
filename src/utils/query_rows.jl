@@ -1,4 +1,3 @@
-
 function snake_case_name(name::Symbol)
     s = string(name)
     s = replace(s, r"([A-Z]+)([A-Z][a-z])" => s"\1_\2")

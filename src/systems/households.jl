@@ -1,8 +1,16 @@
 function update_workers_wages!(world::Ark.World)
+    wage_bills = Dict{Ark.Entity, FloatType}()
     @dub for t in Ark.Query(world, (WageBill,))
         for i in eachindex(t.e)
-            for t2 in Ark.Query(world, (Employed,), with = (EmployedAt => t.e[i],))
-                t2.employed.rate .= t.wage_bill[i].amount
+            wage_bills[t.e[i]] = t.wage_bill[i].amount
+        end
+    end
+
+    @dub for t in Ark.Query(world, (Employed, EmployedAt))
+        for i in eachindex(t.e)
+            firm = t.employed_at[i].entity
+            if haskey(wage_bills, firm)
+                t.employed[i] = Employed(wage_bills[firm])
             end
         end
     end
