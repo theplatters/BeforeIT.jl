@@ -344,24 +344,18 @@ abstract type StockType end
 struct Stock <: StockType end
 struct Capacity <: StockType end
 
-calc_sold_amount(available_stock, stock_capacity, price, demand_cache_val, firm_index, buyer, ::Intermediate, ::Stock) = min(available_stock, demand_cache_val)
-calc_sold_amount(available_stocks, stock_capacity, price, demand_cache_val, firm_index, buyer, ::Intermediate, ::Capacity) = min(stock_capacity, demand_cache_val)
 
-function calc_sold_amount(available_stock, stock_capacity, price, demand_cache_val, firm_index, buyer, ::Final, ::Stock)
-    return if available_stock * price <= demand_cache_val
-        available_stock
-    else
-        demand_cache_val / price
-    end
-end
+@inline calc_sold_amount(available_stock, stock_capacity, price, demand, ::Final, ::Stock) =
+    min(available_stock, demand / price)
 
-function calc_sold_amount(available_stock, stock_capacity, price, demand_cache_val, firm_index, buyer, ::Final, ::Capacity)
-    return if stock_capacity * price <= demand_cache_val
-        stock_capacity
-    else
-        demand_cache_val / price
-    end
-end
+@inline calc_sold_amount(available_stock, stock_capacity, price, demand, ::Final, ::Capacity) =
+    min(stock_capacity, demand / price)
+
+@inline calc_sold_amount(available_stock, stock_capacity, price, demand, ::Intermediate, ::Stock) =
+    min(available_stock, demand)
+
+@inline calc_sold_amount(available_stock, stock_capacity, price, demand, ::Intermediate, ::Capacity) =
+    min(stock_capacity, demand)
 
 
 function reduce_stocks_by_sold_amount!(available_stocks, stock_capacity, firm_index, sold_amount, ::Stock)
@@ -377,24 +371,20 @@ end
 
 function reduce_demand_by_sold_amount!(demand_cache_vals, demand_cache_nominal, sold_amount, buyer, price, ::Intermediate, ::Stock)
     demand_cache_nominal[buyer] += sold_amount * price
-    demand_cache_vals[buyer] -= sold_amount
-    return nothing
+    return demand_cache_vals[buyer] -= sold_amount
 end
 
 function reduce_demand_by_sold_amount!(demand_cache_vals, demand_cache_nominal, sold_amount, buyer, price, ::Intermediate, ::Capacity)
-    demand_cache_vals[buyer] -= sold_amount
-    return nothing
+    return demand_cache_vals[buyer] -= sold_amount
 end
 
 function reduce_demand_by_sold_amount!(demand_cache_vals, demand_cache_nominal, sold_amount, buyer, price, ::Final, ::Stock)
     demand_cache_nominal[buyer] += sold_amount
-    demand_cache_vals[buyer] -= sold_amount * price
-    return nothing
+    return demand_cache_vals[buyer] -= sold_amount * price
 end
 
 function reduce_demand_by_sold_amount!(demand_cache_vals, demand_cache_nominal, sold_amount, buyer, price, ::Final, ::Capacity)
-    demand_cache_vals[buyer] -= sold_amount * price
-    return nothing
+    return demand_cache_vals[buyer] -= sold_amount * price
 end
 
 function adjust_weights!(available_stocks, stock_capacity, weights, firm_index, ::Stock)
@@ -429,14 +419,14 @@ function _allocate(sector_available_stocks, sector_stock_capacity, sector_prices
             available_stock = sector_available_stocks[firm_index]
             stock_capacity = sector_stock_capacity[firm_index]
 
-            sold_amount = calc_sold_amount(available_stock, stock_capacity, price, demand_book[buyer], firm_index, buyer, market, stock_source)
+            sold_amount = calc_sold_amount(available_stock, stock_capacity, price, demand_book[buyer], market, stock_source)
 
             reduce_stocks_by_sold_amount!(sector_available_stocks, sector_stock_capacity, firm_index, sold_amount, stock_source)
-            reduce_demand_by_sold_amount!(demand_book, demand_clearing, sold_amount, buyer, price, market, stock_source)
+            new_demand = reduce_demand_by_sold_amount!(demand_book, demand_clearing, sold_amount, buyer, price, market, stock_source)
 
             adjust_weights!(sector_available_stocks, sector_stock_capacity, weights, firm_index, stock_source) && iszero(weights) && break
 
-            if demand_book[buyer] > 1.0e-10
+            if new_demand > 1.0e-10
                 new_nactive += 1
                 active[new_nactive] = buyer
             end
