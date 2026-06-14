@@ -53,9 +53,11 @@ function _active_household_reference_state(model)
     firm_entities = [row.entity for row in _query_rows(world, (Bit.Firm,))]
     worker_firm_index = Dict{Bit.Ark.Entity, Float64}()
     for (index, firm_entity) in pairs(firm_entities)
-        for (worker_entities, _) in Bit.Ark.Query(world, (Bit.EmployedAt => firm_entity,))
-            for worker_entity in worker_entities
-                worker_firm_index[worker_entity] = Float64(index)
+        for (worker_entities, employed_at) in Bit.Ark.Query(world, (Bit.EmployedAt,))
+            for worker_idx in eachindex(worker_entities)
+                if employed_at[worker_idx].entity == firm_entity
+                    worker_firm_index[worker_entities[worker_idx]] = Float64(index)
+                end
             end
         end
     end

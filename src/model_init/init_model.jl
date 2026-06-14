@@ -1,7 +1,7 @@
 abstract type AbstractModel end
 
-struct ECSModel{CS <: Tuple, CT <: Tuple, ST <: Tuple, N, M} <: AbstractModel
-    world::Ark.World{CS, CT, ST, N, M}
+struct ECSModel{W<:Ark.World} <: AbstractModel
+    world::W
 end
 
 const Model = ECSModel
@@ -65,7 +65,7 @@ function seed_initial_employment!(world::Ark.World, properties::Properties)
             world,
             worker_e,
             remove = (Unemployed,),
-            add = (Employed(wage_rate), EmployedAt(firm_e) => firm_e),
+            add = (Employed(wage_rate), EmployedAt(firm_e)),
         )
     end
 
@@ -78,8 +78,8 @@ function initialize_household_incomes_and_balance_sheets!(world::Ark.World, prop
     household_debt_ratio = properties.initial_conditions.households.debt
     household_capital_ratio = properties.initial_conditions.households.capital
     @dub for t in Ark.Query(
-        world, (NetDisposableIncome, Deposits, CapitalStock), with = (Household,),
-    )
+            world, (NetDisposableIncome, Deposits, CapitalStock), with = (Household,),
+        )
         t.deposits.amount .= household_debt_ratio .* t.net_disposable_income.amount
         t.capital_stock.amount .= household_capital_ratio .* t.net_disposable_income.amount
     end

@@ -1,4 +1,3 @@
-
 function _dub_query_call(ex)
     ex isa Expr && ex.head == :call || return false
     fn = first(ex.args)

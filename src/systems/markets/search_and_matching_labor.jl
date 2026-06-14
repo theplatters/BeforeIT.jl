@@ -125,7 +125,7 @@ function hire_workers!(world::Ark.World)
 
     for (worker_e, firm_e) in add_employment
         Ark.exchange_components!(
-            world, worker_e, remove = (Unemployed,), add = (Employed(0.0), EmployedAt(firm_e) => firm_e)
+            world, worker_e, remove = (Unemployed,), add = (Employed(0.0), EmployedAt(firm_e))
         )
     end
 
