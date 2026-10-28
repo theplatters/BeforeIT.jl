@@ -1,18 +1,36 @@
 function search_and_matching_credit!(world::Ark.World)
-    (; capital_requirement, loan_to_value_ratio) = BeforeIT.properties(world).banking_params
-    total_expected_loans = sum_amount(world, ExpectedLoans)
-    total_loans = 0.0
-    _, E_k = single(Ark.Query(world, (Equity,), with = (Bank,)))
-
     @dub for t in Ark.Query(world, (LoanFlow,), with = (Firm,))
         t.loan_flow.amount .= 0.0
     end
 
     cache = Ark.get_resource(world, CreditMatchingCache)
+
+    # every bank rations credit to its own clients against its own capital
+    @dub for b in Ark.Query(world, (Equity,), with = (Bank,))
+        for k in eachindex(b.e)
+            match_bank_credit!(world, cache, b.e[k], b.equity[k].amount)
+        end
+    end
+
+    return nothing
+end
+
+function match_bank_credit!(world::Ark.World, cache, bank::Ark.Entity, equity::Float64)
+    (; capital_requirement, loan_to_value_ratio, overdrafts_in_capital_ratio) =
+        BeforeIT.properties(world).banking_params
+    account = (BankAccount => bank,)
+
+    # the credit-supply constraint binds on the bank's whole loan book
+    exposure = sum_amount(world, ExpectedLoans, with = account)
+    if overdrafts_in_capital_ratio
+        exposure += sum_negative_amount(world, Deposits, with = account)
+    end
+    total_loans = 0.0
+
     active_firms = cache.active_firms
 
     n_active = 0
-    @dub for t in Ark.Query(world, (TargetLoans,), with = (Firm,))
+    @dub for t in Ark.Query(world, (TargetLoans,), with = (Firm, account...))
         for i in eachindex(t.e)
             if t.target_loans[i].amount > 0.0
                 n_active += 1
@@ -33,7 +51,7 @@ function search_and_matching_credit!(world::Ark.World)
             min(
                 target_loan.amount,
                 loan_to_value_ratio * expected_capital.amount - expected_loan.amount,
-                E_k.amount / capital_requirement - total_expected_loans - total_loans
+                equity / capital_requirement - exposure - total_loans
             )
         )
         Ark.set_components!(world, firm, (LoanFlow(amount),))

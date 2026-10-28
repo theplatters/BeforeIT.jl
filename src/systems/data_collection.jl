@@ -11,6 +11,7 @@ function collect_data!(world::Ark.World)
     props = BeforeIT.properties(world)
 
     push!(history.collection_time, t)
+    collect_bank_data!(world, history)
 
     if length(history.collection_time) == 1
         collect_data_init!(world, history, props)
@@ -246,6 +247,34 @@ function collect_data!(world::Ark.World)
     end
     push!(history.nominal_sector_gva, nom_sector_gva)
     push!(history.real_sector_gva, real_sector_gva)
+
+    return nothing
+end
+
+function collect_bank_data!(world::Ark.World, history::DataCollector)
+    credit_new = Float64[]
+    credit_stock = Float64[]
+    equity = Float64[]
+    reserves = Float64[]
+    roe = Float64[]
+
+    @dub for t in Ark.Query(world, (Equity, Profits, ResidualItems), with = (Bank,))
+        for i in eachindex(t.e)
+            account = (BankAccount => t.e[i],)
+            E_k = t.equity[i].amount
+            push!(credit_new, sum_amount(world, LoanFlow, with = account))
+            push!(credit_stock, sum_amount(world, LoansOutstanding, with = account))
+            push!(equity, E_k)
+            push!(reserves, t.residual_items[i].amount)
+            push!(roe, E_k != 0.0 ? t.profits[i].amount / E_k : 0.0)
+        end
+    end
+
+    push!(history.credit_new_per_bank, credit_new)
+    push!(history.credit_stock_per_bank, credit_stock)
+    push!(history.equity_per_bank, equity)
+    push!(history.reserves_per_bank, reserves)
+    push!(history.roe_per_bank, roe)
 
     return nothing
 end

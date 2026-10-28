@@ -337,22 +337,22 @@ function set_firms_profits!(world::Ark.World)
     price_indices = Ark.get_resource(world, PriceIndices)
     properties = Ark.get_resource(world, Properties)
 
-    _, r = single(Ark.Query(world, (LendingRate,)))
     _, r_bar = single(Ark.Query(world, (NominalInterestRate,)))
 
-    @dub for t in Ark.Query(world, FIRM_PROFIT_COMPONENTS)
-        @inbounds for i in eachindex(t.e)
-            t.profits[i] = firm_profit(
-                t.price.value[i], t.sales.amount[i], t.final_goods_stock_change.amount[i],
-                t.deposits.amount[i], t.wage_bill.amount[i], t.employment.amount[i],
-                price_indices.household_consumption, properties.social_insurance.employers_contribution,
-                t.intermediate_productivity.value[i], t.price_index.value[i], t.output.amount[i],
-                t.capital_depreciation_rate.rate[i], t.capital_productivity.value[i],
-                t.cf_price_index.value[i], t.tax_rates.output[i], t.tax_rates.capital[i],
-                t.loans_outstanding.amount[i], r.rate, r_bar.rate,
-            ) |> Profits
+    foreach_bank(world) do bank, r
+        @dub for t in Ark.Query(world, FIRM_PROFIT_COMPONENTS, with = (BankAccount => bank,))
+            @inbounds for i in eachindex(t.e)
+                t.profits[i] = firm_profit(
+                    t.price.value[i], t.sales.amount[i], t.final_goods_stock_change.amount[i],
+                    t.deposits.amount[i], t.wage_bill.amount[i], t.employment.amount[i],
+                    price_indices.household_consumption, properties.social_insurance.employers_contribution,
+                    t.intermediate_productivity.value[i], t.price_index.value[i], t.output.amount[i],
+                    t.capital_depreciation_rate.rate[i], t.capital_productivity.value[i],
+                    t.cf_price_index.value[i], t.tax_rates.output[i], t.tax_rates.capital[i],
+                    t.loans_outstanding.amount[i], r, r_bar.rate,
+                ) |> Profits
+            end
         end
-
     end
 
     return nothing
@@ -418,7 +418,6 @@ function set_firms_deposits!(world::Ark.World)
     price_indices = Ark.get_resource(world, PriceIndices)
     properties = Ark.get_resource(world, Properties)
 
-    _, r = single(Ark.Query(world, (LendingRate,)))
     _, r_bar = single(Ark.Query(world, (NominalInterestRate,)))
 
     employer_contribution = properties.social_insurance.employers_contribution
@@ -428,18 +427,20 @@ function set_firms_deposits!(world::Ark.World)
 
     household_price_index = price_indices.household_consumption
 
-    @dub for t in Ark.Query(world, FIRM_DEPOSIT_COMPONENTS)
-        for i in eachindex(t.deposits)
-            t.deposits[i] = firm_deposits(
-                t.deposits[i].amount, t.price[i].value, t.sales[i].amount,
-                t.wage_bill[i].amount, t.employment[i].amount, household_price_index,
-                employer_contribution, t.materials_stock_change[i].amount,
-                t.price_index[i].value, t.tax_rates[i].output, t.output[i].amount,
-                t.tax_rates[i].capital, t.profits[i].amount, corporate_tax_rate,
-                dividend_payout_ratio, t.loans_outstanding[i].amount,
-                r.rate, r_bar.rate, t.cf_price_index[i].value, t.investment[i].amount,
-                t.loan_flow[i].amount, debt_installment_rate,
-            ) |> Deposits
+    foreach_bank(world) do bank, r
+        @dub for t in Ark.Query(world, FIRM_DEPOSIT_COMPONENTS, with = (BankAccount => bank,))
+            for i in eachindex(t.deposits)
+                t.deposits[i] = firm_deposits(
+                    t.deposits[i].amount, t.price[i].value, t.sales[i].amount,
+                    t.wage_bill[i].amount, t.employment[i].amount, household_price_index,
+                    employer_contribution, t.materials_stock_change[i].amount,
+                    t.price_index[i].value, t.tax_rates[i].output, t.output[i].amount,
+                    t.tax_rates[i].capital, t.profits[i].amount, corporate_tax_rate,
+                    dividend_payout_ratio, t.loans_outstanding[i].amount,
+                    r, r_bar.rate, t.cf_price_index[i].value, t.investment[i].amount,
+                    t.loan_flow[i].amount, debt_installment_rate,
+                ) |> Deposits
+            end
         end
     end
 

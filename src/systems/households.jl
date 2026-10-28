@@ -168,18 +168,22 @@ function set_households_deposit!(world::Ark.World)
     τ_CF = prop.tax_rates.capital_formation
 
     _, r_bar = single(Ark.Query(world, (NominalInterestRate,)))
-    _, r = single(Ark.Query(world, (LendingRate,)))
 
-    @dub for t in Ark.Query(world, (NetDisposableIncome, RealisedConsumption, RealisedInvestment, Deposits))
-        for i in eachindex(t.e)
-            previous_deposits = t.deposits[i].amount
-            t.deposits[i] = (
-                previous_deposits + t.net_disposable_income[i].amount
-                    - (1 + τ_VAT) * t.realised_consumption[i].amount
-                    - (1 + τ_CF) * t.realised_investment[i].amount
-                    + r_bar.rate * max(0.0, previous_deposits)
-                    + r.rate * min(0.0, previous_deposits)
-            ) |> Deposits
+    foreach_bank(world) do bank, r
+        @dub for t in Ark.Query(
+                world, (NetDisposableIncome, RealisedConsumption, RealisedInvestment, Deposits),
+                with = (BankAccount => bank,),
+            )
+            for i in eachindex(t.e)
+                previous_deposits = t.deposits[i].amount
+                t.deposits[i] = (
+                    previous_deposits + t.net_disposable_income[i].amount
+                        - (1 + τ_VAT) * t.realised_consumption[i].amount
+                        - (1 + τ_CF) * t.realised_investment[i].amount
+                        + r_bar.rate * max(0.0, previous_deposits)
+                        + r * min(0.0, previous_deposits)
+                ) |> Deposits
+            end
         end
     end
 

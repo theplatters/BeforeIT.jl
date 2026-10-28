@@ -14,7 +14,8 @@ end
 struct Population
     active::Int64               # H_act: economically active persons
     inactive::Int64             # H_inact: economically inactive persons
-    total::Int64                # H = active + inactive (derived)
+    banks::Int64                # n_banks: number of banks (one banker household each)
+    total::Int64                # H = active - 1 + banks + inactive (derived)
 end
 
 # === GLOBAL TAX RATES ===
@@ -54,6 +55,7 @@ struct BankingParams
     loan_to_value_ratio::Float64     # zeta_LTV: loan-to-value ratio
     new_firm_loan_ratio::Float64     # zeta_b: loan-to-capital for new firms post-bankruptcy
     risk_premium::Float64            # mu: risk premium on policy rate
+    overdrafts_in_capital_ratio::Bool # count drawn overdrafts in the credit-supply constraint
 end
 
 # === MONETARY POLICY ===
@@ -233,9 +235,12 @@ function Properties(parameters::Dict{String, Any}, initial_conditions::Dict{Stri
     # === POPULATION ===
     H_act = Int64(parameters["H_act"])
     H_inact = Int64(parameters["H_inact"])
-    H = H_act + H_inact
+    n_banks = Int64(get(parameters, "n_banks", 1))
+    n_banks >= 1 || throw(ArgumentError("n_banks must be at least 1, got $n_banks"))
+    # H_act counts a single banker household; every additional bank adds one more
+    H = H_act - 1 + n_banks + H_inact
 
-    population = Population(H_act, H_inact, H)
+    population = Population(H_act, H_inact, n_banks, H)
 
     # === TAX RATES ===
     tax_rates = GlobalTaxRates(
@@ -264,7 +269,8 @@ function Properties(parameters::Dict{String, Any}, initial_conditions::Dict{Stri
     banking_params = BankingParams(
         Float64(parameters["theta_DIV"]), Float64(parameters["theta"]),
         Float64(parameters["zeta"]), Float64(parameters["zeta_LTV"]),
-        Float64(parameters["zeta_b"]), Float64(parameters["mu"])
+        Float64(parameters["zeta_b"]), Float64(parameters["mu"]),
+        Bool(get(parameters, "overdrafts_in_capital_ratio", false))
     )
 
     # === MONETARY POLICY ===

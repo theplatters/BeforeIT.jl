@@ -1,6 +1,6 @@
 abstract type AbstractModel end
 
-struct ECSModel{W<:Ark.World} <: AbstractModel
+struct ECSModel{W <: Ark.World} <: AbstractModel
     world::W
 end
 
@@ -18,18 +18,21 @@ function ECSModel(properties::Properties)
     world = Ark.World(Tuple(BIT_COMPONENTS)...; initial_capacity = 16)
 
     markets = setup_markets!(world, properties)
-    setup_firms!(world, properties, markets)
-    setup_workers!(world, properties)
-    setup_bank!(world, properties)
+    banks = setup_banks!(world, properties)
+    setup_firms!(world, properties, markets, banks)
+    setup_workers!(world, properties, banks)
+    setup_bankers!(world, properties, banks)
     setup_central_bank!(world, properties)
     setup_government!(world, properties)
     setup_rotw!(world, properties, markets)
     setup_aggregates!(world, properties)
 
+    assign_bank_accounts!(world, properties)
+    initialize_bank_profits!(world, properties)
     seed_initial_employment!(world, properties)
     initialize_household_incomes_and_balance_sheets!(world, properties)
     normalize_deposits_and_capital_stocks!(world)
-    add_deposits_to_bank!(world)
+    set_bank_deposits!(world)
     collect_data!(world)
 
     return ECSModel(world)
@@ -96,17 +99,6 @@ function normalize_deposits_and_capital_stocks!(world)
     end
 
     return nothing
-end
-
-function add_deposits_to_bank!(world)
-    total_deposits = sum_amount(world, Deposits)
-    total_loans = sum_amount(world, LoansOutstanding)
-
-    @dub for t in Ark.Query(world, (Equity, ResidualItems), with = (Bank,))
-        t.residual_items.amount .= t.equity.amount .- total_loans .+ total_deposits
-    end
-
-    return
 end
 
 function properties(m::ECSModel)

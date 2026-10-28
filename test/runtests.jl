@@ -32,6 +32,7 @@ include("include_internals.jl")
         include("systems/government.jl")
         include("systems/households.jl")
         include("systems/markets/search_and_matching.jl")
+        include("systems/multibank.jl")
         include("systems/rotw.jl")
     end
 

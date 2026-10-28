@@ -27,6 +27,11 @@ mutable struct DataCollector
     euribor::Vector{Float64}
     nominal_sector_gva::Vector{Vector{Float64}}
     real_sector_gva::Vector{Vector{Float64}}
+    credit_new_per_bank::Vector{Vector{Float64}}
+    credit_stock_per_bank::Vector{Vector{Float64}}
+    equity_per_bank::Vector{Vector{Float64}}
+    reserves_per_bank::Vector{Vector{Float64}}
+    roe_per_bank::Vector{Vector{Float64}}
 
     function DataCollector(props::Properties)
         return new(
@@ -57,7 +62,12 @@ mutable struct DataCollector
             Float64[], # real_gdp_ea
             Float64[], # euribor
             Vector{Float64}[], # nominal_sector_gva
-            Vector{Float64}[]  # real_sector_gva
+            Vector{Float64}[], # real_sector_gva
+            Vector{Float64}[], # credit_new_per_bank
+            Vector{Float64}[], # credit_stock_per_bank
+            Vector{Float64}[], # equity_per_bank
+            Vector{Float64}[], # reserves_per_bank
+            Vector{Float64}[]  # roe_per_bank
         )
     end
 end

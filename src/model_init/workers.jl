@@ -1,4 +1,4 @@
-function setup_workers!(world::Ark.World, properties::Properties)
+function setup_workers!(world::Ark.World, properties::Properties, banks::Vector{Ark.Entity})
     (; active, inactive, total) = properties.population
     unemployment_benefit_rate = properties.social_insurance.unemployment_benefit
     (; subsidies_other, subsidies_inactive) = properties.initial_conditions.government
@@ -21,8 +21,9 @@ function setup_workers!(world::Ark.World, properties::Properties)
             RealisedInvestment,
             Household,
             FinalDemandCacheIndex,
+            BankAccount => first(banks),
         )
-    ) do (entities, income, deposits, expected_income, capital_stock, unemployed, consumption_budget, investment_budget, realised_consumption, realised_investment, household, final_cache_index)
+    ) do (entities, income, deposits, expected_income, capital_stock, unemployed, consumption_budget, investment_budget, realised_consumption, realised_investment, household, final_cache_index, bank_account)
         for i in eachindex(entities)
             income[i] = 0.0 |> NetDisposableIncome
             deposits[i] = 0.0 |> Deposits
@@ -35,6 +36,7 @@ function setup_workers!(world::Ark.World, properties::Properties)
             realised_investment[i] = 0.0 |> RealisedInvestment
             household[i] = Household()
             final_cache_index[i] = i |> FinalDemandCacheIndex
+            bank_account[i] = BankAccount()
         end
     end
 
@@ -52,8 +54,9 @@ function setup_workers!(world::Ark.World, properties::Properties)
             RealisedInvestment,
             Household,
             FinalDemandCacheIndex,
+            BankAccount => first(banks),
         )
-    ) do (entities, income, deposits, expected_income, capital_stock, inactive_component, consumption_budget, investment_budget, realised_consumption, realised_investment, household, final_cache_index)
+    ) do (entities, income, deposits, expected_income, capital_stock, inactive_component, consumption_budget, investment_budget, realised_consumption, realised_investment, household, final_cache_index, bank_account)
         for i in eachindex(entities)
             income[i] = disposable_income |> NetDisposableIncome
             deposits[i] = debt * disposable_income |> Deposits
@@ -66,6 +69,7 @@ function setup_workers!(world::Ark.World, properties::Properties)
             realised_investment[i] = 0.0 |> RealisedInvestment
             household[i] = Household()
             final_cache_index[i] = employable + i |> FinalDemandCacheIndex
+            bank_account[i] = BankAccount()
         end
     end
 

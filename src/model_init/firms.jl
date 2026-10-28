@@ -1,4 +1,4 @@
-function setup_firms!(world::Ark.World, properties::Properties, markets)
+function setup_firms!(world::Ark.World, properties::Properties, markets, banks::Vector{Ark.Entity})
     (; total_firms, firms_per_sector) = properties.dimensions
 
     tau_SIF = properties.social_insurance.employers_contribution
@@ -65,9 +65,9 @@ function setup_firms!(world::Ark.World, properties::Properties, markets)
         (
             NetDisposableIncome, ConsumptionBudget, InvestmentBudget, ExpectedIncome,
             RealisedConsumption, RealisedInvestment, CapitalStock, Deposits, Capitalist,
-            Household, FinalDemandCacheIndex,
+            Household, FinalDemandCacheIndex, BankAccount => first(banks),
         )
-    ) do (entities, net_inc, cons_b, inv_b, exp_inc, real_cons, real_inv, cap_s, dep, cap_ist, hh, final_cache_index)
+    ) do (entities, net_inc, cons_b, inv_b, exp_inc, real_cons, real_inv, cap_s, dep, cap_ist, hh, final_cache_index, bank_account)
         for i in eachindex(entities)
             owners[i] = entities[i]
             net_inc[i] = disposable_income[i] |> NetDisposableIncome
@@ -81,6 +81,7 @@ function setup_firms!(world::Ark.World, properties::Properties, markets)
             cap_ist[i] = Capitalist()
             hh[i] = Household()
             final_cache_index[i] = firm_owner_final_demand_offset + i |> FinalDemandCacheIndex
+            bank_account[i] = BankAccount()
         end
     end
 
@@ -97,9 +98,9 @@ function setup_firms!(world::Ark.World, properties::Properties, markets)
                 TargetLoans, ExpectedCapital, ExpectedLoans, ExpectedSales, DesiredInvestment,
                 DesiredMaterials, DesiredEmployment, ExpectedProfits, FinalGoodsStockChange,
                 MaterialsStockChange, LoanFlow, IntermediaryDemandCacheIndex, StockCacheIndex,
-                Firm, Owner, Market => markets[g],
+                Firm, Owner, Market => markets[g], BankAccount => first(banks),
             )
-        ) do (entities, pp, lp, ip, cp, wb, awr, cdr, tr, emp, out, sal, gd, pr, inv, cs, interm, lo, om, dep, prof, vac, invst, eq, pi, cfpi, tl, ec, el, es, di, dm, de, ep, fgsc, msc, lf, intermediary_cache_index, stock_cache_index, firm, owner, market)
+        ) do (entities, pp, lp, ip, cp, wb, awr, cdr, tr, emp, out, sal, gd, pr, inv, cs, interm, lo, om, dep, prof, vac, invst, eq, pi, cfpi, tl, ec, el, es, di, dm, de, ep, fgsc, msc, lf, intermediary_cache_index, stock_cache_index, firm, owner, market, bank_account)
             for i in eachindex(entities)
                 firm_index = firm_offset + i
                 pp[i] = principal_product[firm_index] |> PrincipalProduct

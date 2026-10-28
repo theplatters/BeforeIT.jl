@@ -23,6 +23,7 @@ mkpath(outdir)
 # end
 
 Literate.markdown(joinpath(indir, "basic_example.jl"), outdir; credit = false)
+Literate.markdown(joinpath(indir, "basic_example_multibank.jl"), outdir; credit = false)
 Literate.markdown(joinpath(indir, "scenario_analysis_via_shock.jl"), outdir; credit = false)
 Literate.markdown(joinpath(indir, "prediction_pipeline.jl"), outdir; credit = false)
 Literate.markdown(joinpath(indir, "multithreading_speedup.jl"), outdir; credit = false)
@@ -37,6 +38,7 @@ makedocs(
     pages = [
         "Home" => "index.md",
         "Basics" => "examples/basic_example.md",
+        "Multiple banks" => "examples/basic_example_multibank.md",
         "Shocked simulations" => "examples/scenario_analysis_via_shock.md",
         "Extending the model" => "examples/basic_inheritance.md",
         "Multithreading within the model" => "examples/multithreading_speedup.md",
